@@ -2,9 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from './types';
 import { colors } from '../styles/theme';
+import HomeScreen from '../screens/HomeScreen';
 
 // Placeholder screens - will be implemented in later phases
-const HomeScreen = () => null;
 const DailyPhraseScreen = () => null;
 const ProfileScreen = () => null;
 const SettingsScreen = () => null;
