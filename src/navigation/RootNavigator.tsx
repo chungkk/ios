@@ -8,18 +8,11 @@ import MainNavigator from './MainNavigator';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
-  // TODO: Add authentication state check in Phase 5
-  // For now, default to showing Main navigator
-  const isAuthenticated = false; // Will be replaced with useAuth() hook
-
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainNavigator} />
-        ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        )}
+        <Stack.Screen name="Main" component={MainNavigator} />
+        <Stack.Screen name="Auth" component={AuthNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );

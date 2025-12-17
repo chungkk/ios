@@ -7,7 +7,7 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 
 // Root Stack Navigator (Auth + Main)
 export type RootStackParamList = {
-  Auth: undefined;
+  Auth: { screen?: keyof AuthStackParamList };
   Main: undefined;
 };
 

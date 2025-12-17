@@ -54,8 +54,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       const result = await login(email.trim(), password);
 
       if (result.success) {
-        // Navigation handled by RootNavigator based on auth state
         console.log('[LoginScreen] Login successful');
+        navigation.navigate('Main');
       } else {
         Alert.alert('Login Failed', result.error || 'Invalid email or password');
       }
@@ -76,6 +76,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
       if (result.success) {
         console.log('[LoginScreen] Google Sign-In successful');
+        navigation.navigate('Main');
       } else {
         Alert.alert('Sign In Failed', result.error || 'Google Sign-In failed');
       }

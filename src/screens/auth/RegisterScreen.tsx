@@ -79,7 +79,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
 
       if (result.success) {
         console.log('[RegisterScreen] Registration successful');
-        // Navigation handled by RootNavigator based on auth state
+        navigation.navigate('Main');
       } else {
         Alert.alert('Registration Failed', result.error || 'Unable to create account');
       }
@@ -100,6 +100,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
 
       if (result.success) {
         console.log('[RegisterScreen] Google Sign-In successful');
+        navigation.navigate('Main');
       } else {
         Alert.alert('Sign In Failed', result.error || 'Google Sign-In failed');
       }

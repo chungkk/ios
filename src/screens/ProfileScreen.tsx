@@ -61,6 +61,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Please login to view your profile</Text>
+          <Button
+            title="Login"
+            variant="primary"
+            onPress={() => navigation.navigate('Auth', {screen: 'Login'})}
+            style={{marginTop: spacing.lg}}
+          />
         </View>
       </SafeAreaView>
     );
