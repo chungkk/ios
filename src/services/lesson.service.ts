@@ -108,6 +108,8 @@ export const fetchLessonById = async (lessonId: string): Promise<Lesson> => {
       console.log('[LessonService] Fetching transcript from:', lessonData.json);
       try {
         const transcriptResponse = await api.get<any[]>(lessonData.json);
+        console.log('[LessonService] Transcript response received, items:', transcriptResponse.data?.length);
+        console.log('[LessonService] First item sample:', JSON.stringify(transcriptResponse.data?.[0]).substring(0, 200));
         
         // Transform transcript: normalize field names (start/end -> startTime/endTime)
         // and select appropriate translation based on user's language preference
@@ -125,8 +127,10 @@ export const fetchLessonById = async (lessonId: string): Promise<Lesson> => {
         
         lessonData.transcript = transformedTranscript;
         console.log('[LessonService] Transcript loaded, sentences:', transformedTranscript.length);
+        console.log('[LessonService] First transformed sentence:', transformedTranscript[0]?.text.substring(0, 50));
       } catch (transcriptError) {
         console.error('[LessonService] Error fetching transcript:', transcriptError);
+        console.error('[LessonService] Error details:', JSON.stringify(transcriptError));
         // Set empty transcript if fetch fails
         lessonData.transcript = [];
       }

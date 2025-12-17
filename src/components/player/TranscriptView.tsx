@@ -1,10 +1,11 @@
 // TranscriptView component - Scrollable transcript with auto-scroll to active sentence
 
 import React, { useEffect, useRef } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View, Text } from 'react-native';
 import type { Sentence } from '../../types/lesson.types';
 import SentenceItem from './SentenceItem';
-import { colors } from '../../styles/theme';
+import { colors, spacing } from '../../styles/theme';
+import { textStyles } from '../../styles/typography';
 
 interface TranscriptViewProps {
   transcript: Sentence[];
@@ -18,6 +19,9 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   onSentencePress,
 }) => {
   const flatListRef = useRef<FlatList>(null);
+
+  console.log('[TranscriptView] Rendering with', transcript.length, 'sentences');
+  console.log('[TranscriptView] First sentence:', transcript[0]?.text?.substring(0, 50));
 
   // Auto-scroll to active sentence
   useEffect(() => {
@@ -35,6 +39,15 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
       onSentencePress(index);
     }
   };
+
+  // Show empty state if no transcript
+  if (transcript.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>No transcript available</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -69,6 +82,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bgPrimary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bgPrimary,
+    padding: spacing.xl,
+  },
+  emptyText: {
+    ...textStyles.body,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 });
 

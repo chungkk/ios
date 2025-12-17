@@ -130,7 +130,14 @@ API_BASE_URL=http://192.168.2.222:3000  # Use your machine's IP
 - This document
 
 ## Status
-✅ **Fixed** - Lesson playback now works correctly on iOS simulator
+✅ **RESOLVED** - Lesson playback and transcript display working correctly on iOS simulator
+
+### Verification
+Tested with lesson "Peppa Wutz-Geschichten" - all features working:
+- ✅ Video loads and plays
+- ✅ Transcript sentences display in German
+- ✅ Vietnamese translations display below each sentence
+- ✅ Play controls functional
 
 ## Next Steps
 - Test on physical iOS device

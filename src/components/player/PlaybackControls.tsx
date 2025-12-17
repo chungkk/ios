@@ -2,55 +2,46 @@
 
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import type { PlaybackSpeed } from '../../hooks/useVideoPlayer';
-import { colors, spacing, borderRadius } from '../../styles/theme';
-import { textStyles } from '../../styles/typography';
+import { colors, spacing } from '../../styles/theme';
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
-  playbackSpeed: PlaybackSpeed;
   onPlayPause: () => void;
-  onSpeedChange: (speed: PlaybackSpeed) => void;
 }
-
-const SPEED_OPTIONS: PlaybackSpeed[] = [0.5, 0.75, 1, 1.25, 1.5];
 
 export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlaying,
-  playbackSpeed,
   onPlayPause,
-  onSpeedChange,
 }) => {
   return (
     <View style={styles.container}>
-      {/* Play/Pause Button */}
-      <TouchableOpacity style={styles.playButton} onPress={onPlayPause}>
-        <Text style={styles.playButtonText}>{isPlaying ? '⏸' : '▶'}</Text>
-      </TouchableOpacity>
+      {/* Center: Navigation, Mic, and Play controls */}
+      <View style={styles.centerControls}>
+        {/* Previous */}
+        <TouchableOpacity style={styles.navButton}>
+          <Text style={styles.navButtonText}>‹</Text>
+        </TouchableOpacity>
 
-      {/* Speed Selector */}
-      <View style={styles.speedSelector}>
-        <Text style={styles.speedLabel}>Speed:</Text>
-        {SPEED_OPTIONS.map((speed) => (
-          <TouchableOpacity
-            key={speed}
-            style={[
-              styles.speedButton,
-              playbackSpeed === speed && styles.speedButtonActive,
-            ]}
-            onPress={() => onSpeedChange(speed)}
-          >
-            <Text
-              style={[
-                styles.speedButtonText,
-                playbackSpeed === speed && styles.speedButtonTextActive,
-              ]}
-            >
-              {speed}x
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {/* Microphone Button */}
+        <TouchableOpacity style={styles.micButton}>
+          <Text style={styles.micButtonText}>🎤</Text>
+        </TouchableOpacity>
+
+        {/* Play/Pause Button */}
+        <TouchableOpacity style={styles.playButton} onPress={onPlayPause}>
+          <Text style={styles.playButtonText}>{isPlaying ? '⏸' : '▶'}</Text>
+        </TouchableOpacity>
+
+        {/* Next */}
+        <TouchableOpacity style={styles.navButton}>
+          <Text style={styles.navButtonText}>›</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Right: Menu */}
+      <TouchableOpacity style={styles.menuButton}>
+        <Text style={styles.menuButtonText}>⋮</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -59,52 +50,66 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.bgSecondary,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgPrimary,
     borderTopWidth: 1,
     borderTopColor: colors.borderColor,
   },
-  playButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.accentBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  playButtonText: {
-    fontSize: 20,
-    color: colors.textPrimary,
-  },
-  speedSelector: {
+  centerControls: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
   },
-  speedLabel: {
-    ...textStyles.label,
-    color: colors.textSecondary,
-    marginRight: spacing.sm,
+  navButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.bgSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  speedButton: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    marginRight: spacing.xs,
-    borderRadius: borderRadius.small,
-    backgroundColor: colors.bgElevated,
-  },
-  speedButtonActive: {
-    backgroundColor: colors.accentBlue,
-  },
-  speedButtonText: {
-    ...textStyles.label,
-    color: colors.textSecondary,
-    fontSize: 12,
-  },
-  speedButtonTextActive: {
+  navButtonText: {
+    fontSize: 32,
     color: colors.textPrimary,
+    fontWeight: '300',
+  },
+  micButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.accentRed,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  micButtonText: {
+    fontSize: 20,
+  },
+  playButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.accentBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButtonText: {
+    fontSize: 24,
+    color: colors.textPrimary,
+    marginLeft: 2,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButtonText: {
+    fontSize: 24,
+    color: colors.textSecondary,
     fontWeight: '700',
   },
 });

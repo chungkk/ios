@@ -2,7 +2,7 @@
 // Migrated from ppgeil/pages/[lessonId].js and ppgeil/pages/dictation/[lessonId].js
 
 import React, { useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, StyleSheet, SafeAreaView, Alert, Text } from 'react-native';
 import { useLessonData } from '../hooks/useLessonData';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
@@ -13,7 +13,7 @@ import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
-import { colors } from '../styles/theme';
+import { colors, spacing, borderRadius } from '../styles/theme';
 import type { HomeStackScreenProps } from '../navigation/types';
 
 type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
@@ -25,7 +25,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   
   const { lesson, loading, error } = useLessonData(lessonId);
   
-  console.log('[LessonScreen] State:', { hasLesson: !!lesson, loading, hasError: !!error });
+  console.log('[LessonScreen] State:', { 
+    hasLesson: !!lesson, 
+    loading, 
+    hasError: !!error,
+    transcriptLength: lesson?.transcript?.length || 0 
+  });
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const [studyStartTime] = useState(Date.now());
   const [completedReported, setCompletedReported] = useState(false);
@@ -34,7 +39,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     isPlaying,
     playbackSpeed,
     setIsPlaying,
-    setPlaybackSpeed,
     setCurrentTime,
     setDuration,
     togglePlayPause,
@@ -157,8 +161,20 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     );
   }
 
+  const transcript = lesson.transcript || [];
+  console.log('[LessonScreen] Rendering with transcript length:', transcript.length);
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{lesson.title}</Text>
+        <View style={styles.pointsContainer}>
+          <Text style={styles.pointsIcon}>💎</Text>
+          <Text style={styles.pointsText}>10190</Text>
+        </View>
+      </View>
+
       <View style={styles.videoContainer}>
         <VideoPlayer
           ref={videoPlayerRef}
@@ -173,7 +189,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
       <View style={styles.transcriptContainer}>
         <TranscriptView
-          transcript={lesson.transcript}
+          transcript={transcript}
           activeSentenceIndex={activeSentenceIndex}
           onSentencePress={handleSentencePress}
         />
@@ -181,9 +197,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
       <PlaybackControls
         isPlaying={isPlaying}
-        playbackSpeed={playbackSpeed}
         onPlayPause={togglePlayPause}
-        onSpeedChange={setPlaybackSpeed}
       />
     </SafeAreaView>
   );
@@ -193,6 +207,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bgPrimary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.bgPrimary,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgSecondary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.round,
+  },
+  pointsIcon: {
+    fontSize: 16,
+    marginRight: spacing.xs,
+  },
+  pointsText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   videoContainer: {
     height: 250,
