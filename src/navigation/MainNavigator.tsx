@@ -1,8 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import type { MainTabParamList } from './types';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { MainTabParamList, HomeStackParamList } from './types';
 import { colors } from '../styles/theme';
 import HomeScreen from '../screens/HomeScreen';
+import CategoryScreen from '../screens/CategoryScreen';
+import LessonScreen from '../screens/LessonScreen';
 
 // Placeholder screens - will be implemented in later phases
 const DailyPhraseScreen = () => null;
@@ -10,6 +13,22 @@ const ProfileScreen = () => null;
 const SettingsScreen = () => null;
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+
+// Home Stack Navigator (nested in Home tab)
+const HomeStackNavigator = () => {
+  return (
+    <HomeStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
+      <HomeStack.Screen name="Category" component={CategoryScreen} />
+      <HomeStack.Screen name="Lesson" component={LessonScreen} />
+    </HomeStack.Navigator>
+  );
+};
 
 export const MainNavigator = () => {
   return (
@@ -34,7 +53,7 @@ export const MainNavigator = () => {
     >
       <Tab.Screen 
         name="Home" 
-        component={HomeScreen}
+        component={HomeStackNavigator}
         options={{
           tabBarLabel: 'Home',
         }}

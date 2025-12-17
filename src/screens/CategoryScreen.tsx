@@ -1,7 +1,7 @@
 // CategoryScreen - Shows all lessons in a specific category
 // Migrated from ppgeil/pages/category/[slug].js
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,

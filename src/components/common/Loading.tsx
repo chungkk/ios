@@ -29,6 +29,37 @@ const styles = StyleSheet.create({
   },
 });
 
+const skeletonStyles = StyleSheet.create({
+  skeletonCard: {
+    width: 280,
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: colors.bgSecondary,
+    overflow: 'hidden',
+  },
+  skeletonImage: {
+    width: '100%',
+    height: 140,
+    backgroundColor: colors.bgElevated,
+  },
+  skeletonContent: {
+    padding: 12,
+  },
+  skeletonTitle: {
+    height: 16,
+    width: '80%',
+    backgroundColor: colors.bgElevated,
+    marginBottom: 8,
+    borderRadius: 4,
+  },
+  skeletonSubtitle: {
+    height: 12,
+    width: '60%',
+    backgroundColor: colors.bgElevated,
+    borderRadius: 4,
+  },
+});
+
 // Skeleton Loader for cards
 interface SkeletonCardProps {
   style?: ViewStyle;
@@ -36,11 +67,11 @@ interface SkeletonCardProps {
 
 export const SkeletonCard: React.FC<SkeletonCardProps> = ({ style }) => {
   return (
-    <View style={[styles.skeletonCard, style]}>
-      <View style={styles.skeletonImage} />
-      <View style={styles.skeletonContent}>
-        <View style={styles.skeletonTitle} />
-        <View style={styles.skeletonSubtitle} />
+    <View style={[skeletonStyles.skeletonCard, style]}>
+      <View style={skeletonStyles.skeletonImage} />
+      <View style={skeletonStyles.skeletonContent}>
+        <View style={skeletonStyles.skeletonTitle} />
+        <View style={skeletonStyles.skeletonSubtitle} />
       </View>
     </View>
   );

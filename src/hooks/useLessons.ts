@@ -19,12 +19,22 @@ export const useLessons = (filters: LessonFilters = {}): UseLessonsResult => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const categoryFilter = filters.category;
+  const difficultyFilter = filters.difficulty;
+  const limitFilter = filters.limit;
+  const skipFilter = filters.skip;
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await lessonService.fetchLessons(filters);
+      const response = await lessonService.fetchLessons({
+        category: categoryFilter,
+        difficulty: difficultyFilter,
+        limit: limitFilter,
+        skip: skipFilter,
+      });
       
       setLessons(response.lessons);
       setTotal(response.total);
@@ -36,7 +46,7 @@ export const useLessons = (filters: LessonFilters = {}): UseLessonsResult => {
     } finally {
       setLoading(false);
     }
-  }, [filters.category, filters.difficulty, filters.limit, filters.skip]);
+  }, [categoryFilter, difficultyFilter, limitFilter, skipFilter]);
 
   useEffect(() => {
     fetchData();

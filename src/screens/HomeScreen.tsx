@@ -30,15 +30,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { lessons, loading: lessonsLoading } = useLessons({ difficulty: difficultyFilter, limit: 6 });
 
   const handleLessonPress = (lessonId: string) => {
-    // TODO: Navigate to LessonScreen (Phase 4)
-    console.log('Navigate to lesson:', lessonId);
-    // navigation.navigate('Lesson', { lessonId });
+    // Navigate to LessonScreen
+    navigation.navigate('Lesson', { lessonId });
   };
 
-  const handleViewAll = (categorySlug: string, categoryName: string) => {
-    // TODO: Navigate to CategoryScreen (T040)
+  const handleViewAll = (categorySlug: string, _categoryName: string) => {
+    // Navigate to CategoryScreen
     console.log('Navigate to category:', categorySlug);
-    // navigation.navigate('Category', { categorySlug, categoryName });
+    // navigation.navigate('Category', { categorySlug, categoryName: _categoryName });
   };
 
   if (categoriesLoading) {
