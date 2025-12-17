@@ -18,16 +18,19 @@ export const useLessonData = (lessonId: string): UseLessonDataResult => {
 
   const fetchData = useCallback(async () => {
     if (!lessonId) {
+      console.error('[useLessonData] No lesson ID provided');
       setError(new Error('Lesson ID is required'));
       setLoading(false);
       return;
     }
 
     try {
+      console.log('[useLessonData] Fetching lesson:', lessonId);
       setLoading(true);
       setError(null);
 
       const data = await lessonService.fetchLessonById(lessonId);
+      console.log('[useLessonData] Lesson fetched successfully:', data?.title);
       setLesson(data);
 
       // Increment view count (non-blocking)

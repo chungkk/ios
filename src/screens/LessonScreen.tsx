@@ -21,7 +21,11 @@ type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
   
+  console.log('[LessonScreen] Loading lesson with ID:', lessonId);
+  
   const { lesson, loading, error } = useLessonData(lessonId);
+  
+  console.log('[LessonScreen] State:', { hasLesson: !!lesson, loading, hasError: !!error });
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const [studyStartTime] = useState(Date.now());
   const [completedReported, setCompletedReported] = useState(false);

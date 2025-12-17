@@ -28,9 +28,8 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
   });
 
   const handleLessonPress = (lessonId: string) => {
-    // TODO: Navigate to LessonScreen (Phase 4)
     console.log('Navigate to lesson:', lessonId);
-    // navigation.navigate('Lesson', { lessonId });
+    navigation.navigate('Lesson', { lessonId });
   };
 
   const handleBack = () => {

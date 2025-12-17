@@ -11,14 +11,22 @@ export interface Category {
   isActive: boolean;
 }
 
+export interface WordTiming {
+  word: string;
+  start: number;
+  end: number;
+}
+
 export interface Sentence {
   text: string;
-  startTime: number; // seconds (decimal)
-  endTime: number; // seconds (decimal)
-  translation?: {
-    en?: string;
-    vi?: string;
-  };
+  start: number; // seconds (decimal) - raw from API
+  end: number; // seconds (decimal) - raw from API
+  startTime: number; // normalized for app use
+  endTime: number; // normalized for app use
+  wordTimings?: WordTiming[];
+  translation?: string; // Combined translation (selected by user's language)
+  translationEn?: string;
+  translationVi?: string;
 }
 
 export interface Lesson {

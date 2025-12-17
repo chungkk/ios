@@ -92,20 +92,53 @@ export const fetchLessonById = async (lessonId: string): Promise<Lesson> => {
   try {
     // Check cache first
     const cacheKey = `lesson_${lessonId}`;
-    const cached = await getCache<LessonDetailResponse>(cacheKey);
+    const cached = await getCache<Lesson>(cacheKey);
     if (cached) {
       console.log('[LessonService] Returning cached lesson:', lessonId);
-      return cached.lesson;
+      return cached;
     }
 
-    // Fetch from API
+    // Fetch lesson metadata from API
     console.log('[LessonService] Fetching lesson from API:', lessonId);
-    const response = await api.get<LessonDetailResponse>(`/api/lessons/${lessonId}`);
+    const response = await api.get<any>(`/api/lessons/${lessonId}`);
+    const lessonData = response.data;
 
-    // Cache for 1 hour
-    await saveCache(cacheKey, response.data, LESSON_CACHE_TTL);
+    // Fetch transcript from JSON file (lesson.json path)
+    if (lessonData.json) {
+      console.log('[LessonService] Fetching transcript from:', lessonData.json);
+      try {
+        const transcriptResponse = await api.get<any[]>(lessonData.json);
+        
+        // Transform transcript: normalize field names (start/end -> startTime/endTime)
+        // and select appropriate translation based on user's language preference
+        const transformedTranscript = transcriptResponse.data.map((item: any) => ({
+          text: item.text,
+          start: item.start,
+          end: item.end,
+          startTime: item.start, // Normalized for backward compatibility
+          endTime: item.end,     // Normalized for backward compatibility
+          wordTimings: item.wordTimings || [],
+          translation: item.translationVi || item.translation || '', // Default to Vietnamese
+          translationEn: item.translationEn,
+          translationVi: item.translationVi,
+        }));
+        
+        lessonData.transcript = transformedTranscript;
+        console.log('[LessonService] Transcript loaded, sentences:', transformedTranscript.length);
+      } catch (transcriptError) {
+        console.error('[LessonService] Error fetching transcript:', transcriptError);
+        // Set empty transcript if fetch fails
+        lessonData.transcript = [];
+      }
+    } else {
+      console.warn('[LessonService] No transcript JSON path found for lesson:', lessonId);
+      lessonData.transcript = [];
+    }
 
-    return response.data.lesson;
+    // Cache the complete lesson with transcript for 1 hour
+    await saveCache(cacheKey, lessonData, LESSON_CACHE_TTL);
+
+    return lessonData;
   } catch (error) {
     console.error('[LessonService] Error fetching lesson:', error);
     throw error;
