@@ -7,7 +7,7 @@ import {
 } from '../types/user.types';
 import {AuthResponse, MeResponse, PointsResponse} from '../types/api.types';
 import {saveToken, removeToken, saveData, STORAGE_KEYS} from './storage.service';
-import {GoogleSignin} from '@react-native-google-signin/google-signin';
+// import {GoogleSignin} from '@react-native-google-signin/google-signin'; // TODO: Install package
 
 /**
  * Register new user with email/password
@@ -115,10 +115,11 @@ export const logout = async (): Promise<void> => {
     await saveData(STORAGE_KEYS.USER_PROFILE, null);
     
     // Sign out from Google if authenticated
-    const isSignedIn = await GoogleSignin.isSignedIn();
-    if (isSignedIn) {
-      await GoogleSignin.signOut();
-    }
+    // TODO: Uncomment when @react-native-google-signin/google-signin is installed
+    // const isSignedIn = await GoogleSignin.isSignedIn();
+    // if (isSignedIn) {
+    //   await GoogleSignin.signOut();
+    // }
   } catch (error) {
     console.error('[AuthService] Logout error:', error);
     throw error;
@@ -143,46 +144,51 @@ export const fetchPoints = async (): Promise<number> => {
 /**
  * Configure Google Sign-In
  * Call this during app initialization (App.tsx or AuthContext)
+ * TODO: Uncomment when package is installed
  */
 export const configureGoogleSignIn = (webClientId: string): void => {
-  GoogleSignin.configure({
-    webClientId, // From Google Cloud Console or Firebase
-    offlineAccess: false,
-    forceCodeForRefreshToken: false,
-  });
+  console.log('[AuthService] Google Sign-In config skipped - package not installed');
+  // GoogleSignin.configure({
+  //   webClientId, // From Google Cloud Console or Firebase
+  //   offlineAccess: false,
+  //   forceCodeForRefreshToken: false,
+  // });
 };
 
 /**
  * Login with Google OAuth
+ * TODO: Uncomment when @react-native-google-signin/google-signin is installed
  */
 export const loginWithGoogle = async (): Promise<AuthResponse> => {
-  try {
-    // Check if device supports Google Play Services (iOS always true)
-    await GoogleSignin.hasPlayServices();
-    
-    // Prompt user to select Google account
-    const userInfo = await GoogleSignin.signIn();
-    
-    // Send Google ID token to backend for verification
-    const response = await api.post<AuthResponse>('/api/auth/google', {
-      idToken: userInfo.data?.idToken,
-      user: {
-        id: userInfo.data?.user.id,
-        email: userInfo.data?.user.email,
-        name: userInfo.data?.user.name,
-        photo: userInfo.data?.user.photo,
-      },
-    });
-    
-    // Save token to Keychain
-    await saveToken(response.data.token);
-    
-    // Cache user profile
-    await saveData(STORAGE_KEYS.USER_PROFILE, response.data.user);
-    
-    return response.data;
-  } catch (error) {
-    console.error('[AuthService] Google Sign-In error:', error);
-    throw error;
-  }
+  throw new Error('Google Sign-In not yet implemented. Install @react-native-google-signin/google-signin');
+  
+  // try {
+  //   // Check if device supports Google Play Services (iOS always true)
+  //   await GoogleSignin.hasPlayServices();
+  //   
+  //   // Prompt user to select Google account
+  //   const userInfo = await GoogleSignin.signIn();
+  //   
+  //   // Send Google ID token to backend for verification
+  //   const response = await api.post<AuthResponse>('/api/auth/google', {
+  //     idToken: userInfo.data?.idToken,
+  //     user: {
+  //       id: userInfo.data?.user.id,
+  //       email: userInfo.data?.user.email,
+  //       name: userInfo.data?.user.name,
+  //       photo: userInfo.data?.user.photo,
+  //     },
+  //   });
+  //   
+  //   // Save token to Keychain
+  //   await saveToken(response.data.token);
+  //   
+  //   // Cache user profile
+  //   await saveData(STORAGE_KEYS.USER_PROFILE, response.data.user);
+  //   
+  //   return response.data;
+  // } catch (error) {
+  //   console.error('[AuthService] Google Sign-In error:', error);
+  //   throw error;
+  // }
 };

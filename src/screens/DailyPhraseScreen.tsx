@@ -83,7 +83,7 @@ const DailyPhraseScreen: React.FC = () => {
   };
 
   // Get explanation for current language
-  const currentExplanation = currentPhrase.explanation?.[nativeLanguage];
+  const currentExplanation = currentPhrase.explanation?.[nativeLanguage as 'en' | 'vi'];
 
   // Determine if "Next Day" button should be disabled (can't go to future)
   const isFuture = currentOffset > 0;

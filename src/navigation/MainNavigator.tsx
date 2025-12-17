@@ -6,10 +6,10 @@ import { colors } from '../styles/theme';
 import HomeScreen from '../screens/HomeScreen';
 import CategoryScreen from '../screens/CategoryScreen';
 import LessonScreen from '../screens/LessonScreen';
+import DailyPhraseScreen from '../screens/DailyPhraseScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // Placeholder screens - will be implemented in later phases
-const DailyPhraseScreen = () => null;
-const ProfileScreen = () => null;
 const SettingsScreen = () => null;
 
 const Tab = createBottomTabNavigator<MainTabParamList>();

@@ -1,12 +1,13 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { getToken, saveToken, removeToken } from './storage.service';
+import { API_BASE_URL } from '@env';
 
 // Get API base URL from environment
-const API_BASE_URL = process.env.API_BASE_URL || 'https://your-backend-domain.com';
+const BASE_URL = API_BASE_URL || 'http://localhost:3000';
 
 // Create Axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: BASE_URL,
   timeout: 10000, // 10 seconds
   headers: {
     'Content-Type': 'application/json',
@@ -16,6 +17,7 @@ const api: AxiosInstance = axios.create({
 // Request interceptor: Inject JWT token
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    console.log('[API] Request:', config.method?.toUpperCase(), config.url, 'baseURL:', BASE_URL);
     try {
       const token = await getToken();
       if (token && config.headers) {
@@ -27,14 +29,19 @@ api.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
+    console.error('[API] Request error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor: Handle 401 errors and token refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('[API] Response:', response.status, response.config.url);
+    return response;
+  },
   async (error: AxiosError) => {
+    console.error('[API] Response error:', error.message, error.code, error.config?.url);
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Handle 401 Unauthorized
@@ -46,7 +53,7 @@ api.interceptors.response.use(
         const token = await getToken();
         if (token) {
           const refreshResponse = await axios.post(
-            `${API_BASE_URL}/api/auth/refresh`,
+            `${BASE_URL}/api/auth/refresh`,
             {},
             {
               headers: {
