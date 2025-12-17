@@ -1,0 +1,249 @@
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+import {User, RegisterRequest, LoginRequest, UpdateProfileRequest} from '../types/user.types';
+import * as authService from '../services/auth.service';
+import {getToken, getData, STORAGE_KEYS} from '../services/storage.service';
+
+// AuthContext interface
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  userPoints: number;
+  login: (email: string, password: string) => Promise<{success: boolean; error?: string}>;
+  register: (name: string, email: string, password: string, level?: 'beginner' | 'experienced') => Promise<{success: boolean; error?: string}>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<{success: boolean; error?: string}>;
+  loginWithGoogle: () => Promise<{success: boolean; error?: string}>;
+  fetchUserPoints: () => Promise<void>;
+  updateUserPoints: (newPoints: number) => void;
+  updateDifficultyLevel: (difficultyLevel: string) => Promise<{success: boolean; error?: string}>;
+  refreshUser: () => Promise<void>;
+}
+
+// Create context with undefined default
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// AuthProvider props
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// AuthProvider component
+export function AuthProvider({children}: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [userPoints, setUserPoints] = useState(0);
+
+  // Fetch user points from API
+  const fetchUserPoints = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        console.log('[AuthContext] No token found, skipping points fetch');
+        return;
+      }
+
+      console.log('[AuthContext] Fetching user points...');
+      const points = await authService.fetchPoints();
+      console.log('[AuthContext] Points fetched:', points);
+      setUserPoints(points);
+    } catch (error) {
+      console.error('[AuthContext] Error fetching user points:', error);
+    }
+  }, []);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await getToken();
+        
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        // Check if we have cached user profile
+        const cachedUser = await getData<User>(STORAGE_KEYS.USER_PROFILE);
+        if (cachedUser) {
+          setUser(cachedUser);
+          setUserPoints(cachedUser.points || 0);
+        }
+
+        // Fetch fresh user data from API
+        try {
+          const freshUser = await authService.fetchMe();
+          setUser(freshUser);
+          setUserPoints(freshUser.points || 0);
+        } catch (error) {
+          console.error('[AuthContext] Failed to fetch user data:', error);
+          // If cached user exists, keep it (offline mode)
+          // If no cached user and API fails, logout
+          if (!cachedUser) {
+            await authService.logout();
+            setUser(null);
+            setUserPoints(0);
+          }
+        }
+      } catch (error) {
+        console.error('[AuthContext] Check auth error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // Login with email/password
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<{success: boolean; error?: string}> => {
+    try {
+      const data = await authService.login({email, password});
+      setUser(data.user);
+      setUserPoints(data.user.points || 0);
+      return {success: true};
+    } catch (error: any) {
+      console.error('[AuthContext] Login error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || 'Login failed',
+      };
+    }
+  };
+
+  // Register new user
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    level: 'beginner' | 'experienced' = 'beginner',
+  ): Promise<{success: boolean; error?: string}> => {
+    try {
+      const data = await authService.register({name, email, password, level});
+      setUser(data.user);
+      setUserPoints(data.user.points || 0);
+      return {success: true};
+    } catch (error: any) {
+      console.error('[AuthContext] Register error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || 'Registration failed',
+      };
+    }
+  };
+
+  // Refresh JWT token
+  const refreshToken = async (): Promise<{success: boolean; error?: string}> => {
+    try {
+      const data = await authService.refreshToken();
+      setUser(data.user);
+      setUserPoints(data.user.points || 0);
+      return {success: true};
+    } catch (error: any) {
+      console.error('[AuthContext] Refresh token error:', error);
+      // Token refresh failed, logout user
+      await authService.logout();
+      setUser(null);
+      setUserPoints(0);
+      return {
+        success: false,
+        error: error?.response?.data?.message || 'Token refresh failed',
+      };
+    }
+  };
+
+  // Login with Google OAuth
+  const loginWithGoogle = async (): Promise<{success: boolean; error?: string}> => {
+    try {
+      const data = await authService.loginWithGoogle();
+      setUser(data.user);
+      setUserPoints(data.user.points || 0);
+      return {success: true};
+    } catch (error: any) {
+      console.error('[AuthContext] Google login error:', error);
+      return {
+        success: false,
+        error: error?.message || 'Google login failed',
+      };
+    }
+  };
+
+  // Update user points (optimistic update)
+  const updateUserPoints = (newPoints: number) => {
+    setUserPoints(newPoints);
+    if (user) {
+      setUser({...user, points: newPoints});
+    }
+  };
+
+  // Update difficulty level
+  const updateDifficultyLevel = async (
+    difficultyLevel: string,
+  ): Promise<{success: boolean; error?: string}> => {
+    try {
+      const updatedUser = await authService.updateProfile({
+        preferredDifficultyLevel: difficultyLevel as any,
+      });
+      setUser(updatedUser);
+      return {success: true};
+    } catch (error: any) {
+      console.error('[AuthContext] Update difficulty level error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || 'Update failed',
+      };
+    }
+  };
+
+  // Refresh user data from API
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const freshUser = await authService.fetchMe();
+      setUser(freshUser);
+      setUserPoints(freshUser.points || 0);
+    } catch (error) {
+      console.error('[AuthContext] Error refreshing user:', error);
+    }
+  }, []);
+
+  // Logout user
+  const logout = async () => {
+    await authService.logout();
+    setUser(null);
+    setUserPoints(0);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        userPoints,
+        login,
+        register,
+        logout,
+        refreshToken,
+        loginWithGoogle,
+        fetchUserPoints,
+        updateUserPoints,
+        updateDifficultyLevel,
+        refreshUser,
+      }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Export AuthContext for use in useAuth hook
+export default AuthContext;
