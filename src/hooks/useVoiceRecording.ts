@@ -136,9 +136,18 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
           return;
         }
 
-        const recordedUri = recorderRef.current?.fsPath || null;
+        // Get file path - use fsPath which returns the full file system path
+        let recordedUri = recorderRef.current?.fsPath || null;
+        
+        // For iOS, fsPath returns format like: /path/to/file.m4a
+        // We need to convert it to file:// URL format for Player
+        if (recordedUri && !recordedUri.startsWith('file://')) {
+          recordedUri = 'file://' + recordedUri;
+        }
+        
         console.log('[useVoiceRecording] Recording stopped successfully');
-        console.log('[useVoiceRecording] File path:', recordedUri);
+        console.log('[useVoiceRecording] File path (original):', recorderRef.current?.fsPath);
+        console.log('[useVoiceRecording] File URI (converted):', recordedUri);
 
         setRecordingState(prev => ({
           ...prev,
@@ -150,7 +159,9 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
         // Process transcription
         if (recordedUri) {
           console.log('[useVoiceRecording] Processing recording...');
-          processRecording(recordedUri, originalText);
+          // For Whisper API, use the original fsPath without file:// prefix
+          const pathForApi = recorderRef.current?.fsPath || recordedUri.replace('file://', '');
+          processRecording(pathForApi, originalText);
         } else {
           console.error('[useVoiceRecording] No recorded URI');
         }
@@ -207,12 +218,18 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
    */
   const playRecording = useCallback(() => {
     try {
+      console.log('[useVoiceRecording] Play recording called');
+      console.log('[useVoiceRecording] recordedUri:', recordingState.recordedUri);
+      console.log('[useVoiceRecording] isPlaying:', recordingState.isPlaying);
+
       if (!recordingState.recordedUri) {
+        console.error('[useVoiceRecording] No recorded URI to play');
         return;
       }
 
       // Stop if already playing
       if (playerRef.current && recordingState.isPlaying) {
+        console.log('[useVoiceRecording] Stopping playback');
         playerRef.current.stop();
         playerRef.current.destroy();
         playerRef.current = null;
@@ -222,20 +239,50 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       // Clean up previous player
       if (playerRef.current) {
+        console.log('[useVoiceRecording] Cleaning up previous player');
         playerRef.current.destroy();
       }
 
-      const player = new Player(recordingState.recordedUri);
+      // Extract filename from URI for Player
+      // Player expects just the filename, not full path or file:// URL
+      let filename = recordingState.recordedUri;
+      
+      // Remove file:// prefix if present
+      if (filename.startsWith('file://')) {
+        filename = filename.replace('file://', '');
+      }
+      
+      // Extract just the filename from full path
+      const filenameParts = filename.split('/');
+      const actualFilename = filenameParts[filenameParts.length - 1];
+      
+      console.log('[useVoiceRecording] Original URI:', recordingState.recordedUri);
+      console.log('[useVoiceRecording] Extracted filename:', actualFilename);
+      console.log('[useVoiceRecording] Creating new player with filename:', actualFilename);
+      
+      const player = new Player(actualFilename, {
+        autoDestroy: false,
+      });
       playerRef.current = player;
 
-      player.play((err) => {
+      player.prepare((err) => {
         if (err) {
-          console.error('[useVoiceRecording] Playback error:', err);
-          options?.onError?.('Failed to play recording');
+          console.error('[useVoiceRecording] Player prepare error:', err);
+          options?.onError?.('Failed to prepare audio player: ' + JSON.stringify(err));
           return;
         }
 
-        setRecordingState(prev => ({ ...prev, isPlaying: true }));
+        console.log('[useVoiceRecording] Player prepared, starting playback');
+        player.play((playErr) => {
+          if (playErr) {
+            console.error('[useVoiceRecording] Playback error:', playErr);
+            options?.onError?.('Failed to play recording: ' + JSON.stringify(playErr));
+            return;
+          }
+
+          console.log('[useVoiceRecording] Playback started successfully');
+          setRecordingState(prev => ({ ...prev, isPlaying: true }));
+        });
       });
 
       player.on('ended', () => {
@@ -248,7 +295,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       });
     } catch (error) {
       console.error('[useVoiceRecording] Play error:', error);
-      options?.onError?.('Failed to play recording');
+      options?.onError?.('Failed to play recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }, [recordingState.recordedUri, recordingState.isPlaying, options]);
 
