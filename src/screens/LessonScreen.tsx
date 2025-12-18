@@ -75,6 +75,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     setDuration,
     setPlaybackSpeed,
     togglePlayPause,
+    setIsPlayingFromYouTube,
   } = useVideoPlayer();
 
   // Transcript sync with 200ms polling
@@ -142,14 +143,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     console.log('[LessonScreen] Player state changed:', state);
     
     if (state === 'playing') {
-      setIsPlaying(true);
+      setIsPlayingFromYouTube(true);
     } else if (state === 'paused') {
-      setIsPlaying(false);
+      setIsPlayingFromYouTube(false);
     } else if (state === 'ended') {
-      setIsPlaying(false);
+      setIsPlayingFromYouTube(false);
       handleLessonComplete();
     }
-  }, [setIsPlaying, handleLessonComplete]);
+  }, [setIsPlayingFromYouTube, handleLessonComplete]);
 
   const handleError = useCallback((errorMsg: string) => {
     console.error('[LessonScreen] Video player error:', errorMsg);

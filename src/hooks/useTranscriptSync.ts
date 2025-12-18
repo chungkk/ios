@@ -38,6 +38,11 @@ export const useTranscriptSync = ({
       const newIndex = findActiveSentence(transcript, currentTime);
       
       if (newIndex !== activeSentenceIndex) {
+        console.log('[useTranscriptSync] Active sentence changed:', {
+          index: newIndex,
+          time: currentTime.toFixed(2),
+          text: transcript[newIndex]?.text?.substring(0, 50) || 'N/A'
+        });
         setActiveSentenceIndex(newIndex);
       }
     } catch (error) {
@@ -49,12 +54,15 @@ export const useTranscriptSync = ({
     if (!isPlaying || !transcript || transcript.length === 0) {
       // Clear interval when not playing
       if (intervalRef.current) {
+        console.log('[useTranscriptSync] Stopping polling (isPlaying:', isPlaying, ')');
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
       return;
     }
 
+    console.log('[useTranscriptSync] Starting polling with', transcript.length, 'sentences');
+    
     // Start polling interval
     intervalRef.current = setInterval(() => {
       updateActiveSentence();
