@@ -21,7 +21,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
   const difficultyColor = getDifficultyColor(lesson.level);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       {/* Thumbnail */}
       <View style={styles.thumbnailContainer}>
         <Image
@@ -30,40 +30,30 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
           resizeMode="cover"
         />
         
-        {/* Badges */}
-        <View style={styles.badgesContainer}>
-          {/* View count */}
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>👁 {formatViewCount(lesson.viewCount)}</Text>
-          </View>
-          
-          {/* Difficulty badge */}
-          <View style={[styles.difficultyBadge, { backgroundColor: difficultyColor }]}>
-            <Text style={styles.difficultyText}>{difficultyLabel}</Text>
-          </View>
+        {/* Difficulty badge - top right */}
+        <View style={[styles.difficultyBadge, { backgroundColor: difficultyColor }]}>
+          <Text style={styles.difficultyText}>{difficultyLabel}</Text>
         </View>
 
-        {/* Duration */}
+        {/* Duration - bottom right */}
         {lesson.videoDuration > 0 && (
           <View style={styles.duration}>
-            <Text style={styles.durationText}>⏱ {formatDuration(lesson.videoDuration)}</Text>
+            <Text style={styles.durationText}>{formatDuration(lesson.videoDuration)}</Text>
           </View>
         )}
-
-        {/* Source indicator */}
-        <View style={styles.sourceIndicator}>
-          <Text style={styles.sourceText}>▶ YouTube</Text>
-        </View>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        {lesson.category && (
-          <CategoryTag category={lesson.category} size="small" />
-        )}
         <Text style={styles.title} numberOfLines={2}>
           {lesson.title}
         </Text>
+        <View style={styles.footer}>
+          {lesson.category && (
+            <CategoryTag category={lesson.category} size="small" />
+          )}
+          <Text style={styles.viewCount}>{formatViewCount(lesson.viewCount)} views</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -87,84 +77,66 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: borderRadius.medium,
     overflow: 'hidden',
-    marginRight: spacing.sm,
-    ...shadows.md,
+    marginRight: spacing.md,
+    ...shadows.sm,
   },
   thumbnailContainer: {
     height: layout.lessonCardImageHeight,
     position: 'relative',
+    backgroundColor: colors.bgElevated,
   },
   thumbnail: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.bgElevated,
-  },
-  badgesContainer: {
-    position: 'absolute',
-    top: spacing.sm,
-    left: spacing.sm,
-    right: spacing.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.small,
-  },
-  badgeText: {
-    color: colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
   },
   difficultyBadge: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: borderRadius.small,
   },
   difficultyText: {
     color: colors.textPrimary,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
+    textTransform: 'uppercase',
   },
   duration: {
     position: 'absolute',
-    bottom: spacing.sm,
-    right: spacing.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.small,
+    bottom: spacing.xs,
+    right: spacing.xs,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   durationText: {
-    color: colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  sourceIndicator: {
-    position: 'absolute',
-    bottom: spacing.sm,
-    left: spacing.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.small,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sourceText: {
     color: colors.textPrimary,
     fontSize: 10,
     fontWeight: '600',
   },
   content: {
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   title: {
-    ...textStyles.bodyLarge,
+    ...textStyles.body,
     color: colors.textPrimary,
-    marginTop: spacing.sm,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+    lineHeight: 18,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  viewCount: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '500',
   },
 });
 

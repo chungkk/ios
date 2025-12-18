@@ -57,9 +57,9 @@ export const layout = {
   thumbnailXLarge: 200,
 
   // Lesson card dimensions
-  lessonCardWidth: SCREEN_WIDTH * 0.75, // 75% of screen width for horizontal scroll
-  lessonCardHeight: 200,
-  lessonCardImageHeight: 120,
+  lessonCardWidth: SCREEN_WIDTH * 0.65, // 65% of screen width for horizontal scroll - more compact
+  lessonCardHeight: 180,
+  lessonCardImageHeight: 100,
 };
 
 // Spacing scale (matches theme.ts)
