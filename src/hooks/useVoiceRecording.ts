@@ -194,12 +194,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       options?.onRecordingComplete?.(comparison);
 
-      // Show result
-      Alert.alert(
-        comparison.isCorrect ? 'Excellent! 🎉' : 'Good Try!',
-        `Similarity: ${comparison.similarity}%\n\nYou said: "${comparison.transcribed}"\nCorrect: "${comparison.original}"`,
-        [{ text: 'OK' }]
-      );
+      // Don't show alert - result will be displayed in TranscriptView
     } catch (error) {
       console.error('[useVoiceRecording] Process error:', error);
       Alert.alert('Error', 'Failed to process recording');

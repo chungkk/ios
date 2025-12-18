@@ -112,28 +112,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-evenly',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     backgroundColor: '#0a0f1e',
     borderTopWidth: 0,
   },
   navButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   navButtonText: {
-    fontSize: 40,
+    fontSize: 36,
     color: '#ffffff',
     fontWeight: '200',
-    marginTop: -4, // Optical alignment
+    marginTop: -3, // Optical alignment
   },
   playButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#2d5cde', // Blue matching play buttons
     justifyContent: 'center',
     alignItems: 'center',
@@ -144,14 +144,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   playButtonText: {
-    fontSize: 28,
+    fontSize: 26,
     color: '#ffffff',
     marginLeft: 3, // Optical alignment for play icon
   },
   micButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#c41e3a', // Dark red
     justifyContent: 'center',
     alignItems: 'center',
@@ -163,12 +163,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#666666', // Gray when processing
   },
   micButtonText: {
-    fontSize: 24,
+    fontSize: 22,
   },
   replayButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#4a9eff', // Blue for playback
     justifyContent: 'center',
     alignItems: 'center',
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d7acc', // Darker blue when playing
   },
   replayButtonText: {
-    fontSize: 24,
+    fontSize: 22,
   },
 });
 

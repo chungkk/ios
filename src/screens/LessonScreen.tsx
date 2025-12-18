@@ -210,7 +210,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [activeSentenceIndex, lesson, setIsPlaying]);
 
   const handleMicrophone = useCallback(() => {
-    console.log('[LessonScreen] Microphone pressed');
+    console.log('[LessonScreen] Microphone pressed, isPlaying:', isPlaying);
     
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[activeSentenceIndex];
@@ -222,16 +222,19 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
     if (recordingState.isRecording) {
       // Stop recording and process
+      console.log('[LessonScreen] Stopping recording');
       stopRecording(currentSentence.text);
     } else {
       // Start recording
-      // Pause video first
-      if (isPlaying && videoPlayerRef.current) {
-        setIsPlaying(false);
+      // Pause video first if playing
+      console.log('[LessonScreen] Starting recording, pausing video');
+      if (isPlaying) {
+        console.log('[LessonScreen] Video is playing, pausing now');
+        togglePlayPause(); // Use togglePlayPause to properly pause
       }
       startRecording();
     }
-  }, [lesson, activeSentenceIndex, recordingState.isRecording, isPlaying, stopRecording, startRecording, setIsPlaying]);
+  }, [lesson, activeSentenceIndex, recordingState.isRecording, isPlaying, stopRecording, startRecording, togglePlayPause]);
 
   const handleSpeedSelect = useCallback((speed: number) => {
     setPlaybackSpeed(speed);
@@ -339,6 +342,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           activeSentenceIndex={activeSentenceIndex}
           onSentencePress={handleSentencePress}
           showTranslation={showTranslation}
+          voiceRecordingResult={recordingState.comparisonResult}
         />
       </View>
 

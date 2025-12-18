@@ -11,6 +11,13 @@ interface SentenceItemProps {
   isActive: boolean;
   onPress?: () => void;
   showTranslation?: boolean;
+  voiceRecordingResult?: {
+    transcribed: string;
+    original: string;
+    similarity: number;
+    isCorrect: boolean;
+    wordComparison: Record<number, 'correct' | 'incorrect' | 'missing'>;
+  } | null;
 }
 
 export const SentenceItem: React.FC<SentenceItemProps> = ({
@@ -18,7 +25,46 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
   isActive,
   onPress,
   showTranslation = true,
+  voiceRecordingResult = null,
 }) => {
+  // Render text with word-by-word highlighting based on voice recording result
+  const renderText = () => {
+    if (!voiceRecordingResult) {
+      return (
+        <Text style={[styles.text, isActive && styles.textActive]}>
+          {sentence.text}
+        </Text>
+      );
+    }
+
+    // Split text into words while preserving punctuation
+    const words = sentence.text.split(/\s+/);
+    const wordComparison = voiceRecordingResult.wordComparison;
+
+    return (
+      <Text style={[styles.text, isActive && styles.textActive]}>
+        {words.map((word, idx) => {
+          const status = wordComparison[idx];
+          let wordColor = undefined;
+          
+          if (status === 'correct') {
+            wordColor = '#10b981'; // Green
+          } else if (status === 'incorrect') {
+            wordColor = '#ef4444'; // Red
+          } else if (status === 'missing') {
+            wordColor = '#f59e0b'; // Orange
+          }
+
+          return (
+            <Text key={idx} style={wordColor ? { color: wordColor } : undefined}>
+              {word}{idx < words.length - 1 ? ' ' : ''}
+            </Text>
+          );
+        })}
+      </Text>
+    );
+  };
+
   return (
     <TouchableOpacity
       style={[styles.container, isActive && styles.containerActive]}
@@ -30,9 +76,20 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
         <Text style={styles.playIcon}>▶</Text>
       </View>
       <View style={styles.textContainer}>
-        <Text style={[styles.text, isActive && styles.textActive]}>
-          {sentence.text}
-        </Text>
+        {renderText()}
+        
+        {/* Voice Recording Badge */}
+        {voiceRecordingResult && (
+          <View style={[
+            styles.badge,
+            voiceRecordingResult.isCorrect ? styles.badgeCorrect : styles.badgeIncorrect
+          ]}>
+            <Text style={styles.badgeText}>
+              {voiceRecordingResult.isCorrect ? '✅' : '❌'} {voiceRecordingResult.similarity}%
+            </Text>
+          </View>
+        )}
+        
         {showTranslation && sentence.translation && (
           <Text style={[styles.translation, isActive && styles.translationActive]}>
             {sentence.translation}
@@ -113,6 +170,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(148, 163, 184, 0.95)', // Slightly brighter for active
     fontWeight: '400',
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  badgeCorrect: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)', // Green background
+  },
+  badgeIncorrect: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)', // Red background
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
 

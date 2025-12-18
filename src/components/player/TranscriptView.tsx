@@ -12,6 +12,13 @@ interface TranscriptViewProps {
   activeSentenceIndex: number;
   onSentencePress?: (index: number) => void;
   showTranslation?: boolean;
+  voiceRecordingResult?: {
+    transcribed: string;
+    original: string;
+    similarity: number;
+    isCorrect: boolean;
+    wordComparison: Record<number, 'correct' | 'incorrect' | 'missing'>;
+  } | null;
 }
 
 export const TranscriptView: React.FC<TranscriptViewProps> = ({
@@ -19,6 +26,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   activeSentenceIndex,
   onSentencePress,
   showTranslation = true,
+  voiceRecordingResult = null,
 }) => {
   const flatListRef = useRef<FlatList>(null);
 
@@ -56,14 +64,20 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
       <FlatList
         ref={flatListRef}
         data={transcript}
-        renderItem={({ item, index }) => (
+        renderItem={({ item, index }) => {
+          const isActive = index === activeSentenceIndex;
+          const hasRecording = isActive && voiceRecordingResult;
+          
+          return (
           <SentenceItem
             sentence={item}
-            isActive={index === activeSentenceIndex}
+            isActive={isActive}
             onPress={() => handleSentencePress(index)}
             showTranslation={showTranslation}
+            voiceRecordingResult={hasRecording ? voiceRecordingResult : null}
           />
-        )}
+        );
+        }}
         keyExtractor={(item, index) => `sentence-${index}`}
         showsVerticalScrollIndicator={true}
         onScrollToIndexFailed={(info) => {
