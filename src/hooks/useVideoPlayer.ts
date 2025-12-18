@@ -30,10 +30,12 @@ export const useVideoPlayer = (): UseVideoPlayerResult => {
   const lastUserActionTime = useRef<number>(0);
 
   const togglePlayPause = useCallback(() => {
-    console.log('[useVideoPlayer] User toggled play/pause:', !isPlaying);
     lastUserActionTime.current = Date.now();
-    setIsPlaying(prev => !prev);
-  }, [isPlaying]);
+    setIsPlaying(prev => {
+      console.log('[useVideoPlayer] User toggled play/pause from', prev, 'to', !prev);
+      return !prev;
+    });
+  }, []);
 
   // Separate handler for YouTube state changes to prevent race conditions
   const setIsPlayingFromYouTube = useCallback((playing: boolean) => {

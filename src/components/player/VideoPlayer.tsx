@@ -27,6 +27,10 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     const [playerReady, setPlayerReady] = useState(false);
     const playerRef = React.useRef<any>(null);
 
+    React.useEffect(() => {
+      console.log('[VideoPlayer] isPlaying prop changed to:', isPlaying);
+    }, [isPlaying]);
+
     useImperativeHandle(ref, () => ({
       getCurrentTime: async () => {
         if (playerRef.current && playerReady) {
@@ -60,6 +64,7 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     }));
 
     const handleReady = () => {
+      console.log('[VideoPlayer] Player is ready');
       setPlayerReady(true);
       onReady();
     };

@@ -10,7 +10,11 @@ interface PlaybackControlsProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onMicrophone?: () => void;
-  onRepeat?: () => void;
+  isRecording?: boolean;
+  isProcessing?: boolean;
+  hasRecording?: boolean;
+  isPlayingRecording?: boolean;
+  onPlayRecording?: () => void;
 }
 
 export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
@@ -19,8 +23,21 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   onPrevious,
   onNext,
   onMicrophone,
-  onRepeat,
+  isRecording = false,
+  isProcessing = false,
+  hasRecording = false,
+  isPlayingRecording = false,
+  onPlayRecording,
 }) => {
+  React.useEffect(() => {
+    console.log('[PlaybackControls] isPlaying:', isPlaying);
+  }, [isPlaying]);
+
+  const handlePlayPause = () => {
+    console.log('[PlaybackControls] Play/Pause button pressed');
+    onPlayPause();
+  };
+
   return (
     <View style={styles.container}>
       {/* Previous Sentence */}
@@ -35,7 +52,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       {/* Play/Pause Button - Large Center */}
       <TouchableOpacity 
         style={styles.playButton} 
-        onPress={onPlayPause}
+        onPress={handlePlayPause}
         activeOpacity={0.8}
       >
         <Text style={styles.playButtonText}>{isPlaying ? '⏸' : '▶'}</Text>
@@ -43,12 +60,39 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
 
       {/* Microphone Button */}
       <TouchableOpacity 
-        style={styles.micButton}
+        style={[
+          styles.micButton,
+          isRecording && styles.micButtonRecording,
+          isProcessing && styles.micButtonProcessing,
+        ]}
         onPress={onMicrophone}
         activeOpacity={0.7}
+        disabled={isProcessing}
       >
-        <Text style={styles.micButtonText}>🎤</Text>
+        {isProcessing ? (
+          <Text style={styles.micButtonText}>⏳</Text>
+        ) : isRecording ? (
+          <Text style={styles.micButtonText}>⏹</Text>
+        ) : (
+          <Text style={styles.micButtonText}>🎤</Text>
+        )}
       </TouchableOpacity>
+
+      {/* Play Recording Button - Only show if has recording */}
+      {hasRecording && (
+        <TouchableOpacity 
+          style={[
+            styles.replayButton,
+            isPlayingRecording && styles.replayButtonPlaying,
+          ]}
+          onPress={onPlayRecording}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.replayButtonText}>
+            {isPlayingRecording ? '⏸' : '▶️'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Next Sentence */}
       <TouchableOpacity 
@@ -57,15 +101,6 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         activeOpacity={0.7}
       >
         <Text style={styles.navButtonText}>›</Text>
-      </TouchableOpacity>
-
-      {/* Repeat/Loop Button */}
-      <TouchableOpacity 
-        style={styles.repeatButton}
-        onPress={onRepeat}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.repeatButtonText}>N</Text>
       </TouchableOpacity>
     </View>
   );
@@ -121,23 +156,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  micButtonRecording: {
+    backgroundColor: '#ff3333', // Bright red when recording
+  },
+  micButtonProcessing: {
+    backgroundColor: '#666666', // Gray when processing
+  },
   micButtonText: {
     fontSize: 24,
   },
-  repeatButton: {
+  replayButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#4a9eff', // Blue for playback
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
-  repeatButtonText: {
-    fontSize: 20,
-    color: '#ffffff',
-    fontWeight: '600',
+  replayButtonPlaying: {
+    backgroundColor: '#2d7acc', // Darker blue when playing
+  },
+  replayButtonText: {
+    fontSize: 24,
   },
 });
 

@@ -6,6 +6,7 @@ import { View, StyleSheet, SafeAreaView, Alert, Text, TouchableOpacity } from 'r
 import { useLessonData } from '../hooks/useLessonData';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
+import { useVoiceRecording } from '../hooks/useVoiceRecording';
 import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import TranscriptView from '../components/player/TranscriptView';
 import PlaybackControls from '../components/player/PlaybackControls';
@@ -78,6 +79,17 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     setIsPlayingFromYouTube,
   } = useVideoPlayer();
 
+  // Voice recording
+  const { recordingState, startRecording, stopRecording, playRecording, clearRecording } = useVoiceRecording({
+    onRecordingComplete: (result) => {
+      console.log('[LessonScreen] Recording complete:', result);
+    },
+    onError: (error) => {
+      console.error('[LessonScreen] Recording error:', error);
+      Alert.alert('Recording Error', error);
+    },
+  });
+
   // Transcript sync with 200ms polling
   const { activeSentenceIndex } = useTranscriptSync({
     transcript: lesson?.transcript || [],
@@ -91,6 +103,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       return 0;
     },
   });
+
+  // Clear recording when sentence changes
+  React.useEffect(() => {
+    if (recordingState.recordedUri) {
+      clearRecording();
+    }
+  }, [activeSentenceIndex]);
 
   const handleReady = useCallback(async () => {
     console.log('[LessonScreen] Video player ready');
@@ -160,42 +179,59 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const handleSentencePress = useCallback((index: number) => {
     const sentence = lesson?.transcript[index];
     if (sentence && videoPlayerRef.current) {
+      console.log('[LessonScreen] Seeking to sentence:', index, sentence.startTime);
       videoPlayerRef.current.seekTo(sentence.startTime);
       setIsPlaying(true);
     }
   }, [lesson, setIsPlaying]);
 
   const handlePrevious = useCallback(() => {
-    if (activeSentenceIndex > 0) {
+    const transcript = lesson?.transcript || [];
+    if (activeSentenceIndex > 0 && transcript.length > 0) {
       const prevSentence = transcript[activeSentenceIndex - 1];
       if (prevSentence && videoPlayerRef.current) {
+        console.log('[LessonScreen] Previous - seeking to:', prevSentence.startTime);
         videoPlayerRef.current.seekTo(prevSentence.startTime);
         setIsPlaying(true);
       }
     }
-  }, [activeSentenceIndex, transcript, setIsPlaying]);
+  }, [activeSentenceIndex, lesson, setIsPlaying]);
 
   const handleNext = useCallback(() => {
+    const transcript = lesson?.transcript || [];
     if (activeSentenceIndex < transcript.length - 1) {
       const nextSentence = transcript[activeSentenceIndex + 1];
       if (nextSentence && videoPlayerRef.current) {
+        console.log('[LessonScreen] Next - seeking to:', nextSentence.startTime);
         videoPlayerRef.current.seekTo(nextSentence.startTime);
         setIsPlaying(true);
       }
     }
-  }, [activeSentenceIndex, transcript, setIsPlaying]);
+  }, [activeSentenceIndex, lesson, setIsPlaying]);
 
   const handleMicrophone = useCallback(() => {
-    Alert.alert('Voice Input', 'Voice recording feature coming soon!');
-  }, []);
-
-  const handleRepeat = useCallback(() => {
+    console.log('[LessonScreen] Microphone pressed');
+    
+    const transcript = lesson?.transcript || [];
     const currentSentence = transcript[activeSentenceIndex];
-    if (currentSentence && videoPlayerRef.current) {
-      videoPlayerRef.current.seekTo(currentSentence.startTime);
-      setIsPlaying(true);
+    
+    if (!currentSentence) {
+      Alert.alert('Error', 'No sentence selected');
+      return;
     }
-  }, [activeSentenceIndex, transcript, setIsPlaying]);
+
+    if (recordingState.isRecording) {
+      // Stop recording and process
+      stopRecording(currentSentence.text);
+    } else {
+      // Start recording
+      // Pause video first
+      if (isPlaying && videoPlayerRef.current) {
+        setIsPlaying(false);
+      }
+      startRecording();
+    }
+  }, [lesson, activeSentenceIndex, recordingState.isRecording, isPlaying, stopRecording, startRecording, setIsPlaying]);
 
   const handleSpeedSelect = useCallback((speed: number) => {
     setPlaybackSpeed(speed);
@@ -313,7 +349,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         onPrevious={handlePrevious}
         onNext={handleNext}
         onMicrophone={handleMicrophone}
-        onRepeat={handleRepeat}
+        isRecording={recordingState.isRecording}
+        isProcessing={recordingState.isProcessing}
+        hasRecording={!!recordingState.recordedUri}
+        isPlayingRecording={recordingState.isPlaying}
+        onPlayRecording={playRecording}
       />
     </SafeAreaView>
   );

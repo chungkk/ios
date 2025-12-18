@@ -47,58 +47,72 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: spacing.lg,
-    marginVertical: spacing.xs,
-    marginHorizontal: spacing.sm,
-    borderRadius: borderRadius.large,
-    backgroundColor: '#1a2235', // Darker card background
+    padding: 14,
+    marginVertical: 4,
+    marginHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#1a1e2e', // Dark card background (--bg-primary)
+    borderWidth: 1,
+    borderColor: 'transparent',
+    opacity: 0.7,
   },
   containerActive: {
-    backgroundColor: '#1e2940', // Slightly lighter when active
-    borderLeftWidth: 0, // Remove border
+    backgroundColor: 'rgba(59, 130, 246, 0.06)', // Subtle blue tint
+    opacity: 1,
+    borderWidth: 1,
+    borderColor: '#3b82f6', // Blue border
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   playIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#2d5cde', // Blue play button
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)', // Blue tint
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
-    marginTop: spacing.xs,
+    marginRight: 10,
+    marginTop: 2,
   },
   playIconContainerActive: {
-    backgroundColor: '#3b82f6', // Brighter blue when active
+    backgroundColor: 'rgba(59, 130, 246, 0.2)', // Brighter blue when active
   },
   playIcon: {
-    fontSize: 16,
-    color: '#ffffff',
-    marginLeft: 3,
+    fontSize: 11,
+    color: 'rgba(59, 130, 246, 0.8)',
+    marginLeft: 2,
   },
   textContainer: {
     flex: 1,
-    paddingTop: spacing.xs,
+    paddingTop: 2,
   },
   text: {
-    fontSize: 17,
-    color: colors.textPrimary,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.7)', // Muted white for inactive
     lineHeight: 26,
-    fontWeight: '400',
-    letterSpacing: 0.3,
+    fontWeight: '500',
+    letterSpacing: 0.01,
   },
   textActive: {
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.95)', // Bright white for active
   },
   translation: {
-    fontSize: 15,
-    color: '#7b8ba3', // Muted blue-gray
-    marginTop: spacing.sm,
+    fontSize: 13,
+    color: 'rgba(148, 163, 184, 0.7)', // Muted for inactive
+    marginTop: 8,
     fontStyle: 'italic',
     lineHeight: 22,
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
   translationActive: {
-    color: '#8b9bb3', // Slightly brighter when active
+    fontSize: 13,
+    color: 'rgba(148, 163, 184, 0.95)', // Slightly brighter for active
+    fontWeight: '400',
   },
 });
 
