@@ -20,15 +20,20 @@ export interface VideoPlayerRef {
   getCurrentTime: () => Promise<number>;
   seekTo: (seconds: number) => void;
   getDuration: () => Promise<number>;
+  pause: () => void;
+  play: () => void;
 }
 
 export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
   ({ videoId, isPlaying, playbackSpeed, onReady, onStateChange, onError }, ref) => {
     const [playerReady, setPlayerReady] = useState(false);
+    const [internalPlaying, setInternalPlaying] = useState(isPlaying);
     const playerRef = React.useRef<any>(null);
 
+    // Sync internal state with prop
     React.useEffect(() => {
       console.log('[VideoPlayer] isPlaying prop changed to:', isPlaying);
+      setInternalPlaying(isPlaying);
     }, [isPlaying]);
 
     useImperativeHandle(ref, () => ({
@@ -61,7 +66,15 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         }
         return 0;
       },
-    }));
+      pause: () => {
+        console.log('[VideoPlayer] Pause called - updating internal state to false');
+        setInternalPlaying(false);
+      },
+      play: () => {
+        console.log('[VideoPlayer] Play called - updating internal state to true');
+        setInternalPlaying(true);
+      },
+    }), [playerReady]);
 
     const handleReady = () => {
       console.log('[VideoPlayer] Player is ready');
@@ -75,7 +88,7 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           ref={playerRef}
           videoId={videoId}
           height={250}
-          play={isPlaying}
+          play={internalPlaying}
           rate={playbackSpeed}
           onReady={handleReady}
           onChangeState={onStateChange}

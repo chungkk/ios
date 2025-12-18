@@ -226,15 +226,22 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       stopRecording(currentSentence.text);
     } else {
       // Start recording
-      // Pause video first if playing
-      console.log('[LessonScreen] Starting recording, pausing video');
-      if (isPlaying) {
-        console.log('[LessonScreen] Video is playing, pausing now');
-        togglePlayPause(); // Use togglePlayPause to properly pause
+      // ALWAYS pause video when starting recording, regardless of isPlaying state
+      console.log('[LessonScreen] Starting recording - pausing video');
+      
+      // Force pause video directly via player ref
+      if (videoPlayerRef.current) {
+        console.log('[LessonScreen] Calling videoPlayerRef.pause()');
+        videoPlayerRef.current.pause();
       }
+      
+      // Update state to ensure UI reflects paused state
+      setIsPlaying(false);
+      
+      // Start recording after ensuring video is paused
       startRecording();
     }
-  }, [lesson, activeSentenceIndex, recordingState.isRecording, isPlaying, stopRecording, startRecording, togglePlayPause]);
+  }, [lesson, activeSentenceIndex, recordingState.isRecording, isPlaying, stopRecording, startRecording, setIsPlaying]);
 
   const handleSpeedSelect = useCallback((speed: number) => {
     setPlaybackSpeed(speed);
