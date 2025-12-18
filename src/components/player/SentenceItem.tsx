@@ -10,12 +10,14 @@ interface SentenceItemProps {
   sentence: Sentence;
   isActive: boolean;
   onPress?: () => void;
+  showTranslation?: boolean;
 }
 
 export const SentenceItem: React.FC<SentenceItemProps> = ({
   sentence,
   isActive,
   onPress,
+  showTranslation = true,
 }) => {
   return (
     <TouchableOpacity
@@ -31,7 +33,7 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
         <Text style={[styles.text, isActive && styles.textActive]}>
           {sentence.text}
         </Text>
-        {sentence.translation && (
+        {showTranslation && sentence.translation && (
           <Text style={[styles.translation, isActive && styles.translationActive]}>
             {sentence.translation}
           </Text>

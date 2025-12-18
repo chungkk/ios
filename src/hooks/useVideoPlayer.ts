@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 
-export type PlaybackSpeed = 0.5 | 0.75 | 1 | 1.25 | 1.5;
+export type PlaybackSpeed = 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2;
 
 interface UseVideoPlayerResult {
   isPlaying: boolean;

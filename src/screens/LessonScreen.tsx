@@ -11,6 +11,8 @@ import TranscriptView from '../components/player/TranscriptView';
 import PlaybackControls from '../components/player/PlaybackControls';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
+import SettingsMenu from '../components/lesson/SettingsMenu';
+import SpeedSelector from '../components/lesson/SpeedSelector';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { colors, spacing, borderRadius } from '../styles/theme';
@@ -59,12 +61,19 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [studyStartTime] = useState(Date.now());
   const [completedReported, setCompletedReported] = useState(false);
 
+  // Settings menu state
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showSpeedSelector, setShowSpeedSelector] = useState(false);
+  const [autoStop, setAutoStop] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(true);
+
   const {
     isPlaying,
     playbackSpeed,
     setIsPlaying,
     setCurrentTime,
     setDuration,
+    setPlaybackSpeed,
     togglePlayPause,
   } = useVideoPlayer();
 
@@ -187,6 +196,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
   }, [activeSentenceIndex, transcript, setIsPlaying]);
 
+  const handleSpeedSelect = useCallback((speed: number) => {
+    setPlaybackSpeed(speed);
+  }, [setPlaybackSpeed]);
+
   if (loading) {
     return <Loading />;
   }
@@ -251,10 +264,36 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           <Text style={styles.counterSeparator}> / </Text>
           <Text style={styles.counterTotal}>{transcript.length}</Text>
         </Text>
-        <TouchableOpacity style={styles.settingsButton}>
+        <TouchableOpacity 
+          style={styles.settingsButton}
+          onPress={() => setShowSettingsMenu(true)}
+        >
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Settings Menu */}
+      <SettingsMenu
+        visible={showSettingsMenu}
+        onClose={() => setShowSettingsMenu(false)}
+        playbackSpeed={playbackSpeed}
+        onSpeedPress={() => {
+          setShowSettingsMenu(false);
+          setShowSpeedSelector(true);
+        }}
+        autoStop={autoStop}
+        onAutoStopToggle={() => setAutoStop(!autoStop)}
+        showTranslation={showTranslation}
+        onTranslationToggle={() => setShowTranslation(!showTranslation)}
+      />
+
+      {/* Speed Selector */}
+      <SpeedSelector
+        visible={showSpeedSelector}
+        onClose={() => setShowSpeedSelector(false)}
+        currentSpeed={playbackSpeed}
+        onSelectSpeed={handleSpeedSelect}
+      />
 
       {/* Transcript List */}
       <View style={styles.transcriptContainer}>
@@ -262,6 +301,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           transcript={transcript}
           activeSentenceIndex={activeSentenceIndex}
           onSentencePress={handleSentencePress}
+          showTranslation={showTranslation}
         />
       </View>
 

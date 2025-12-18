@@ -11,12 +11,14 @@ interface TranscriptViewProps {
   transcript: Sentence[];
   activeSentenceIndex: number;
   onSentencePress?: (index: number) => void;
+  showTranslation?: boolean;
 }
 
 export const TranscriptView: React.FC<TranscriptViewProps> = ({
   transcript,
   activeSentenceIndex,
   onSentencePress,
+  showTranslation = true,
 }) => {
   const flatListRef = useRef<FlatList>(null);
 
@@ -59,6 +61,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
             sentence={item}
             isActive={index === activeSentenceIndex}
             onPress={() => handleSentencePress(index)}
+            showTranslation={showTranslation}
           />
         )}
         keyExtractor={(item, index) => `sentence-${index}`}
