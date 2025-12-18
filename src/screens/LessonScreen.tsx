@@ -1,8 +1,8 @@
 // LessonScreen - Video player with synchronized transcript
 // Migrated from ppgeil/pages/[lessonId].js and ppgeil/pages/dictation/[lessonId].js
 
-import React, { useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, Alert, Text } from 'react-native';
+import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
+import { View, StyleSheet, SafeAreaView, Alert, Text, TouchableOpacity } from 'react-native';
 import { useLessonData } from '../hooks/useLessonData';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
@@ -20,6 +20,30 @@ type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
+
+  // Hide navigation header and bottom tabs for full-screen experience
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+
+    // Hide bottom tab bar
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.setOptions({
+        tabBarStyle: { display: 'none' },
+      });
+    }
+
+    // Restore bottom tab bar when leaving screen
+    return () => {
+      if (parent) {
+        parent.setOptions({
+          tabBarStyle: undefined,
+        });
+      }
+    };
+  }, [navigation]);
   
   console.log('[LessonScreen] Loading lesson with ID:', lessonId);
   
@@ -131,6 +155,38 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
   }, [lesson, setIsPlaying]);
 
+  const handlePrevious = useCallback(() => {
+    if (activeSentenceIndex > 0) {
+      const prevSentence = transcript[activeSentenceIndex - 1];
+      if (prevSentence && videoPlayerRef.current) {
+        videoPlayerRef.current.seekTo(prevSentence.startTime);
+        setIsPlaying(true);
+      }
+    }
+  }, [activeSentenceIndex, transcript, setIsPlaying]);
+
+  const handleNext = useCallback(() => {
+    if (activeSentenceIndex < transcript.length - 1) {
+      const nextSentence = transcript[activeSentenceIndex + 1];
+      if (nextSentence && videoPlayerRef.current) {
+        videoPlayerRef.current.seekTo(nextSentence.startTime);
+        setIsPlaying(true);
+      }
+    }
+  }, [activeSentenceIndex, transcript, setIsPlaying]);
+
+  const handleMicrophone = useCallback(() => {
+    Alert.alert('Voice Input', 'Voice recording feature coming soon!');
+  }, []);
+
+  const handleRepeat = useCallback(() => {
+    const currentSentence = transcript[activeSentenceIndex];
+    if (currentSentence && videoPlayerRef.current) {
+      videoPlayerRef.current.seekTo(currentSentence.startTime);
+      setIsPlaying(true);
+    }
+  }, [activeSentenceIndex, transcript, setIsPlaying]);
+
   if (loading) {
     return <Loading />;
   }
@@ -166,15 +222,16 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{lesson.title}</Text>
-        <View style={styles.pointsContainer}>
-          <Text style={styles.pointsIcon}>💎</Text>
-          <Text style={styles.pointsText}>10190</Text>
-        </View>
-      </View>
+      {/* Back Button - Floating */}
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.backIcon}>←</Text>
+      </TouchableOpacity>
 
+      {/* Video Player - Larger size */}
       <View style={styles.videoContainer}>
         <VideoPlayer
           ref={videoPlayerRef}
@@ -187,6 +244,19 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         />
       </View>
 
+      {/* Sentence Counter */}
+      <View style={styles.sentenceCounter}>
+        <Text style={styles.counterText}>
+          <Text style={styles.counterCurrent}>#{activeSentenceIndex + 1}</Text>
+          <Text style={styles.counterSeparator}> / </Text>
+          <Text style={styles.counterTotal}>{transcript.length}</Text>
+        </Text>
+        <TouchableOpacity style={styles.settingsButton}>
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Transcript List */}
       <View style={styles.transcriptContainer}>
         <TranscriptView
           transcript={transcript}
@@ -195,9 +265,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         />
       </View>
 
+      {/* Bottom Controls */}
       <PlaybackControls
         isPlaying={isPlaying}
         onPlayPause={togglePlayPause}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+        onMicrophone={handleMicrophone}
+        onRepeat={handleRepeat}
       />
     </SafeAreaView>
   );
@@ -206,45 +281,73 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: '#0a0f1e', // Darker background
   },
-  header: {
+  backButton: {
+    position: 'absolute',
+    top: 50, // Below status bar
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  backIcon: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: '300',
+  },
+  videoContainer: {
+    height: 280, // Larger video
+    backgroundColor: '#000',
+  },
+  sentenceCounter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.bgPrimary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: '#0a0f1e',
   },
-  headerTitle: {
-    fontSize: 18,
+  counterText: {
+    fontSize: 20,
     fontWeight: '600',
-    color: colors.textPrimary,
-    flex: 1,
   },
-  pointsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bgSecondary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.round,
-  },
-  pointsIcon: {
-    fontSize: 16,
-    marginRight: spacing.xs,
-  },
-  pointsText: {
-    fontSize: 16,
+  counterCurrent: {
+    color: colors.accentBlue,
+    fontSize: 24,
     fontWeight: '700',
-    color: colors.textPrimary,
   },
-  videoContainer: {
-    height: 250,
-    backgroundColor: colors.bgPrimary,
+  counterSeparator: {
+    color: colors.textMuted,
+    fontSize: 20,
+  },
+  counterTotal: {
+    color: colors.textMuted,
+    fontSize: 20,
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsIcon: {
+    fontSize: 22,
   },
   transcriptContainer: {
     flex: 1,
+    backgroundColor: '#0a0f1e',
   },
 });
 

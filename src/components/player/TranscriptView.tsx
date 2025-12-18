@@ -81,13 +81,14 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: '#0a0f1e', // Match dark theme
+    paddingTop: spacing.xs,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: '#0a0f1e',
     padding: spacing.xl,
   },
   emptyText: {

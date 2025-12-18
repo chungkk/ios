@@ -86,7 +86,7 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: '#000', // Pure black for video
     overflow: 'hidden',
   },
 });
