@@ -64,13 +64,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           <Button
             title="Login"
             variant="primary"
-            onPress={() => navigation.navigate('Auth', {screen: 'Login'})}
+            onPress={() => {
+              // @ts-ignore - Navigation type issue
+              navigation.navigate('Auth', {screen: 'Login'});
+            }}
             style={{marginTop: spacing.lg}}
           />
         </View>
       </SafeAreaView>
     );
   }
+
+  // Ensure user name and email are strings
+  const userName = String(user.name || 'User');
+  const userEmail = String(user.email || 'No email');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -80,26 +87,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
         {/* Profile Header */}
         <View style={styles.header}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
           </View>
-          <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.email}>{userEmail}</Text>
         </View>
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{userPoints}</Text>
+            <Text style={styles.statValue}>{userPoints || 0}</Text>
             <Text style={styles.statLabel}>Points</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user.streak}</Text>
+            <Text style={styles.statValue}>{user.streak || 0}</Text>
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user.answerStreak}</Text>
+            <Text style={styles.statValue}>{user.answerStreak || 0}</Text>
             <Text style={styles.statLabel}>Answer Streak</Text>
           </View>
         </View>
@@ -111,39 +118,42 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Native Language</Text>
             <Text style={styles.infoValue}>
-              {user.nativeLanguage.toUpperCase()}
+              {(user.nativeLanguage || 'N/A').toUpperCase()}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Learning Level</Text>
             <Text style={styles.infoValue}>
-              {user.level.charAt(0).toUpperCase() + user.level.slice(1)}
+              {user.level ? user.level.charAt(0).toUpperCase() + user.level.slice(1) : 'N/A'}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Difficulty Preference</Text>
             <Text style={styles.infoValue}>
-              {user.preferredDifficultyLevel.toUpperCase()}
+              {(user.preferredDifficultyLevel || 'N/A').toUpperCase()}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Account Type</Text>
             <Text style={styles.infoValue}>
-              {user.authProvider === 'email' ? 'Email/Password' : 'Google'}
+              {user.authProvider === 'email' ? 'Email/Password' : user.authProvider === 'google' ? 'Google' : 'N/A'}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Member Since</Text>
             <Text style={styles.infoValue}>
-              {new Date(user.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              {user.createdAt 
+                ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : 'N/A'
+              }
             </Text>
           </View>
         </View>

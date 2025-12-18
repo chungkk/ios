@@ -282,14 +282,23 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button - Floating */}
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.backIcon}>←</Text>
-      </TouchableOpacity>
+      {/* Header Bar with Back Button */}
+      <View style={styles.headerBar}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.lessonTitle} numberOfLines={1}>
+          {lesson?.title || 'Loading...'}
+        </Text>
+        
+        <View style={styles.headerRight} />
+      </View>
 
       {/* Video Player - Larger size */}
       <View style={styles.videoContainer}>
@@ -375,30 +384,49 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0f1e', // Darker background
   },
-  backButton: {
-    position: 'absolute',
-    top: 50, // Below status bar
-    left: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
+  headerBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderColor,
+    height: 56,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
   },
   backIcon: {
-    fontSize: 28,
-    color: '#ffffff',
-    fontWeight: '300',
+    fontSize: 20,
+    color: colors.accentBlue,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  backText: {
+    fontSize: 16,
+    color: colors.accentBlue,
+    fontWeight: '600',
+  },
+  lessonTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginHorizontal: spacing.md,
+  },
+  headerRight: {
+    width: 60, // Balance the back button width
   },
   videoContainer: {
-    height: 280, // Larger video
+    height: 240, // Slightly reduced to fit header
     backgroundColor: '#000',
   },
   sentenceCounter: {

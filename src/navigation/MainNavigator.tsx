@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Text } from 'react-native';
 import type { MainTabParamList, HomeStackParamList } from './types';
 import { colors } from '../styles/theme';
 import HomeScreen from '../screens/HomeScreen';
@@ -11,6 +12,11 @@ import ProfileScreen from '../screens/ProfileScreen';
 
 // Placeholder screens - will be implemented in later phases
 const SettingsScreen = () => null;
+
+// Tab Bar Icons
+const TabIcon = ({ icon, focused }: { icon: string; focused: boolean }) => (
+  <Text style={{ fontSize: 24, opacity: focused ? 1 : 0.6 }}>{icon}</Text>
+);
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -39,15 +45,16 @@ export const MainNavigator = () => {
           backgroundColor: colors.bgSecondary,
           borderTopColor: colors.borderColor,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 70,
+          paddingBottom: 12,
+          paddingTop: 12,
         },
         tabBarActiveTintColor: colors.accentBlue,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
+          marginTop: 4,
         },
       }}
     >
@@ -56,13 +63,15 @@ export const MainNavigator = () => {
         component={HomeStackNavigator}
         options={{
           tabBarLabel: 'Home',
+          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
         }}
       />
       <Tab.Screen 
         name="DailyPhrase" 
         component={DailyPhraseScreen}
         options={{
-          tabBarLabel: 'Daily Phrase',
+          tabBarLabel: 'Phrase',
+          tabBarIcon: ({ focused }) => <TabIcon icon="💭" focused={focused} />,
         }}
       />
       <Tab.Screen 
@@ -70,6 +79,7 @@ export const MainNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
+          tabBarIcon: ({ focused }) => <TabIcon icon="👤" focused={focused} />,
         }}
       />
       <Tab.Screen 
@@ -77,6 +87,7 @@ export const MainNavigator = () => {
         component={SettingsScreen}
         options={{
           tabBarLabel: 'Settings',
+          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
         }}
       />
     </Tab.Navigator>

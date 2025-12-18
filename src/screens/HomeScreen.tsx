@@ -46,6 +46,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed Header Bar */}
+      <View style={styles.headerBar}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.appTitle}>Pgeil</Text>
+          <View style={styles.betaBadge}>
+            <Text style={styles.betaText}>BETA</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.notificationButton}>
+          <Text style={styles.notificationIcon}>🔔</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -128,9 +141,53 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgPrimary,
   },
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderColor,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.accentBlue,
+    letterSpacing: -0.5,
+  },
+  betaBadge: {
+    backgroundColor: colors.accentCyan,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  betaText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.bgPrimary,
+    letterSpacing: 0.5,
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationIcon: {
+    fontSize: 20,
+  },
   header: {
     padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
   },
   title: {
     ...textStyles.h2,
