@@ -30,9 +30,6 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
 }) => {
   const flatListRef = useRef<FlatList>(null);
 
-  console.log('[TranscriptView] Rendering with', transcript.length, 'sentences');
-  console.log('[TranscriptView] First sentence:', transcript[0]?.text?.substring(0, 50));
-
   // Auto-scroll to active sentence
   useEffect(() => {
     if (activeSentenceIndex >= 0 && flatListRef.current) {

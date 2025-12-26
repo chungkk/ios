@@ -47,17 +47,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       }
     };
   }, [navigation]);
-  
-  console.log('[LessonScreen] Loading lesson with ID:', lessonId);
-  
+
   const { lesson, loading, error } = useLessonData(lessonId);
-  
-  console.log('[LessonScreen] State:', { 
-    hasLesson: !!lesson, 
-    loading, 
-    hasError: !!error,
-    transcriptLength: lesson?.transcript?.length || 0 
-  });
+
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const [studyStartTime] = useState(Date.now());
   const [completedReported, setCompletedReported] = useState(false);
@@ -81,12 +73,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Voice recording
   const { recordingState, startRecording, stopRecording, playRecording, clearRecording } = useVoiceRecording({
-    onRecordingComplete: (result) => {
-      console.log('[LessonScreen] Recording complete:', result);
+    onRecordingComplete: () => {
+      // Recording complete
     },
-    onError: (error) => {
-      console.error('[LessonScreen] Recording error:', error);
-      Alert.alert('Recording Error', error);
+    onError: (err) => {
+      Alert.alert('Recording Error', err);
     },
   });
 
@@ -112,8 +103,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [activeSentenceIndex]);
 
   const handleReady = useCallback(async () => {
-    console.log('[LessonScreen] Video player ready');
-    
     // Get duration
     if (videoPlayerRef.current) {
       const dur = await videoPlayerRef.current.getDuration();
@@ -130,8 +119,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     const pointsEarned = 10; // Base points for completing lesson
 
     try {
-      console.log('[LessonScreen] Lesson completed, saving progress');
-      
       const response = await progressService.saveProgress({
         lessonId,
         mode: 'shadowing',
@@ -147,8 +134,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         `You earned ${pointsEarned} points!\nTotal points: ${response.user.points}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    } catch (err) {
-      console.error('[LessonScreen] Error saving progress:', err);
+    } catch {
       // Progress is queued for offline sync, show success anyway
       Alert.alert(
         'Lesson Complete! 🎉',
@@ -159,27 +145,27 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [lessonId, studyStartTime, completedReported, navigation]);
 
   const handleStateChange = useCallback((state: string) => {
-    console.log('[LessonScreen] Player state changed:', state);
-    
-    if (state === 'playing') {
+    // react-native-youtube-bridge returns PlayerState enum as string
+    // PlayerState.PLAYING = 1, PAUSED = 2, ENDED = 0
+    const stateNum = parseInt(state, 10);
+
+    if (stateNum === 1) { // PLAYING
       setIsPlayingFromYouTube(true);
-    } else if (state === 'paused') {
+    } else if (stateNum === 2) { // PAUSED
       setIsPlayingFromYouTube(false);
-    } else if (state === 'ended') {
+    } else if (stateNum === 0) { // ENDED
       setIsPlayingFromYouTube(false);
       handleLessonComplete();
     }
   }, [setIsPlayingFromYouTube, handleLessonComplete]);
 
-  const handleError = useCallback((errorMsg: string) => {
-    console.error('[LessonScreen] Video player error:', errorMsg);
+  const handleError = useCallback(() => {
     Alert.alert('Video Error', 'Failed to load video. Please try again.');
   }, []);
 
   const handleSentencePress = useCallback((index: number) => {
     const sentence = lesson?.transcript[index];
     if (sentence && videoPlayerRef.current) {
-      console.log('[LessonScreen] Seeking to sentence:', index, sentence.startTime);
       videoPlayerRef.current.seekTo(sentence.startTime);
       setIsPlaying(true);
     }
@@ -190,7 +176,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (activeSentenceIndex > 0 && transcript.length > 0) {
       const prevSentence = transcript[activeSentenceIndex - 1];
       if (prevSentence && videoPlayerRef.current) {
-        console.log('[LessonScreen] Previous - seeking to:', prevSentence.startTime);
         videoPlayerRef.current.seekTo(prevSentence.startTime);
         setIsPlaying(true);
       }
@@ -202,7 +187,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (activeSentenceIndex < transcript.length - 1) {
       const nextSentence = transcript[activeSentenceIndex + 1];
       if (nextSentence && videoPlayerRef.current) {
-        console.log('[LessonScreen] Next - seeking to:', nextSentence.startTime);
         videoPlayerRef.current.seekTo(nextSentence.startTime);
         setIsPlaying(true);
       }
@@ -210,11 +194,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [activeSentenceIndex, lesson, setIsPlaying]);
 
   const handleMicrophone = useCallback(() => {
-    console.log('[LessonScreen] Microphone pressed, isPlaying:', isPlaying);
-    
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[activeSentenceIndex];
-    
+
     if (!currentSentence) {
       Alert.alert('Error', 'No sentence selected');
       return;
@@ -222,26 +204,23 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
     if (recordingState.isRecording) {
       // Stop recording and process
-      console.log('[LessonScreen] Stopping recording');
       stopRecording(currentSentence.text);
     } else {
       // Start recording
       // ALWAYS pause video when starting recording, regardless of isPlaying state
-      console.log('[LessonScreen] Starting recording - pausing video');
-      
+
       // Force pause video directly via player ref
       if (videoPlayerRef.current) {
-        console.log('[LessonScreen] Calling videoPlayerRef.pause()');
         videoPlayerRef.current.pause();
       }
-      
+
       // Update state to ensure UI reflects paused state
       setIsPlaying(false);
-      
+
       // Start recording after ensuring video is paused
       startRecording();
     }
-  }, [lesson, activeSentenceIndex, recordingState.isRecording, isPlaying, stopRecording, startRecording, setIsPlaying]);
+  }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying]);
 
   const handleSpeedSelect = useCallback((speed: number) => {
     setPlaybackSpeed(speed);
@@ -278,7 +257,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }
 
   const transcript = lesson.transcript || [];
-  console.log('[LessonScreen] Rendering with transcript length:', transcript.length);
 
   return (
     <SafeAreaView style={styles.container}>

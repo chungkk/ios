@@ -29,12 +29,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlayingRecording = false,
   onPlayRecording,
 }) => {
-  React.useEffect(() => {
-    console.log('[PlaybackControls] isPlaying:', isPlaying);
-  }, [isPlaying]);
-
   const handlePlayPause = () => {
-    console.log('[PlaybackControls] Play/Pause button pressed');
     onPlayPause();
   };
 
