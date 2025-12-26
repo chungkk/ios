@@ -3,6 +3,7 @@
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, Alert, Text, TouchableOpacity } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useLessonData } from '../hooks/useLessonData';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
@@ -130,14 +131,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       setCompletedReported(true);
 
       Alert.alert(
-        'Lesson Complete! 🎉',
+        'Lesson Complete!',
         `You earned ${pointsEarned} points!\nTotal points: ${response.user.points}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch {
       // Progress is queued for offline sync, show success anyway
       Alert.alert(
-        'Lesson Complete! 🎉',
+        'Lesson Complete!',
         `You earned ${pointsEarned} points! (Progress saved offline)`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
@@ -233,7 +234,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   if (error || !lesson) {
     return (
       <EmptyState
-        icon="❌"
+        icon="close-circle"
         title="Lesson Not Found"
         message="This lesson could not be loaded. It may have been removed or is temporarily unavailable."
         actionLabel="Go Back"
@@ -247,7 +248,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   if (!videoId) {
     return (
       <EmptyState
-        icon="⚠️"
+        icon="alert-circle"
         title="Invalid Video"
         message="This lesson's video URL is invalid."
         actionLabel="Go Back"
@@ -262,12 +263,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     <SafeAreaView style={styles.container}>
       {/* Header Bar with Back Button */}
       <View style={styles.headerBar}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Icon name="chevron-back" size={24} color={colors.accentBlue} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         
@@ -298,11 +299,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           <Text style={styles.counterSeparator}> / </Text>
           <Text style={styles.counterTotal}>{transcript.length}</Text>
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.settingsButton}
           onPress={() => setShowSettingsMenu(true)}
         >
-          <Text style={styles.settingsIcon}>⚙️</Text>
+          <Icon name="settings-outline" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -381,12 +382,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
   },
-  backIcon: {
-    fontSize: 20,
-    color: colors.accentBlue,
-    fontWeight: '600',
-    marginRight: 4,
-  },
   backText: {
     fontSize: 16,
     color: colors.accentBlue,
@@ -439,9 +434,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  settingsIcon: {
-    fontSize: 22,
   },
   transcriptContainer: {
     flex: 1,

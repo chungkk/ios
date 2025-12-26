@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 
 interface PlaybackControlsProps {
@@ -36,25 +37,30 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   return (
     <View style={styles.container}>
       {/* Previous Sentence */}
-      <TouchableOpacity 
-        style={styles.navButton} 
+      <TouchableOpacity
+        style={styles.navButton}
         onPress={onPrevious}
         activeOpacity={0.7}
       >
-        <Text style={styles.navButtonText}>‹</Text>
+        <Icon name="chevron-back" size={28} color="#ffffff" />
       </TouchableOpacity>
 
       {/* Play/Pause Button - Large Center */}
-      <TouchableOpacity 
-        style={styles.playButton} 
+      <TouchableOpacity
+        style={styles.playButton}
         onPress={handlePlayPause}
         activeOpacity={0.8}
       >
-        <Text style={styles.playButtonText}>{isPlaying ? '⏸' : '▶'}</Text>
+        <Icon
+          name={isPlaying ? 'pause' : 'play'}
+          size={32}
+          color="#ffffff"
+          style={isPlaying ? {} : { marginLeft: 3 }}
+        />
       </TouchableOpacity>
 
       {/* Microphone Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
           styles.micButton,
           isRecording && styles.micButtonRecording,
@@ -65,17 +71,17 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         disabled={isProcessing}
       >
         {isProcessing ? (
-          <Text style={styles.micButtonText}>⏳</Text>
+          <Icon name="hourglass-outline" size={24} color="#ffffff" />
         ) : isRecording ? (
-          <Text style={styles.micButtonText}>⏹</Text>
+          <Icon name="stop" size={24} color="#ffffff" />
         ) : (
-          <Text style={styles.micButtonText}>🎤</Text>
+          <Icon name="mic" size={24} color="#ffffff" />
         )}
       </TouchableOpacity>
 
       {/* Play Recording Button - Only show if has recording */}
       {hasRecording && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.replayButton,
             isPlayingRecording && styles.replayButtonPlaying,
@@ -83,19 +89,22 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           onPress={onPlayRecording}
           activeOpacity={0.7}
         >
-          <Text style={styles.replayButtonText}>
-            {isPlayingRecording ? '⏸' : '▶️'}
-          </Text>
+          <Icon
+            name={isPlayingRecording ? 'pause' : 'play'}
+            size={24}
+            color="#ffffff"
+            style={isPlayingRecording ? {} : { marginLeft: 2 }}
+          />
         </TouchableOpacity>
       )}
 
       {/* Next Sentence */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.navButton}
         onPress={onNext}
         activeOpacity={0.7}
       >
-        <Text style={styles.navButtonText}>›</Text>
+        <Icon name="chevron-forward" size={28} color="#ffffff" />
       </TouchableOpacity>
     </View>
   );
@@ -119,12 +128,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navButtonText: {
-    fontSize: 36,
-    color: '#ffffff',
-    fontWeight: '200',
-    marginTop: -3, // Optical alignment
-  },
   playButton: {
     width: 64,
     height: 64,
@@ -137,11 +140,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
-  },
-  playButtonText: {
-    fontSize: 26,
-    color: '#ffffff',
-    marginLeft: 3, // Optical alignment for play icon
   },
   micButton: {
     width: 48,
@@ -157,9 +155,6 @@ const styles = StyleSheet.create({
   micButtonProcessing: {
     backgroundColor: '#666666', // Gray when processing
   },
-  micButtonText: {
-    fontSize: 22,
-  },
   replayButton: {
     width: 48,
     height: 48,
@@ -170,9 +165,6 @@ const styles = StyleSheet.create({
   },
   replayButtonPlaying: {
     backgroundColor: '#2d7acc', // Darker blue when playing
-  },
-  replayButtonText: {
-    fontSize: 22,
   },
 });
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 import { textStyles } from '../../styles/typography';
 import Button from './Button';
@@ -9,7 +10,7 @@ interface EmptyStateProps {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
-  icon?: string; // Emoji or icon
+  icon?: string; // Ionicons name or emoji
   style?: ViewStyle;
 }
 
@@ -18,12 +19,19 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   message,
   actionLabel,
   onAction,
-  icon = '🔍',
+  icon = 'search',
   style,
 }) => {
+  // Check if icon is an Ionicons name (no emoji characters)
+  const isIonicon = icon && /^[a-z-]+$/.test(icon);
+
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.icon}>{icon}</Text>
+      {isIonicon ? (
+        <Icon name={icon} size={64} color={colors.textMuted} style={styles.iconSpacing} />
+      ) : (
+        <Text style={styles.icon}>{icon}</Text>
+      )}
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       {actionLabel && onAction && (
@@ -49,6 +57,9 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 64,
+    marginBottom: spacing.lg,
+  },
+  iconSpacing: {
     marginBottom: spacing.lg,
   },
   title: {

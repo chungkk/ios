@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import type { Sentence } from '../../types/lesson.types';
 import { colors, spacing, borderRadius } from '../../styles/theme';
 import { textStyles } from '../../styles/typography';
@@ -73,7 +74,7 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
       disabled={!onPress}
     >
       <View style={[styles.playIconContainer, isActive && styles.playIconContainerActive]}>
-        <Text style={styles.playIcon}>▶</Text>
+        <Icon name="play" size={12} color="rgba(59, 130, 246, 0.8)" style={styles.playIcon} />
       </View>
       <View style={styles.textContainer}>
         {renderText()}
@@ -84,8 +85,13 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
             styles.badge,
             voiceRecordingResult.isCorrect ? styles.badgeCorrect : styles.badgeIncorrect
           ]}>
+            <Icon
+              name={voiceRecordingResult.isCorrect ? 'checkmark-circle' : 'close-circle'}
+              size={14}
+              color={voiceRecordingResult.isCorrect ? '#10b981' : '#ef4444'}
+            />
             <Text style={styles.badgeText}>
-              {voiceRecordingResult.isCorrect ? '✅' : '❌'} {voiceRecordingResult.similarity}%
+              {voiceRecordingResult.similarity}%
             </Text>
           </View>
         )}
@@ -138,8 +144,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59, 130, 246, 0.2)', // Brighter blue when active
   },
   playIcon: {
-    fontSize: 11,
-    color: 'rgba(59, 130, 246, 0.8)',
     marginLeft: 2,
   },
   textContainer: {
@@ -172,11 +176,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     marginTop: 8,
+    gap: 4,
   },
   badgeCorrect: {
     backgroundColor: 'rgba(16, 185, 129, 0.15)', // Green background

@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing, borderRadius } from '../../styles/theme';
 import { DownloadProgress } from '../../types/offline.types';
 
@@ -44,7 +45,7 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
     return (
       <View style={styles.downloadedContainer}>
         <View style={styles.downloadedBadge}>
-          <Text style={styles.downloadedIcon}>✓</Text>
+          <Icon name="checkmark" size={16} color={colors.textPrimary} />
           <Text style={styles.downloadedText}>Downloaded</Text>
         </View>
         {onDelete && (
@@ -54,7 +55,7 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
             disabled={disabled}
             activeOpacity={0.7}
           >
-            <Text style={styles.deleteIcon}>🗑️</Text>
+            <Icon name="trash" size={18} color={colors.textPrimary} />
           </TouchableOpacity>
         )}
       </View>
@@ -68,7 +69,7 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
       disabled={disabled}
       activeOpacity={0.7}
     >
-      <Text style={styles.downloadIcon}>⬇️</Text>
+      <Icon name="download" size={16} color={colors.textPrimary} />
       <Text style={styles.downloadText}>Download</Text>
     </TouchableOpacity>
   );
@@ -86,9 +87,6 @@ const styles = StyleSheet.create({
   },
   downloadButtonDisabled: {
     opacity: 0.3,
-  },
-  downloadIcon: {
-    fontSize: 16,
   },
   downloadText: {
     fontSize: 14,
@@ -130,10 +128,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.small,
     gap: spacing.xs,
   },
-  downloadedIcon: {
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
   downloadedText: {
     fontSize: 14,
     fontWeight: '600',
@@ -146,9 +140,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  deleteIcon: {
-    fontSize: 16,
   },
 });
 

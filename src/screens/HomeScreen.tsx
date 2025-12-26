@@ -73,7 +73,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
         ) : lessons.length === 0 ? (
           <EmptyState
-            icon="📚"
+            icon="book"
             title="No lessons found"
             message={`Try changing the difficulty filter or check back later.`}
             actionLabel="Reset Filter"
