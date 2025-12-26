@@ -31,10 +31,7 @@ export const useVideoPlayer = (): UseVideoPlayerResult => {
 
   const togglePlayPause = useCallback(() => {
     lastUserActionTime.current = Date.now();
-    setIsPlaying(prev => {
-      console.log('[useVideoPlayer] User toggled play/pause from', prev, 'to', !prev);
-      return !prev;
-    });
+    setIsPlaying(prev => !prev);
   }, []);
 
   // Separate handler for YouTube state changes to prevent race conditions
@@ -42,11 +39,9 @@ export const useVideoPlayer = (): UseVideoPlayerResult => {
     const timeSinceUserAction = Date.now() - lastUserActionTime.current;
     
     if (timeSinceUserAction < DEBOUNCE_MS) {
-      console.log('[useVideoPlayer] Ignoring YouTube event (too soon after user action):', playing);
       return; // Ignore YouTube events shortly after user action
     }
     
-    console.log('[useVideoPlayer] YouTube state changed:', playing);
     setIsPlaying(playing);
   }, []);
 

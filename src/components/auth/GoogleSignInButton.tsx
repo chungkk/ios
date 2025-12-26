@@ -7,6 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {colors, spacing, borderRadius, shadows} from '../../styles/theme';
 import {textStyles} from '../../styles/typography';
 
@@ -35,8 +36,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         <ActivityIndicator color={colors.textPrimary} size="small" />
       ) : (
         <View style={styles.content}>
-          {/* Google "G" Logo (using emoji as placeholder) */}
-          <Text style={styles.googleIcon}>G</Text>
+          <Icon name="logo-google" size={20} color={colors.textPrimary} style={styles.googleIcon} />
           <Text style={styles.buttonText}>Continue with Google</Text>
         </View>
       )}
@@ -66,9 +66,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   googleIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
     marginRight: spacing.sm,
   },
   buttonText: {

@@ -10,6 +10,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing, borderRadius } from '../../styles/theme';
 
 interface SettingsMenuProps {
@@ -54,7 +55,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             onPress={onTranslationToggle}
             activeOpacity={0.7}
           >
-            <Text style={styles.menuIcon}>🌐</Text>
+            <Icon name="language-outline" size={24} color={colors.textPrimary} style={styles.menuIcon} />
             <Text style={styles.menuText}>Hiện dịch</Text>
             <View style={styles.toggle}>
               <View style={[styles.toggleTrack, showTranslation && styles.toggleTrackActive]}>
@@ -69,7 +70,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             onPress={onSpeedPress}
             activeOpacity={0.7}
           >
-            <Text style={styles.menuIcon}>⚡</Text>
+            <Icon name="speedometer-outline" size={24} color={colors.textPrimary} style={styles.menuIcon} />
             <Text style={styles.menuText}>Tốc độ</Text>
             <Text style={styles.menuValue}>{playbackSpeed}x</Text>
           </TouchableOpacity>
@@ -80,7 +81,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             onPress={onAutoStopToggle}
             activeOpacity={0.7}
           >
-            <Text style={styles.menuIcon}>⏸️</Text>
+            <Icon name="pause-outline" size={24} color={colors.textPrimary} style={styles.menuIcon} />
             <Text style={styles.menuText}>Auto stop</Text>
             <View style={styles.toggle}>
               <View style={[styles.toggleTrack, autoStop && styles.toggleTrackActive]}>
@@ -125,8 +126,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
   },
   menuIcon: {
-    fontSize: 20,
     width: 28,
+    textAlign: 'center',
   },
   menuText: {
     flex: 1,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing, borderRadius } from '../../styles/theme';
 
 interface DictationInputProps {
@@ -46,7 +47,11 @@ const DictationInput: React.FC<DictationInputProps> = ({
             onPress={onVoiceInput}
             activeOpacity={0.7}
           >
-            <Text style={styles.voiceIcon}>{isListening ? '⏹️' : '🎤'}</Text>
+            <Icon
+              name={isListening ? 'stop' : 'mic'}
+              size={22}
+              color={colors.textPrimary}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -101,9 +106,6 @@ const styles = StyleSheet.create({
   },
   voiceButtonActive: {
     backgroundColor: colors.accentRed,
-  },
-  voiceIcon: {
-    fontSize: 20,
   },
   submitButton: {
     backgroundColor: colors.accentBlue,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import type { MainTabParamList, HomeStackParamList } from './types';
 import { colors } from '../styles/theme';
 import HomeScreen from '../screens/HomeScreen';
@@ -14,8 +14,8 @@ import ProfileScreen from '../screens/ProfileScreen';
 const SettingsScreen = () => null;
 
 // Tab Bar Icons
-const TabIcon = ({ icon, focused }: { icon: string; focused: boolean }) => (
-  <Text style={{ fontSize: 24, opacity: focused ? 1 : 0.6 }}>{icon}</Text>
+const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => (
+  <Icon name={iconName} size={24} color={focused ? colors.accentBlue : colors.textMuted} />
 );
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -58,36 +58,36 @@ export const MainNavigator = () => {
         },
       }}
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={HomeStackNavigator}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon iconName="home" focused={focused} />,
         }}
       />
-      <Tab.Screen 
-        name="DailyPhrase" 
+      <Tab.Screen
+        name="DailyPhrase"
         component={DailyPhraseScreen}
         options={{
           tabBarLabel: 'Phrase',
-          tabBarIcon: ({ focused }) => <TabIcon icon="💭" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon iconName="chatbubble-ellipses" focused={focused} />,
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
+      <Tab.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon icon="👤" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon iconName="person" focused={focused} />,
         }}
       />
-      <Tab.Screen 
-        name="Settings" 
+      <Tab.Screen
+        name="Settings"
         component={SettingsScreen}
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon iconName="settings" focused={focused} />,
         }}
       />
     </Tab.Navigator>

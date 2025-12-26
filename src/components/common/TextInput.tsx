@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {colors, spacing, borderRadius} from '../../styles/theme';
 import {textStyles} from '../../styles/typography';
 
@@ -81,7 +82,11 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
             style={styles.rightIcon}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             activeOpacity={0.7}>
-            <Text style={styles.eyeIcon}>{isPasswordVisible ? '👁️' : '👁️‍🗨️'}</Text>
+            <Icon
+              name={isPasswordVisible ? 'eye-outline' : 'eye-off-outline'}
+              size={22}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
         )}
 
@@ -138,9 +143,6 @@ const styles = StyleSheet.create({
   rightIcon: {
     marginLeft: spacing.sm,
     padding: spacing.xs,
-  },
-  eyeIcon: {
-    fontSize: 20,
   },
   errorText: {
     ...textStyles.caption,
