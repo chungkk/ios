@@ -42,7 +42,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         onPress={onPrevious}
         activeOpacity={0.7}
       >
-        <Icon name="chevron-back" size={28} color="#ffffff" />
+        <Icon name="chevron-back" size={24} color={colors.retroDark} />
       </TouchableOpacity>
 
       {/* Play/Pause Button - Large Center */}
@@ -104,7 +104,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         onPress={onNext}
         activeOpacity={0.7}
       >
-        <Icon name="chevron-forward" size={28} color="#ffffff" />
+        <Icon name="chevron-forward" size={24} color={colors.retroDark} />
       </TouchableOpacity>
     </View>
   );
@@ -115,15 +115,18 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-evenly',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
     backgroundColor: colors.retroCream,
+    borderTopWidth: 3,
+    borderTopColor: colors.retroBorder,
+    gap: 16,
   },
   navButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: colors.retroBorder,
@@ -136,9 +139,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   playButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.retroCyan,
     borderWidth: 3,
     borderColor: colors.retroBorder,

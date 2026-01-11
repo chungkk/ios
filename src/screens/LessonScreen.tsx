@@ -2,8 +2,10 @@
 // Video player with synchronized transcript for shadowing practice
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, Alert, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 import { useLessonData } from '../hooks/useLessonData';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
@@ -24,20 +26,28 @@ type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
+  const parentNavigation = useNavigation().getParent();
+  const insets = useSafeAreaInsets();
 
-  // Hide navigation header and bottom tabs
+  // Hide navigation header and tab bar
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
-    const parent = navigation.getParent();
-    if (parent) {
-      parent.setOptions({ tabBarStyle: { display: 'none' } });
-    }
+    parentNavigation?.setOptions({ tabBarStyle: { display: 'none' } });
+    
     return () => {
-      if (parent) {
-        parent.setOptions({ tabBarStyle: undefined });
-      }
+      parentNavigation?.setOptions({ 
+        tabBarStyle: {
+          backgroundColor: '#FFF8E7',
+          borderTopColor: '#1a1a2e',
+          borderTopWidth: 3,
+          height: 75,
+          paddingBottom: 14,
+          paddingTop: 10,
+          display: 'flex',
+        } 
+      });
     };
-  }, [navigation]);
+  }, [navigation, parentNavigation]);
 
   const { lesson, loading, error } = useLessonData(lessonId);
 
@@ -228,11 +238,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const transcript = lesson.transcript || [];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Neo-Retro Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={22} color={colors.retroCyan} />
+          <Icon name="chevron-back" size={18} color="#fff" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         
@@ -243,23 +253,20 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         </TouchableOpacity>
       </View>
 
-      {/* Video Section - Neo-Retro Card */}
-      <View style={styles.videoSection}>
-        <View style={styles.videoCard}>
-          <View style={styles.cardTopBar} />
-          <View style={styles.videoContainer}>
-            <VideoPlayer
-              ref={videoPlayerRef}
-              videoId={videoId}
-              isPlaying={isPlaying}
-              playbackSpeed={playbackSpeed}
-              onReady={handleReady}
-              onStateChange={handleStateChange}
-              onError={handleError}
-            />
-          </View>
+      {/* Video Player - Full Width */}
+      {videoId && (
+        <View style={styles.videoContainer}>
+          <VideoPlayer
+            ref={videoPlayerRef}
+            videoId={videoId}
+            isPlaying={isPlaying}
+            playbackSpeed={playbackSpeed}
+            onReady={handleReady}
+            onStateChange={handleStateChange}
+            onError={handleError}
+          />
         </View>
-      </View>
+      )}
 
       {/* Sentence Counter */}
       <View style={styles.sentenceCounter}>
@@ -296,37 +303,35 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         onSelectSpeed={handleSpeedSelect}
       />
 
-      {/* Transcript Section - Neo-Retro Card */}
+      {/* Transcript Section - Full Width */}
       <View style={styles.transcriptSection}>
-        <View style={styles.transcriptCard}>
-          <View style={styles.transcriptTopBar} />
-          <View style={styles.transcriptHeader}>
-            <Text style={styles.transcriptTitle}>📝 Transcript</Text>
-            <TouchableOpacity 
-              style={styles.translationToggle}
-              onPress={() => setShowTranslation(!showTranslation)}
-            >
-              <Icon 
-                name={showTranslation ? 'eye' : 'eye-off'} 
-                size={16} 
-                color={colors.retroDark} 
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.transcriptContent}>
-            <TranscriptView
-              transcript={transcript}
-              activeSentenceIndex={activeSentenceIndex}
-              onSentencePress={handleSentencePress}
-              showTranslation={showTranslation}
-              voiceRecordingResult={recordingState.comparisonResult}
+        <View style={styles.transcriptTopBar} />
+        <View style={styles.transcriptHeader}>
+          <Text style={styles.transcriptTitle}>📝 Transcript</Text>
+          <TouchableOpacity 
+            style={styles.translationToggle}
+            onPress={() => setShowTranslation(!showTranslation)}
+          >
+            <Icon 
+              name={showTranslation ? 'eye' : 'eye-off'} 
+              size={16} 
+              color={colors.retroDark} 
             />
-          </View>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.transcriptContent}>
+          <TranscriptView
+            transcript={transcript}
+            activeSentenceIndex={activeSentenceIndex}
+            onSentencePress={handleSentencePress}
+            showTranslation={showTranslation}
+            voiceRecordingResult={recordingState.comparisonResult}
+          />
         </View>
       </View>
 
       {/* Bottom Controls - Neo-Retro Style */}
-      <View style={styles.controlsWrapper}>
+      <View style={[styles.controlsWrapper, { paddingBottom: insets.bottom || 14 }]}>
         <PlaybackControls
           isPlaying={isPlaying}
           onPlayPause={togglePlayPause}
@@ -340,7 +345,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           onPlayRecording={playRecording}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -363,12 +368,23 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 6,
+    backgroundColor: colors.retroCyan,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 4,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
   },
   backText: {
-    fontSize: 15,
-    color: colors.retroCyan,
-    fontWeight: '600',
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 16,
@@ -387,27 +403,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Video Section
-  videoSection: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  videoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 3,
-    borderColor: colors.retroBorder,
-    overflow: 'hidden',
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  cardTopBar: {
-    height: 4,
-    backgroundColor: colors.retroCyan,
-  },
+  // Video Container - Full Width like Dictation
   videoContainer: {
     height: 200,
     backgroundColor: '#000',
@@ -459,24 +455,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.retroDark,
   },
-  // Transcript Section
+  // Transcript Section - Full Width
   transcriptSection: {
     flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  transcriptCard: {
-    flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 3,
-    borderColor: colors.retroBorder,
-    overflow: 'hidden',
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 0,
-    elevation: 4,
   },
   transcriptTopBar: {
     height: 4,
@@ -486,7 +468,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
     backgroundColor: 'rgba(255, 107, 129, 0.08)',
     borderBottomWidth: 2,
@@ -515,7 +497,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.retroCream,
     borderTopWidth: 2,
     borderTopColor: colors.retroBorder,
-    paddingBottom: 8,
   },
 });
 

@@ -7,14 +7,15 @@ import {
   Text,
   TextInput,
   ScrollView,
-  SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 import { useLessonData } from '../hooks/useLessonData';
 import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
@@ -31,6 +32,8 @@ type DictationScreenProps = HomeStackScreenProps<'Dictation'>;
 const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
   const { lesson, loading, error } = useLessonData(lessonId);
+  const parentNavigation = useNavigation().getParent();
+  const insets = useSafeAreaInsets();
   
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const inputRef = useRef<TextInput>(null);
@@ -44,19 +47,25 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [completedSentences, setCompletedSentences] = useState<Set<number>>(new Set());
   const [studyStartTime] = useState(Date.now());
 
-  // Hide navigation
+  // Hide navigation header and tab bar
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
-    const parent = navigation.getParent();
-    if (parent) {
-      parent.setOptions({ tabBarStyle: { display: 'none' } });
-    }
+    parentNavigation?.setOptions({ tabBarStyle: { display: 'none' } });
+    
     return () => {
-      if (parent) {
-        parent.setOptions({ tabBarStyle: undefined });
-      }
+      parentNavigation?.setOptions({ 
+        tabBarStyle: {
+          backgroundColor: '#FFF8E7',
+          borderTopColor: '#1a1a2e',
+          borderTopWidth: 3,
+          height: 75,
+          paddingBottom: 14,
+          paddingTop: 10,
+          display: 'flex',
+        } 
+      });
     };
-  }, [navigation]);
+  }, [navigation, parentNavigation]);
 
   const transcript = lesson?.transcript || [];
   const currentSentence: Sentence | undefined = transcript[currentIndex];
@@ -199,11 +208,11 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const videoId = extractVideoId(lesson.youtubeUrl);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={22} color={colors.retroCyan} />
+          <Icon name="chevron-back" size={18} color="#fff" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>Dictation</Text>
@@ -343,7 +352,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       </KeyboardAvoidingView>
 
       {/* Bottom Controls - Fixed */}
-      <View style={styles.bottomControls}>
+      <View style={[styles.bottomControls, { paddingBottom: insets.bottom || 14 }]}>
         {/* Previous */}
         <TouchableOpacity 
           style={[styles.controlBtn, styles.controlBtnNav, currentIndex === 0 && styles.controlBtnDisabled]}
@@ -370,7 +379,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : '#fff'} />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -392,12 +401,23 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 6,
+    backgroundColor: colors.retroCyan,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 4,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
   },
   backText: {
-    fontSize: 15,
-    color: colors.retroCyan,
-    fontWeight: '600',
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 16,

@@ -12,9 +12,9 @@ import DailyPhraseScreen from '../screens/DailyPhraseScreen';
 import VocabularyScreen from '../screens/VocabularyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-// Tab Bar Icons
+// Tab Bar Icons - Neo-Retro Style
 const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => (
-  <Icon name={iconName} size={24} color={focused ? colors.accentBlue : colors.textMuted} />
+  <Icon name={iconName} size={22} color={focused ? colors.retroPurple : colors.textMuted} />
 );
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -42,18 +42,23 @@ export const MainNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.bgSecondary,
-          borderTopColor: colors.borderColor,
-          borderTopWidth: 1,
-          height: 70,
-          paddingBottom: 12,
-          paddingTop: 12,
+          backgroundColor: colors.retroCream,
+          borderTopColor: colors.retroBorder,
+          borderTopWidth: 3,
+          height: 75,
+          paddingBottom: 14,
+          paddingTop: 10,
+          shadowColor: '#1a1a2e',
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.1,
+          shadowRadius: 0,
+          elevation: 8,
         },
-        tabBarActiveTintColor: colors.accentBlue,
+        tabBarActiveTintColor: colors.retroPurple,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: '700',
           marginTop: 4,
         },
       }}

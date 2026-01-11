@@ -3,11 +3,11 @@
 
 export const colors = {
   // Neo-Retro Background colors
-  bgPrimary: '#2d3436',      // Retro dark gray
-  bgSecondary: '#3d4448',    // Lighter gray
+  bgPrimary: '#000000',      // Black background
+  bgSecondary: '#111111',    // Slightly lighter black
   bgCard: '#ffffff',         // White cards (retro style)
   bgHover: 'rgba(0, 206, 201, 0.2)', // Cyan hover
-  bgElevated: '#4a5156',     // Elevated surface
+  bgElevated: '#1a1a1a',     // Elevated surface (dark)
   bgCream: '#FFF8E7',        // Retro cream (for cards)
 
   // Neo-Retro Text colors

@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
   },
   // Welcome Header
   header: {
