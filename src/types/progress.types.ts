@@ -15,9 +15,9 @@ export interface Progress {
 export interface SaveProgressRequest {
   lessonId: string;
   mode: 'shadowing' | 'dictation';
-  completed: boolean;
-  pointsEarned: number;
-  studyTime: number;
+  completed?: boolean;
+  pointsEarned?: number;
+  studyTime?: number;
   accuracy?: number;
 }
 

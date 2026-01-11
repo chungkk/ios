@@ -1,5 +1,4 @@
-// SettingsMenu - Dropdown menu for lesson settings
-// Migrated from ppgeil DictationHeader settings dropdown
+// SettingsMenu - Neo-Retro Dropdown menu for lesson settings
 
 import React from 'react';
 import {
@@ -11,7 +10,7 @@ import {
   Pressable,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { colors, spacing, borderRadius } from '../../styles/theme';
+import { colors, spacing } from '../../styles/theme';
 
 interface SettingsMenuProps {
   visible: boolean;
@@ -49,13 +48,18 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={styles.menuContainer}>
+          {/* Top accent bar */}
+          <View style={styles.topBar} />
+
           {/* Translation Toggle */}
           <TouchableOpacity
-            style={[styles.menuItem, showTranslation && styles.menuItemActive]}
+            style={styles.menuItem}
             onPress={onTranslationToggle}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Icon name="language-outline" size={24} color={colors.textPrimary} style={styles.menuIcon} />
+            <View style={[styles.iconContainer, { backgroundColor: colors.retroCyan }]}>
+              <Icon name="language-outline" size={20} color={colors.retroDark} />
+            </View>
             <Text style={styles.menuText}>Hiện dịch</Text>
             <View style={styles.toggle}>
               <View style={[styles.toggleTrack, showTranslation && styles.toggleTrackActive]}>
@@ -64,24 +68,36 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             </View>
           </TouchableOpacity>
 
+          {/* Divider */}
+          <View style={styles.divider} />
+
           {/* Speed Control */}
           <TouchableOpacity
             style={styles.menuItem}
             onPress={onSpeedPress}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Icon name="speedometer-outline" size={24} color={colors.textPrimary} style={styles.menuIcon} />
+            <View style={[styles.iconContainer, { backgroundColor: colors.retroPink }]}>
+              <Icon name="speedometer-outline" size={20} color={colors.retroDark} />
+            </View>
             <Text style={styles.menuText}>Tốc độ</Text>
-            <Text style={styles.menuValue}>{playbackSpeed}x</Text>
+            <View style={styles.speedBadge}>
+              <Text style={styles.speedValue}>{playbackSpeed}x</Text>
+            </View>
           </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider} />
 
           {/* Auto-stop Toggle */}
           <TouchableOpacity
-            style={[styles.menuItem, autoStop && styles.menuItemActive]}
+            style={styles.menuItem}
             onPress={onAutoStopToggle}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Icon name="pause-outline" size={24} color={colors.textPrimary} style={styles.menuIcon} />
+            <View style={[styles.iconContainer, { backgroundColor: colors.retroYellow }]}>
+              <Icon name="pause-outline" size={20} color={colors.retroDark} />
+            </View>
             <Text style={styles.menuText}>Auto stop</Text>
             <View style={styles.toggle}>
               <View style={[styles.toggleTrack, autoStop && styles.toggleTrackActive]}>
@@ -101,69 +117,115 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 95, // Below sentence counter + settings button
+    paddingTop: 95,
     paddingRight: spacing.md,
   },
   menuContainer: {
-    backgroundColor: '#1a2235',
-    borderRadius: borderRadius.large,
-    minWidth: 220,
-    paddingVertical: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    backgroundColor: colors.retroCream,
+    borderRadius: 16,
+    minWidth: 240,
+    paddingVertical: spacing.md,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    // Neo-retro shadow
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
     elevation: 8,
+    overflow: 'hidden',
+  },
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: colors.retroCoral,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     gap: spacing.md,
   },
-  menuItemActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  menuIcon: {
-    width: 28,
-    textAlign: 'center',
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    // Shadow
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 2,
   },
   menuText: {
     flex: 1,
-    fontSize: 16,
-    color: colors.textPrimary,
-    fontWeight: '500',
-  },
-  menuValue: {
     fontSize: 15,
-    color: colors.accentBlue,
-    fontWeight: '600',
+    color: colors.retroDark,
+    fontWeight: '700',
+  },
+  divider: {
+    height: 2,
+    backgroundColor: colors.retroBorder,
+    marginHorizontal: spacing.md,
+    marginVertical: spacing.xs,
+    opacity: 0.15,
+  },
+  speedBadge: {
+    backgroundColor: colors.retroPurple,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    // Shadow
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  speedValue: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '800',
   },
   toggle: {
     padding: spacing.xs,
   },
   toggleTrack: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#dfe6e9',
     justifyContent: 'center',
-    paddingHorizontal: 2,
+    paddingHorizontal: 3,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
   },
   toggleTrackActive: {
-    backgroundColor: colors.accentBlue,
+    backgroundColor: colors.retroCyan,
   },
   toggleThumb: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    // Shadow
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowRadius: 0,
+    elevation: 2,
   },
   toggleThumbActive: {
     alignSelf: 'flex-end',

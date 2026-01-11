@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useLessonData } from '../hooks/useLessonData';
+import { useStudyTimer } from '../hooks/useStudyTimer';
 import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
@@ -45,7 +46,17 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [showResult, setShowResult] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
   const [completedSentences, setCompletedSentences] = useState<Set<number>>(new Set());
-  const [studyStartTime] = useState(Date.now());
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [revealedWords, setRevealedWords] = useState<{[key: string]: boolean}>({});
+  const [revealCount, setRevealCount] = useState<{[key: number]: number}>({}); // Track reveals per sentence
+  const [pointsDeducted, setPointsDeducted] = useState(0); // Total points deducted
+
+  // Study timer
+  const { studyTime, formattedTime, isTimerRunning } = useStudyTimer({
+    isPlaying,
+    lessonId,
+    mode: 'dictation',
+  });
 
   // Hide navigation header and tab bar
   useLayoutEffect(() => {
@@ -155,23 +166,23 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
 
   // Save progress on complete
   const handleComplete = useCallback(async () => {
-    const studyTime = Math.floor((Date.now() - studyStartTime) / 1000);
     const accuracy = Math.round(progress);
-    const pointsEarned = Math.floor(completedSentences.size * 2);
+    const basePoints = Math.floor(completedSentences.size * 2);
+    const finalPoints = Math.max(0, basePoints - pointsDeducted);
 
     try {
       await progressService.saveProgress({
         lessonId,
         mode: 'dictation',
         completed: true,
-        pointsEarned,
+        pointsEarned: finalPoints,
         studyTime,
         accuracy,
       });
 
       Alert.alert(
         'Dictation Complete! 🎉',
-        `Accuracy: ${accuracy}%\nPoints Earned: ${pointsEarned}`,
+        `Accuracy: ${accuracy}%\nPoints Earned: ${finalPoints}${pointsDeducted > 0 ? ` (-${pointsDeducted} hint)` : ''}\nStudy Time: ${formattedTime}`,
         [{ text: 'Back', onPress: () => navigation.goBack() }]
       );
     } catch {
@@ -179,7 +190,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         [{ text: 'Back', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, progress, completedSentences.size, totalSentences, studyStartTime, navigation]);
+  }, [lessonId, progress, completedSentences.size, totalSentences, studyTime, formattedTime, pointsDeducted, navigation]);
 
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
@@ -190,6 +201,14 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       playSentence();
     }
   }, [isPlaying, playSentence]);
+
+  // Cycle through speed options
+  const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const cycleSpeed = useCallback(() => {
+    const currentIndex = SPEED_OPTIONS.indexOf(playbackSpeed);
+    const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+    setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
+  }, [playbackSpeed]);
 
   if (loading) return <Loading />;
 
@@ -215,8 +234,20 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           <Icon name="chevron-back" size={18} color="#fff" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Dictation</Text>
-        <View style={styles.headerRight} />
+        
+        {/* Study Timer */}
+        <View style={styles.timerContainer}>
+          <Icon name="time-outline" size={14} color={colors.retroDark} />
+          <Text style={styles.timerText}>{formattedTime}</Text>
+        </View>
+        
+        {/* Speed Button - tap to cycle */}
+        <TouchableOpacity 
+          style={styles.speedButton} 
+          onPress={cycleSpeed}
+        >
+          <Text style={styles.speedButtonText}>{playbackSpeed}x</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Video Player */}
@@ -226,7 +257,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             ref={videoPlayerRef}
             videoId={videoId}
             isPlaying={isPlaying}
-            playbackSpeed={1}
+            playbackSpeed={playbackSpeed}
             onStateChange={handleStateChange}
             onError={() => {}}
           />
@@ -261,11 +292,99 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             </Text>
           </View>
 
-          {/* Translation hint */}
-          {currentSentence?.translation && (
-            <View style={styles.translationBox}>
-              <Text style={styles.translationLabel}>💡 Hint:</Text>
-              <Text style={styles.translationText}>{currentSentence.translation}</Text>
+          {/* Masked Sentence Hint */}
+          {currentSentence && (
+            <View style={styles.maskedSentenceBox}>
+              <View style={styles.hintHeader}>
+                <Text style={styles.maskedLabel}>💡 Hint</Text>
+                <Text style={[
+                  styles.freeHintText,
+                  (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
+                ]}>
+                  {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
+                </Text>
+              </View>
+              <View style={styles.maskedWordsContainer}>
+                {currentSentence.text.split(' ').map((word, index) => {
+                  const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
+                  const punctuation = word.replace(pureWord, '');
+                  const wordKey = `${currentIndex}-${index}`;
+                  const isRevealedByClick = revealedWords[wordKey];
+                  
+                  // Check user input for this word position
+                  const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                  const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                  const correctWord = pureWord.toLowerCase();
+                  
+                  // Calculate matched characters from start
+                  let matchedChars = 0;
+                  for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
+                    if (userWord[i] === correctWord[i]) {
+                      matchedChars++;
+                    } else {
+                      break;
+                    }
+                  }
+                  
+                  const isFullyCorrect = userWord === correctWord;
+                  const isWrong = userWord.length > 0 && matchedChars === 0;
+                  const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
+                  
+                  // Handle tap to reveal
+                  const handleReveal = () => {
+                    if (!isFullyCorrect && !isRevealedByClick) {
+                      const currentCount = revealCount[currentIndex] || 0;
+                      const newCount = currentCount + 1;
+                      
+                      // Update reveal count for this sentence
+                      setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
+                      
+                      // Deduct 1 point from 3rd reveal onwards
+                      if (newCount > 2) {
+                        setPointsDeducted(prev => prev + 1);
+                      }
+                      
+                      setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                    }
+                  };
+                  
+                  return (
+                    <View key={index} style={styles.maskedWordWrapper}>
+                      {isFullyCorrect || isRevealedByClick ? (
+                        // Revealed - show word
+                        <View style={[styles.wordBox, styles.wordBoxRevealed]}>
+                          <Text style={styles.revealedWord}>{pureWord}</Text>
+                        </View>
+                      ) : isWrong ? (
+                        // Wrong - red box
+                        <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
+                          <Text style={styles.wrongAsterisks}>
+                            {'*'.repeat(pureWord.length)}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : hasPartialMatch ? (
+                        // Partial match
+                        <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
+                          <Text style={styles.matchedChars}>
+                            {pureWord.substring(0, matchedChars)}
+                          </Text>
+                          <Text style={styles.remainingAsterisks}>
+                            {'*'.repeat(pureWord.length - matchedChars)}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        // Not started - hidden box
+                        <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
+                          <Text style={styles.hiddenAsterisks}>
+                            {'*'.repeat(pureWord.length)}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           )}
 
@@ -362,6 +481,14 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           <Icon name="chevron-back" size={24} color={currentIndex === 0 ? colors.textMuted : '#fff'} />
         </TouchableOpacity>
 
+        {/* Replay Current Sentence */}
+        <TouchableOpacity 
+          style={[styles.controlBtn, styles.controlBtnReplay]}
+          onPress={playSentence}
+        >
+          <Icon name="refresh" size={22} color="#fff" />
+        </TouchableOpacity>
+
         {/* Play/Pause - Center Large */}
         <TouchableOpacity 
           style={[styles.controlBtn, styles.controlBtnPlay]}
@@ -379,7 +506,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : '#fff'} />
         </TouchableOpacity>
       </View>
-    </View>
+
+      </View>
   );
 };
 
@@ -419,15 +547,47 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
-  headerTitle: {
-    fontSize: 16,
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroYellow,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 6,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  timerText: {
+    fontSize: 14,
     fontWeight: '800',
     color: colors.retroDark,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
+    letterSpacing: 1,
   },
-  headerRight: {
-    width: 60,
+  speedButton: {
+    backgroundColor: colors.retroCyan,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  speedButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#fff',
+    fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
   },
   videoContainer: {
     height: 200,
@@ -480,24 +640,105 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
   },
-  translationBox: {
-    backgroundColor: colors.retroYellow,
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: spacing.md,
-    borderWidth: 2,
+  maskedSentenceBox: {
+    backgroundColor: '#fff',
+    padding: 8,
+    borderRadius: 10,
+    marginBottom: spacing.sm,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
-  translationLabel: {
+  hintHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  maskedLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  freeHintText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#fff',
+    backgroundColor: colors.retroCyan,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+  },
+  freeHintWarning: {
+    backgroundColor: colors.retroCoral,
+  },
+  maskedWordsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  maskedWordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  wordBox: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  wordBoxHidden: {
+    backgroundColor: colors.retroCream,
+    borderColor: colors.retroBorder,
+  },
+  wordBoxWrong: {
+    backgroundColor: '#ffe0e0',
+    borderColor: colors.retroCoral,
+  },
+  wordBoxPartial: {
+    backgroundColor: '#e0f7fa',
+    borderColor: colors.retroCyan,
+  },
+  wordBoxRevealed: {
+    backgroundColor: '#e8f5e9',
+    borderColor: colors.retroCyan,
+  },
+  hiddenAsterisks: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  wrongAsterisks: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.retroCoral,
+    letterSpacing: 1,
+  },
+  matchedChars: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.retroDark,
-    marginBottom: 4,
+    color: colors.retroCyan,
   },
-  translationText: {
-    fontSize: 14,
+  remainingAsterisks: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textMuted,
+    letterSpacing: 1,
+  },
+  revealedWord: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.retroCyan,
+  },
+  punctuation: {
+    fontSize: 12,
     color: colors.retroDark,
-    fontStyle: 'italic',
+    marginLeft: 1,
   },
   inputContainer: {
     backgroundColor: colors.retroCream,
@@ -637,6 +878,12 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: colors.retroPurple,
+  },
+  controlBtnReplay: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.retroCoral,
   },
   controlBtnPlay: {
     width: 64,

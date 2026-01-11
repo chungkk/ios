@@ -26,7 +26,12 @@ export const saveProgress = async (progressData: SaveProgressRequest): Promise<S
       progress: {
         id: `temp-${Date.now()}`,
         userId: 'temp',
-        ...progressData,
+        lessonId: progressData.lessonId,
+        mode: progressData.mode,
+        completed: progressData.completed ?? false,
+        pointsEarned: progressData.pointsEarned ?? 0,
+        studyTime: progressData.studyTime ?? 0,
+        accuracy: progressData.accuracy,
         completedAt: new Date().toISOString(),
       },
       user: {

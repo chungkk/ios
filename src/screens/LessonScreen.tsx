@@ -2,11 +2,12 @@
 // Video player with synchronized transcript for shadowing practice
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useLessonData } from '../hooks/useLessonData';
+import { useStudyTimer } from '../hooks/useStudyTimer';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
 import { useVoiceRecording } from '../hooks/useVoiceRecording';
@@ -52,7 +53,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const { lesson, loading, error } = useLessonData(lessonId);
 
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
-  const [studyStartTime] = useState(Date.now());
   const [completedReported, setCompletedReported] = useState(false);
 
   // Settings state
@@ -71,6 +71,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     togglePlayPause,
     setIsPlayingFromYouTube,
   } = useVideoPlayer();
+
+  // Study timer
+  const { studyTime, formattedTime } = useStudyTimer({
+    isPlaying,
+    lessonId,
+    mode: 'shadowing',
+  });
 
   // Voice recording
   const { recordingState, startRecording, stopRecording, playRecording, clearRecording } = useVoiceRecording({
@@ -110,7 +117,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const handleLessonComplete = useCallback(async () => {
     if (completedReported) return;
 
-    const studyTime = Math.floor((Date.now() - studyStartTime) / 1000);
     const pointsEarned = 10;
 
     try {
@@ -125,17 +131,17 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       setCompletedReported(true);
       Alert.alert(
         'Lesson Complete!',
-        `You earned ${pointsEarned} points!\nTotal points: ${response.user.points}`,
+        `You earned ${pointsEarned} points!\nStudy Time: ${formattedTime}\nTotal points: ${response.user.points}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch {
       Alert.alert(
         'Lesson Complete!',
-        `You earned ${pointsEarned} points! (Saved offline)`,
+        `You earned ${pointsEarned} points! (Saved offline)\nStudy Time: ${formattedTime}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, studyStartTime, completedReported, navigation]);
+  }, [lessonId, studyTime, formattedTime, completedReported, navigation]);
 
   const handleStateChange = useCallback((state: string) => {
     const stateNum = parseInt(state, 10);
@@ -246,7 +252,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle} numberOfLines={1}>Shadowing</Text>
+        {/* Study Timer */}
+        <View style={styles.timerContainer}>
+          <Icon name="time-outline" size={14} color={colors.retroDark} />
+          <Text style={styles.timerText}>{formattedTime}</Text>
+        </View>
         
         <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettingsMenu(true)}>
           <Icon name="settings-outline" size={22} color={colors.retroDark} />
@@ -386,12 +396,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
-  headerTitle: {
-    fontSize: 16,
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroYellow,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 6,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  timerText: {
+    fontSize: 14,
     fontWeight: '800',
     color: colors.retroDark,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
+    letterSpacing: 1,
   },
   settingsButton: {
     width: 36,
