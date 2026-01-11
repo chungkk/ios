@@ -44,15 +44,13 @@ export const ModeSelectionPopup: React.FC<ModeSelectionPopupProps> = ({
   onClose,
   onSelectMode,
 }) => {
-  if (!lesson) return null;
-
   const modes = [
     {
       id: 'shadowing' as LessonMode,
       name: 'SHADOWING',
       icon: '🗣️',
       description: 'Listen and repeat along with the video',
-      studyTime: (lesson as any).shadowStudyTime || 0,
+      studyTime: (lesson as any)?.shadowStudyTime || 0,
       bgColor: '#e0f7fa',
       iconBg: colors.retroCyan,
     },
@@ -61,11 +59,13 @@ export const ModeSelectionPopup: React.FC<ModeSelectionPopupProps> = ({
       name: 'DICTATION',
       icon: '✍️',
       description: 'Write down what you hear',
-      studyTime: (lesson as any).dictationStudyTime || 0,
+      studyTime: (lesson as any)?.dictationStudyTime || 0,
       bgColor: '#fce4ec',
       iconBg: colors.retroCoral,
     },
   ];
+
+  if (!visible || !lesson) return null;
 
   return (
     <Modal
@@ -94,7 +94,7 @@ export const ModeSelectionPopup: React.FC<ModeSelectionPopupProps> = ({
           {/* Lesson info */}
           <View style={styles.lessonInfo}>
             <Text style={styles.lessonTitle} numberOfLines={2}>
-              {lesson.title}
+              {lesson?.title}
             </Text>
           </View>
 
