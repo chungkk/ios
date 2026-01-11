@@ -20,17 +20,7 @@ const LESSON_CACHE_TTL = 3600; // 1 hour in seconds
  */
 export const fetchLessons = async (filters: LessonFilters = {}): Promise<LessonsResponse> => {
   try {
-    // Build cache key
-    const cacheKey = `${STORAGE_KEYS.LESSONS_CACHE}${filters.difficulty || 'all'}_${filters.category || 'all'}`;
-    
-    // Check cache first
-    const cached = await getCache<LessonsResponse>(cacheKey);
-    if (cached) {
-      console.log('[LessonService] Returning cached lessons:', cacheKey);
-      return cached;
-    }
-
-    // Fetch from API
+    // Fetch from API (cache disabled for development)
     console.log('[LessonService] Fetching lessons from API:', filters);
     const response = await api.get<LessonsResponse>('/api/lessons', {
       params: {
@@ -41,9 +31,6 @@ export const fetchLessons = async (filters: LessonFilters = {}): Promise<Lessons
         activeOnly: filters.activeOnly !== false ? 'true' : 'false',
       },
     });
-
-    // Cache the result
-    await saveCache(cacheKey, response.data, LESSON_CACHE_TTL);
 
     return response.data;
   } catch (error) {
@@ -58,24 +45,13 @@ export const fetchLessons = async (filters: LessonFilters = {}): Promise<Lessons
  */
 export const fetchCategories = async (activeOnly: boolean = true): Promise<Category[]> => {
   try {
-    // Check cache first
-    const cacheKey = STORAGE_KEYS.CATEGORIES_CACHE;
-    const cached = await getCache<CategoriesResponse>(cacheKey);
-    if (cached) {
-      console.log('[LessonService] Returning cached categories');
-      return cached.categories;
-    }
-
-    // Fetch from API
+    // Fetch from API (cache disabled for development)
     console.log('[LessonService] Fetching categories from API');
     const response = await api.get<CategoriesResponse>('/api/article-categories', {
       params: {
         activeOnly: activeOnly ? 'true' : 'false',
       },
     });
-
-    // Cache for 24 hours
-    await saveCache(cacheKey, response.data, 86400); // 24 hours
 
     return response.data.categories;
   } catch (error) {
@@ -90,15 +66,7 @@ export const fetchCategories = async (activeOnly: boolean = true): Promise<Categ
  */
 export const fetchLessonById = async (lessonId: string): Promise<Lesson> => {
   try {
-    // Check cache first
-    const cacheKey = `lesson_${lessonId}`;
-    const cached = await getCache<Lesson>(cacheKey);
-    if (cached) {
-      console.log('[LessonService] Returning cached lesson:', lessonId);
-      return cached;
-    }
-
-    // Fetch lesson metadata from API
+    // Fetch lesson metadata from API (cache disabled for development)
     console.log('[LessonService] Fetching lesson from API:', lessonId);
     const response = await api.get<any>(`/api/lessons/${lessonId}`);
     const lessonData = response.data;
@@ -138,9 +106,6 @@ export const fetchLessonById = async (lessonId: string): Promise<Lesson> => {
       console.warn('[LessonService] No transcript JSON path found for lesson:', lessonId);
       lessonData.transcript = [];
     }
-
-    // Cache the complete lesson with transcript for 1 hour
-    await saveCache(cacheKey, lessonData, LESSON_CACHE_TTL);
 
     return lessonData;
   } catch (error) {

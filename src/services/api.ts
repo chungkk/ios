@@ -3,7 +3,10 @@ import { getToken, saveToken, removeToken } from './storage.service';
 import { API_BASE_URL } from '@env';
 
 // Get API base URL from environment
-const BASE_URL = API_BASE_URL || 'http://localhost:3000';
+// Hardcode for now since @env might not load correctly
+const BASE_URL = 'http://192.168.2.212:3000';
+console.log('[API] ENV API_BASE_URL:', API_BASE_URL);
+console.log('[API] Using BASE_URL:', BASE_URL);
 
 // Create Axios instance
 const api: AxiosInstance = axios.create({
