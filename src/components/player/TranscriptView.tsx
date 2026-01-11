@@ -92,17 +92,18 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   );
 };
 
+// Neo-Retro Style
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0f1e', // Match dark theme
-    paddingTop: spacing.xs,
+    backgroundColor: '#fff',
+    paddingTop: 4,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0f1e',
+    backgroundColor: '#fff',
     padding: spacing.xl,
   },
   emptyText: {

@@ -1,7 +1,7 @@
 // Playback controls component - 5-button layout matching iOS design
 
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 
@@ -110,61 +110,84 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   );
 };
 
+// Neo-Retro Style
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-evenly',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    backgroundColor: '#0a0f1e',
-    borderTopWidth: 0,
+    paddingVertical: 12,
+    backgroundColor: colors.retroCream,
   },
   navButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
   },
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2d5cde', // Blue matching play buttons
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.retroCyan,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2d5cde',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 4,
   },
   micButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#c41e3a', // Dark red
+    backgroundColor: colors.retroCoral,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
   },
   micButtonRecording: {
-    backgroundColor: '#ff3333', // Bright red when recording
+    backgroundColor: '#ff4444',
   },
   micButtonProcessing: {
-    backgroundColor: '#666666', // Gray when processing
+    backgroundColor: '#999',
   },
   replayButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#4a9eff', // Blue for playback
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.retroPurple,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
   },
   replayButtonPlaying: {
-    backgroundColor: '#2d7acc', // Darker blue when playing
+    backgroundColor: '#7c3aed',
   },
 });
 

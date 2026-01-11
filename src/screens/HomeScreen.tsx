@@ -1,7 +1,7 @@
 // HomeScreen - Browse lessons by category with difficulty filter
-// Migrated from ppgeil/pages/index.js
+// Migrated from ppgeil/pages/index.js - uses optimized homepage-data API
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,47 +10,134 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  RefreshControl,
+  Image,
 } from 'react-native';
-import { useLessons } from '../hooks/useLessons';
-import { useCategories } from '../hooks/useCategories';
+import { useHomepageData } from '../hooks/useHomepageData';
+import { useAuth } from '../hooks/useAuth';
+import { lessonService } from '../services/lesson.service';
 import LessonCard from '../components/lesson/LessonCard';
 import DifficultyFilter from '../components/lesson/DifficultyFilter';
+import ModeSelectionPopup, { LessonMode } from '../components/lesson/ModeSelectionPopup';
 import { Loading, SkeletonCard } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
-import { textStyles } from '../styles/typography';
 import type { HomeStackScreenProps } from '../navigation/types';
+import type { Lesson } from '../types/lesson.types';
+import { BASE_URL } from '../services/api';
 
 type HomeScreenProps = HomeStackScreenProps<'HomeScreen'>;
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'experienced'>('beginner');
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [showModePopup, setShowModePopup] = useState(false);
   
-  const { categories, loading: categoriesLoading } = useCategories();
-  const { lessons, loading: lessonsLoading } = useLessons({ difficulty: difficultyFilter, limit: 6 });
+  // Get user data
+  const { user, userPoints } = useAuth();
+  
+  // Get streak value safely
+  const streakValue = typeof user?.streak === 'object' && user?.streak !== null
+    ? (user.streak as any).currentStreak || 0
+    : user?.streak || 0;
+  
+  // Use optimized single API call instead of separate calls
+  const { categories, categoriesWithLessons, loading, refetch } = useHomepageData(difficultyFilter, 6);
 
-  const handleLessonPress = (lessonId: string) => {
-    // Navigate to LessonScreen
-    navigation.navigate('Lesson', { lessonId });
-  };
+  const handleLessonPress = useCallback((lesson: Lesson) => {
+    // Increment view count (non-blocking)
+    lessonService.incrementViewCount(lesson.id).catch(() => {});
+    // Show mode selection popup
+    setSelectedLesson(lesson);
+    setShowModePopup(true);
+  }, []);
 
-  const handleViewAll = (categorySlug: string, _categoryName: string) => {
-    // Navigate to CategoryScreen
-    console.log('Navigate to category:', categorySlug);
-    // navigation.navigate('Category', { categorySlug, categoryName: _categoryName });
-  };
+  const handleModeSelect = useCallback((mode: LessonMode) => {
+    if (!selectedLesson) return;
+    
+    setShowModePopup(false);
+    setSelectedLesson(null);
+    
+    // Navigate based on mode
+    if (mode === 'dictation') {
+      navigation.navigate('Dictation', { lessonId: selectedLesson.id });
+    } else {
+      navigation.navigate('Lesson', { lessonId: selectedLesson.id });
+    }
+  }, [selectedLesson, navigation]);
 
-  if (categoriesLoading) {
+  const handleClosePopup = useCallback(() => {
+    setShowModePopup(false);
+    setSelectedLesson(null);
+  }, []);
+
+  const handleViewAll = useCallback((categorySlug: string, categoryName: string) => {
+    navigation.navigate('Category', { categorySlug, categoryName });
+  }, [navigation]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  if (loading && !refreshing) {
     return <Loading />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
+      {/* Top Header Bar */}
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>Học tập</Text>
+      </View>
+
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.retroCyan}
+          />
+        }
+      >
+        {/* Welcome Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Learn German</Text>
-          <Text style={styles.subtitle}>Browse lessons by category</Text>
+          <View style={styles.welcomeRow}>
+            {/* Avatar */}
+            {user?.picture ? (
+              <Image 
+                source={{ uri: user.picture.startsWith('/') ? `${BASE_URL}${user.picture}` : user.picture }} 
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>
+                  {(user?.name || 'U').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            
+            {/* Welcome Text */}
+            <View style={styles.welcomeText}>
+              <Text style={styles.welcomeLabel}>Chào mừng trở lại</Text>
+              <Text style={styles.userName}>{user?.name || 'Học viên'}</Text>
+            </View>
+            
+            {/* Stats */}
+            <View style={styles.statsContainer}>
+              <View style={styles.statBadge}>
+                <Text style={styles.statIcon}>💎</Text>
+                <Text style={styles.statValue}>{userPoints || 0}</Text>
+              </View>
+              <View style={styles.statBadge}>
+                <Text style={styles.statIcon}>🔥</Text>
+                <Text style={styles.statValue}>{streakValue}</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Difficulty Filter */}
@@ -59,8 +146,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           onSelect={setDifficultyFilter}
         />
 
-        {/* Categories */}
-        {lessonsLoading ? (
+        {/* Categories with Lessons */}
+        {loading ? (
           <View style={styles.categorySection}>
             <FlatList
               horizontal
@@ -71,43 +158,41 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               contentContainerStyle={styles.horizontalList}
             />
           </View>
-        ) : lessons.length === 0 ? (
+        ) : categories.length === 0 ? (
           <EmptyState
             icon="book"
             title="No lessons found"
-            message={`Try changing the difficulty filter or check back later.`}
+            message="Try changing the difficulty filter or check back later."
             actionLabel="Reset Filter"
             onAction={() => setDifficultyFilter('all')}
           />
         ) : (
           categories.map((category) => {
-            // Filter lessons by category
-            const categoryLessons = lessons.filter(
-              (lesson) => lesson.category.slug === category.slug
-            );
-
-            if (categoryLessons.length === 0) return null;
+            const categoryData = categoriesWithLessons[category.slug];
+            if (!categoryData || categoryData.lessons.length === 0) return null;
 
             return (
               <View key={category.slug} style={styles.categorySection}>
                 <View style={styles.categoryHeader}>
                   <Text style={styles.categoryTitle}>
-                    {category.name} ({categoryLessons.length} lessons)
+                    {category.name} ({categoryData.totalCount} lessons)
                   </Text>
                   <TouchableOpacity
+                    style={styles.viewAllButton}
                     onPress={() => handleViewAll(category.slug, category.name)}
+                    activeOpacity={0.9}
                   >
-                    <Text style={styles.viewAllButton}>View all ›</Text>
+                    <Text style={styles.viewAllButtonText}>View all ›</Text>
                   </TouchableOpacity>
                 </View>
 
                 <FlatList
                   horizontal
-                  data={categoryLessons}
+                  data={categoryData.lessons}
                   renderItem={({ item }) => (
                     <LessonCard
                       lesson={item}
-                      onPress={() => handleLessonPress(item.id)}
+                      onPress={() => handleLessonPress(item)}
                     />
                   )}
                   keyExtractor={(item) => item.id}
@@ -119,53 +204,176 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           })
         )}
       </ScrollView>
+
+      {/* Mode Selection Popup */}
+      <ModeSelectionPopup
+        visible={showModePopup}
+        lesson={selectedLesson}
+        onClose={handleClosePopup}
+        onSelectMode={handleModeSelect}
+      />
     </SafeAreaView>
   );
 };
 
+// Neo-Retro Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bgPrimary,
   },
-  header: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
+  // Top Bar
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.bgPrimary,
   },
-  title: {
-    ...textStyles.h2,
+  topBarTitle: {
+    fontSize: 22,
+    fontWeight: '800',
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
   },
-  subtitle: {
-    ...textStyles.body,
-    color: colors.textMuted,
+  // Welcome Header
+  header: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
+  welcomeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroCream,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: colors.retroCyan,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.retroCyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  welcomeText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  welcomeLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroCream,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 6,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  statIcon: {
+    fontSize: 16,
+  },
+  statValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  // Neo-Retro Category Section - Compact
   categorySection: {
-    marginBottom: spacing.xl,
+    marginBottom: 16,
+    marginHorizontal: spacing.sm,
+    padding: 14,
+    backgroundColor: colors.retroCream,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    borderRadius: 16,
+    // Neo-retro offset shadow
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 4,
   },
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   categoryTitle: {
-    ...textStyles.h4,
-    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.retroPurple,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    flex: 1,
   },
   viewAllButton: {
-    ...textStyles.label,
-    color: colors.accentBlue,
-    fontWeight: '600',
+    backgroundColor: colors.retroPurple,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    // Small shadow
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  viewAllButtonText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   horizontalList: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
+    paddingHorizontal: 2,
   },
   skeletonCard: {
-    width: 280,
+    width: 180,
     marginRight: spacing.sm,
   },
 });

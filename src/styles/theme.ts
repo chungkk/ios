@@ -1,49 +1,69 @@
 // Theme constants - migrated from ppgeil/styles/globals.css
-// Modern Dark Theme - Discord/Tailwind Inspired
+// Neo-Retro Theme - 80s Inspired with Bold Colors
 
 export const colors = {
-  // Background colors
-  bgPrimary: '#0f172a',      // slate-900
-  bgSecondary: '#1e293b',    // slate-800
-  bgCard: '#1e293b',         // slate-800
-  bgHover: 'rgba(59, 130, 246, 0.1)', // blue hover
-  bgElevated: '#334155',     // slate-700
+  // Neo-Retro Background colors
+  bgPrimary: '#2d3436',      // Retro dark gray
+  bgSecondary: '#3d4448',    // Lighter gray
+  bgCard: '#ffffff',         // White cards (retro style)
+  bgHover: 'rgba(0, 206, 201, 0.2)', // Cyan hover
+  bgElevated: '#4a5156',     // Elevated surface
+  bgCream: '#FFF8E7',        // Retro cream (for cards)
 
-  // Text colors
-  textPrimary: '#f8fafc',    // slate-50
-  textSecondary: '#e2e8f0',  // slate-200
-  textMuted: '#94a3b8',      // slate-400
+  // Neo-Retro Text colors
+  textPrimary: '#2d3436',    // Dark text on light cards
+  textSecondary: '#636e72',  // Gray text
+  textMuted: '#b2bec3',      // Muted text
+  textLight: '#fef9e7',      // Light text for dark backgrounds
+  textOnDark: '#fef9e7',     // Text on dark backgrounds
 
-  // Accent colors
-  accentBlue: '#3b82f6',     // blue-500
-  accentCyan: '#06b6d4',     // cyan-500
-  accentPurple: '#3b82f6',   // blue-500 (aliased)
-  accentRed: '#ef4444',      // red-500
-  accentGreen: '#10b981',    // emerald-500
-  accentOrange: '#f59e0b',   // amber-500
-  accentYellow: '#eab308',   // yellow-500
+  // Neo-Retro Accent Colors (Bold & Vibrant)
+  accentBlue: '#74b9ff',     // Soft blue
+  accentCyan: '#00cec9',     // Teal/Cyan - Primary accent
+  accentPurple: '#a29bfe',   // Soft purple
+  accentRed: '#ff6b35',      // Retro coral/orange
+  accentGreen: '#00b894',    // Mint green
+  accentOrange: '#ff6b35',   // Coral orange
+  accentYellow: '#FFE66D',   // Retro yellow
+  accentPink: '#FF8ED4',     // Retro pink
+  accentCoral: '#FF6B6B',    // Coral red
 
-  // Border colors
-  borderColor: 'rgba(148, 163, 184, 0.2)', // slate-400 with opacity
-  borderLight: 'rgba(148, 163, 184, 0.1)',
+  // Neo-Retro specific colors
+  retroCoral: '#FF6B6B',
+  retroCyan: '#4ECDC4',
+  retroYellow: '#FFE66D',
+  retroPink: '#FF8ED4',
+  retroPurple: '#A855F7',
+  retroCream: '#FFF8E7',
+  retroDark: '#2D3436',
+  retroBorder: '#1a1a2e',
+  retroShadow: '#1a1a2e',
 
-  // Difficulty level colors
-  difficultyA1: '#10b981',   // emerald-500 (beginner)
-  difficultyA2: '#34d399',   // emerald-400
-  difficultyB1: '#f59e0b',   // amber-500 (intermediate)
-  difficultyB2: '#fb923c',   // orange-400
-  difficultyC1: '#f43f5e',   // rose-500 (advanced)
-  difficultyC2: '#ef4444',   // red-500
+  // Border colors (bold for retro look)
+  borderColor: '#1a1a2e',    // Dark border
+  borderLight: 'rgba(254, 249, 231, 0.2)',
+
+  // Difficulty level colors - Vibrant Neo-Retro
+  difficultyA1: '#4ECDC4',   // Cyan (beginner)
+  difficultyA2: '#7FDBDA',   // Light cyan
+  difficultyB1: '#FFE66D',   // Yellow (intermediate)
+  difficultyB2: '#FF6B6B',   // Coral
+  difficultyC1: '#FF8ED4',   // Pink (advanced)
+  difficultyC2: '#A855F7',   // Purple
 
   // Status colors
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  info: '#3b82f6',
+  success: '#00b894',        // Mint green
+  warning: '#FFE66D',        // Yellow
+  error: '#FF6B6B',          // Coral
+  info: '#74b9ff',           // Blue
 
   // Transparent overlays
   overlay: 'rgba(0, 0, 0, 0.5)',
   overlayLight: 'rgba(0, 0, 0, 0.3)',
+
+  // Gradient colors
+  gradientStart: '#00cec9',
+  gradientEnd: '#ff6b35',
 };
 
 export const spacing = {
@@ -56,48 +76,58 @@ export const spacing = {
 };
 
 export const borderRadius = {
-  small: 8,
-  medium: 12,
+  small: 4,        // Sharper edges for retro look
+  medium: 8,
   large: 16,
-  xl: 24,
-  round: 9999, // Fully rounded
+  xl: 20,
+  round: 30,       // Rounded buttons
+  full: 9999,      // Fully rounded
 };
 
+// Neo-Retro shadows - Bold offset shadows instead of blur
 export const shadows = {
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 3,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 5,
   },
   lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 6,
   },
   xl: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.35,
-    shadowRadius: 25,
-    elevation: 12,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 0,
+    elevation: 8,
   },
   hover: {
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 0,
+    elevation: 8,
+  },
+  // Pressed/Active state - smaller shadow
+  pressed: {
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 2,
   },
 };
 

@@ -1,13 +1,13 @@
-// LessonCard component - migrated from ppgeil/components/LessonCard.js
-// Displays lesson card with thumbnail, metadata, difficulty badge
+// LessonCard component - Neo-Retro Design
+// Migrated from ppgeil/components/LessonCard.js with retro styling
 
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Lesson } from '../../types/lesson.types';
-import { colors, spacing, borderRadius, shadows } from '../../styles/theme';
-import { textStyles } from '../../styles/typography';
+import { colors, spacing } from '../../styles/theme';
 import { layout } from '../../constants/sizes';
 import { getThumbnailUrl, formatDuration, formatViewCount, getDifficultyLabel } from '../../utils/youtube';
+import { BASE_URL } from '../../services/api';
 import CategoryTag from './CategoryTag';
 
 interface LessonCardProps {
@@ -16,12 +16,32 @@ interface LessonCardProps {
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
-  const thumbnail = lesson.thumbnail || getThumbnailUrl(lesson.youtubeUrl) || '';
+  // Get thumbnail URL - handle local paths from API
+  const getThumbnail = (): string => {
+    // If lesson has local thumbnail path (e.g., /thumbnails/xxx.jpg)
+    if (lesson.thumbnail) {
+      if (lesson.thumbnail.startsWith('/')) {
+        // Local path - prepend API base URL
+        return `${BASE_URL}${lesson.thumbnail}`;
+      }
+      // Already full URL
+      return lesson.thumbnail;
+    }
+    // Fallback to YouTube thumbnail
+    return getThumbnailUrl(lesson.youtubeUrl) || '';
+  };
+  
+  const thumbnail = getThumbnail();
   const difficultyLabel = getDifficultyLabel(lesson.level);
   const difficultyColor = getDifficultyColor(lesson.level);
+  const needsWhiteText = ['b2', 'c2'].includes(lesson.level?.toLowerCase() || '');
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={onPress} 
+      activeOpacity={0.9}
+    >
       {/* Thumbnail */}
       <View style={styles.thumbnailContainer}>
         <Image
@@ -32,7 +52,9 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
         
         {/* Difficulty badge - top right */}
         <View style={[styles.difficultyBadge, { backgroundColor: difficultyColor }]}>
-          <Text style={styles.difficultyText}>{difficultyLabel}</Text>
+          <Text style={[styles.difficultyText, needsWhiteText && styles.whiteText]}>
+            {difficultyLabel}
+          </Text>
         </View>
 
         {/* Duration - bottom right */}
@@ -61,29 +83,39 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
 
 const getDifficultyColor = (level: string): string => {
   const levelMap: Record<string, string> = {
-    a1: colors.difficultyA1,
-    a2: colors.difficultyA2,
-    b1: colors.difficultyB1,
-    b2: colors.difficultyB2,
-    c1: colors.difficultyC1,
-    c2: colors.difficultyC2,
+    a1: colors.retroCyan,
+    a2: '#7FDBDA',
+    b1: colors.retroYellow,
+    b2: colors.retroCoral,
+    c1: colors.retroPink,
+    c2: colors.retroPurple,
   };
-  return levelMap[level.toLowerCase()] || colors.difficultyA1;
+  return levelMap[level.toLowerCase()] || colors.retroCyan;
 };
 
+// Compact Neo-Retro styles
 const styles = StyleSheet.create({
   card: {
     width: layout.lessonCardWidth,
-    backgroundColor: colors.bgCard,
-    borderRadius: borderRadius.medium,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     overflow: 'hidden',
-    marginRight: spacing.md,
-    ...shadows.sm,
+    marginRight: spacing.sm,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    // Neo-retro offset shadow - smaller
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 3,
   },
   thumbnailContainer: {
     height: layout.lessonCardImageHeight,
     position: 'relative',
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.bgCream,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.retroBorder,
   },
   thumbnail: {
     width: '100%',
@@ -91,51 +123,58 @@ const styles = StyleSheet.create({
   },
   difficultyBadge: {
     position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    top: 6,
+    right: 6,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: borderRadius.small,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
   },
   difficultyText: {
-    color: colors.textPrimary,
+    color: colors.retroDark,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
+  },
+  whiteText: {
+    color: '#ffffff',
   },
   duration: {
     position: 'absolute',
-    bottom: spacing.xs,
-    right: spacing.xs,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    bottom: 6,
+    right: 6,
+    backgroundColor: colors.retroDark,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
   },
   durationText: {
-    color: colors.textPrimary,
+    color: '#ffffff',
     fontSize: 10,
     fontWeight: '600',
   },
   content: {
-    padding: spacing.sm,
+    padding: 10,
+    backgroundColor: '#ffffff',
   },
   title: {
-    ...textStyles.body,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    lineHeight: 18,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.retroDark,
+    marginBottom: 6,
+    lineHeight: 15,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.xs,
   },
   viewCount: {
-    fontSize: 11,
-    color: colors.textMuted,
+    fontSize: 10,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
 });

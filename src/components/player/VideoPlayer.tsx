@@ -5,15 +5,14 @@ import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'rea
 import { View, StyleSheet } from 'react-native';
 import { YoutubeView, useYouTubePlayer, useYouTubeEvent, PlayerState } from 'react-native-youtube-bridge';
 import type { PlaybackSpeed } from '../../hooks/useVideoPlayer';
-import { colors } from '../../styles/theme';
 
 interface VideoPlayerProps {
   videoId: string;
   isPlaying: boolean;
   playbackSpeed: PlaybackSpeed;
-  onReady: () => void;
-  onStateChange: (state: string) => void;
-  onError: (error: string) => void;
+  onReady?: () => void;
+  onStateChange?: (state: string) => void;
+  onError?: (error: string) => void;
 }
 
 export interface VideoPlayerRef {
@@ -40,17 +39,17 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     // Listen to player ready event
     useYouTubeEvent(player, 'ready', () => {
       setPlayerReady(true);
-      onReady();
+      onReady?.();
     });
 
     // Listen to state change events
     useYouTubeEvent(player, 'stateChange', (state: PlayerState) => {
-      onStateChange(state.toString());
+      onStateChange?.(state.toString());
     });
 
     // Listen to error events
     useYouTubeEvent(player, 'error', (error) => {
-      onError(error.message);
+      onError?.(error.message);
     });
 
     // Control playback when isPlaying changes

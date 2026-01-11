@@ -78,6 +78,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
   // Ensure user name and email are strings
   const userName = String(user.name || 'User');
   const userEmail = String(user.email || 'No email');
+  
+  // Handle streak - could be number or object with currentStreak
+  const streakValue = typeof user.streak === 'object' && user.streak !== null
+    ? (user.streak as any).currentStreak || 0
+    : user.streak || 0;
+  
+  // Handle answerStreak - could be number or object with current
+  const answerStreakValue = typeof user.answerStreak === 'object' && user.answerStreak !== null
+    ? (user.answerStreak as any).current || 0
+    : user.answerStreak || 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,12 +111,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user.streak || 0}</Text>
+            <Text style={styles.statValue}>{streakValue}</Text>
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user.answerStreak || 0}</Text>
+            <Text style={styles.statValue}>{answerStreakValue}</Text>
             <Text style={styles.statLabel}>Answer Streak</Text>
           </View>
         </View>

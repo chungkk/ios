@@ -1,5 +1,5 @@
-// LessonScreen - Video player with synchronized transcript
-// Migrated from ppgeil/pages/[lessonId].js and ppgeil/pages/dictation/[lessonId].js
+// LessonScreen - Shadowing Mode with Neo-Retro Design
+// Video player with synchronized transcript for shadowing practice
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { View, StyleSheet, SafeAreaView, Alert, Text, TouchableOpacity } from 'react-native';
@@ -17,7 +17,7 @@ import SettingsMenu from '../components/lesson/SettingsMenu';
 import SpeedSelector from '../components/lesson/SpeedSelector';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
-import { colors, spacing, borderRadius } from '../styles/theme';
+import { colors, spacing } from '../styles/theme';
 import type { HomeStackScreenProps } from '../navigation/types';
 
 type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
@@ -25,26 +25,16 @@ type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
 
-  // Hide navigation header and bottom tabs for full-screen experience
+  // Hide navigation header and bottom tabs
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-
-    // Hide bottom tab bar
+    navigation.setOptions({ headerShown: false });
     const parent = navigation.getParent();
     if (parent) {
-      parent.setOptions({
-        tabBarStyle: { display: 'none' },
-      });
+      parent.setOptions({ tabBarStyle: { display: 'none' } });
     }
-
-    // Restore bottom tab bar when leaving screen
     return () => {
       if (parent) {
-        parent.setOptions({
-          tabBarStyle: undefined,
-        });
+        parent.setOptions({ tabBarStyle: undefined });
       }
     };
   }, [navigation]);
@@ -55,7 +45,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [studyStartTime] = useState(Date.now());
   const [completedReported, setCompletedReported] = useState(false);
 
-  // Settings menu state
+  // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showSpeedSelector, setShowSpeedSelector] = useState(false);
   const [autoStop, setAutoStop] = useState(false);
@@ -74,15 +64,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Voice recording
   const { recordingState, startRecording, stopRecording, playRecording, clearRecording } = useVoiceRecording({
-    onRecordingComplete: () => {
-      // Recording complete
-    },
-    onError: (err) => {
-      Alert.alert('Recording Error', err);
-    },
+    onRecordingComplete: () => {},
+    onError: (err) => Alert.alert('Recording Error', err),
   });
 
-  // Transcript sync with 200ms polling
+  // Transcript sync
   const { activeSentenceIndex } = useTranscriptSync({
     transcript: lesson?.transcript || [],
     isPlaying,
@@ -101,10 +87,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (recordingState.recordedUri) {
       clearRecording();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSentenceIndex]);
 
   const handleReady = useCallback(async () => {
-    // Get duration
     if (videoPlayerRef.current) {
       const dur = await videoPlayerRef.current.getDuration();
       setDuration(dur);
@@ -112,12 +98,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [setDuration]);
 
   const handleLessonComplete = useCallback(async () => {
-    if (completedReported) {
-      return; // Already reported
-    }
+    if (completedReported) return;
 
-    const studyTime = Math.floor((Date.now() - studyStartTime) / 1000); // seconds
-    const pointsEarned = 10; // Base points for completing lesson
+    const studyTime = Math.floor((Date.now() - studyStartTime) / 1000);
+    const pointsEarned = 10;
 
     try {
       const response = await progressService.saveProgress({
@@ -129,32 +113,27 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       });
 
       setCompletedReported(true);
-
       Alert.alert(
         'Lesson Complete!',
         `You earned ${pointsEarned} points!\nTotal points: ${response.user.points}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch {
-      // Progress is queued for offline sync, show success anyway
       Alert.alert(
         'Lesson Complete!',
-        `You earned ${pointsEarned} points! (Progress saved offline)`,
+        `You earned ${pointsEarned} points! (Saved offline)`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
   }, [lessonId, studyStartTime, completedReported, navigation]);
 
   const handleStateChange = useCallback((state: string) => {
-    // react-native-youtube-bridge returns PlayerState enum as string
-    // PlayerState.PLAYING = 1, PAUSED = 2, ENDED = 0
     const stateNum = parseInt(state, 10);
-
-    if (stateNum === 1) { // PLAYING
+    if (stateNum === 1) {
       setIsPlayingFromYouTube(true);
-    } else if (stateNum === 2) { // PAUSED
+    } else if (stateNum === 2) {
       setIsPlayingFromYouTube(false);
-    } else if (stateNum === 0) { // ENDED
+    } else if (stateNum === 0) {
       setIsPlayingFromYouTube(false);
       handleLessonComplete();
     }
@@ -204,21 +183,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
 
     if (recordingState.isRecording) {
-      // Stop recording and process
       stopRecording(currentSentence.text);
     } else {
-      // Start recording
-      // ALWAYS pause video when starting recording, regardless of isPlaying state
-
-      // Force pause video directly via player ref
       if (videoPlayerRef.current) {
         videoPlayerRef.current.pause();
       }
-
-      // Update state to ensure UI reflects paused state
       setIsPlaying(false);
-
-      // Start recording after ensuring video is paused
       startRecording();
     }
   }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying]);
@@ -227,16 +197,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     setPlaybackSpeed(speed);
   }, [setPlaybackSpeed]);
 
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
 
   if (error || !lesson) {
     return (
       <EmptyState
         icon="close-circle"
         title="Lesson Not Found"
-        message="This lesson could not be loaded. It may have been removed or is temporarily unavailable."
+        message="This lesson could not be loaded."
         actionLabel="Go Back"
         onAction={() => navigation.goBack()}
       />
@@ -261,50 +229,48 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Bar with Back Button */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Icon name="chevron-back" size={24} color={colors.accentBlue} />
+      {/* Neo-Retro Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Icon name="chevron-back" size={22} color={colors.retroCyan} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         
-        <Text style={styles.lessonTitle} numberOfLines={1}>
-          {lesson?.title || 'Loading...'}
-        </Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>Shadowing</Text>
         
-        <View style={styles.headerRight} />
+        <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettingsMenu(true)}>
+          <Icon name="settings-outline" size={22} color={colors.retroDark} />
+        </TouchableOpacity>
       </View>
 
-      {/* Video Player - Larger size */}
-      <View style={styles.videoContainer}>
-        <VideoPlayer
-          ref={videoPlayerRef}
-          videoId={videoId}
-          isPlaying={isPlaying}
-          playbackSpeed={playbackSpeed}
-          onReady={handleReady}
-          onStateChange={handleStateChange}
-          onError={handleError}
-        />
+      {/* Video Section - Neo-Retro Card */}
+      <View style={styles.videoSection}>
+        <View style={styles.videoCard}>
+          <View style={styles.cardTopBar} />
+          <View style={styles.videoContainer}>
+            <VideoPlayer
+              ref={videoPlayerRef}
+              videoId={videoId}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              onReady={handleReady}
+              onStateChange={handleStateChange}
+              onError={handleError}
+            />
+          </View>
+        </View>
       </View>
 
       {/* Sentence Counter */}
       <View style={styles.sentenceCounter}>
-        <Text style={styles.counterText}>
+        <View style={styles.counterBox}>
           <Text style={styles.counterCurrent}>#{activeSentenceIndex + 1}</Text>
-          <Text style={styles.counterSeparator}> / </Text>
+          <Text style={styles.counterSeparator}>/</Text>
           <Text style={styles.counterTotal}>{transcript.length}</Text>
-        </Text>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => setShowSettingsMenu(true)}
-        >
-          <Icon name="settings-outline" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </View>
+        <View style={styles.speedBadge}>
+          <Text style={styles.speedText}>{playbackSpeed}x</Text>
+        </View>
       </View>
 
       {/* Settings Menu */}
@@ -330,30 +296,50 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         onSelectSpeed={handleSpeedSelect}
       />
 
-      {/* Transcript List */}
-      <View style={styles.transcriptContainer}>
-        <TranscriptView
-          transcript={transcript}
-          activeSentenceIndex={activeSentenceIndex}
-          onSentencePress={handleSentencePress}
-          showTranslation={showTranslation}
-          voiceRecordingResult={recordingState.comparisonResult}
-        />
+      {/* Transcript Section - Neo-Retro Card */}
+      <View style={styles.transcriptSection}>
+        <View style={styles.transcriptCard}>
+          <View style={styles.transcriptTopBar} />
+          <View style={styles.transcriptHeader}>
+            <Text style={styles.transcriptTitle}>📝 Transcript</Text>
+            <TouchableOpacity 
+              style={styles.translationToggle}
+              onPress={() => setShowTranslation(!showTranslation)}
+            >
+              <Icon 
+                name={showTranslation ? 'eye' : 'eye-off'} 
+                size={16} 
+                color={colors.retroDark} 
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.transcriptContent}>
+            <TranscriptView
+              transcript={transcript}
+              activeSentenceIndex={activeSentenceIndex}
+              onSentencePress={handleSentencePress}
+              showTranslation={showTranslation}
+              voiceRecordingResult={recordingState.comparisonResult}
+            />
+          </View>
+        </View>
       </View>
 
-      {/* Bottom Controls */}
-      <PlaybackControls
-        isPlaying={isPlaying}
-        onPlayPause={togglePlayPause}
-        onPrevious={handlePrevious}
-        onNext={handleNext}
-        onMicrophone={handleMicrophone}
-        isRecording={recordingState.isRecording}
-        isProcessing={recordingState.isProcessing}
-        hasRecording={!!recordingState.recordedUri}
-        isPlayingRecording={recordingState.isPlaying}
-        onPlayRecording={playRecording}
-      />
+      {/* Bottom Controls - Neo-Retro Style */}
+      <View style={styles.controlsWrapper}>
+        <PlaybackControls
+          isPlaying={isPlaying}
+          onPlayPause={togglePlayPause}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          onMicrophone={handleMicrophone}
+          isRecording={recordingState.isRecording}
+          isProcessing={recordingState.isProcessing}
+          hasRecording={!!recordingState.recordedUri}
+          isPlayingRecording={recordingState.isPlaying}
+          onPlayRecording={playRecording}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -361,83 +347,175 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0f1e', // Darker background
+    backgroundColor: colors.bgPrimary,
   },
-  headerBar: {
+  // Neo-Retro Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    backgroundColor: colors.retroCream,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.retroBorder,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+  },
+  backText: {
+    fontSize: 15,
+    color: colors.retroCyan,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.retroDark,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  settingsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.retroCream,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Video Section
+  videoSection: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  videoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  cardTopBar: {
+    height: 4,
+    backgroundColor: colors.retroCyan,
+  },
+  videoContainer: {
+    height: 200,
+    backgroundColor: '#000',
+  },
+  // Sentence Counter
+  sentenceCounter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
-    height: 56,
   },
-  backButton: {
+  counterBox: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.accentBlue,
-    fontWeight: '600',
-  },
-  lessonTitle: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginHorizontal: spacing.md,
-  },
-  headerRight: {
-    width: 60, // Balance the back button width
-  },
-  videoContainer: {
-    height: 240, // Slightly reduced to fit header
-    backgroundColor: '#000',
-  },
-  sentenceCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: '#0a0f1e',
-  },
-  counterText: {
-    fontSize: 20,
-    fontWeight: '600',
+    alignItems: 'baseline',
+    backgroundColor: colors.retroCream,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
   },
   counterCurrent: {
-    color: colors.accentBlue,
-    fontSize: 24,
-    fontWeight: '700',
+    color: colors.retroPurple,
+    fontSize: 22,
+    fontWeight: '800',
   },
   counterSeparator: {
     color: colors.textMuted,
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: '600',
+    marginHorizontal: 4,
   },
   counterTotal: {
     color: colors.textMuted,
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: '600',
   },
-  settingsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  speedBadge: {
+    backgroundColor: colors.retroYellow,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+  },
+  speedText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  // Transcript Section
+  transcriptSection: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  transcriptCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  transcriptTopBar: {
+    height: 4,
+    backgroundColor: colors.retroCoral,
+  },
+  transcriptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 107, 129, 0.08)',
+    borderBottomWidth: 2,
+    borderBottomColor: colors.retroBorder,
+  },
+  transcriptTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  translationToggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.retroCream,
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  transcriptContainer: {
+  transcriptContent: {
     flex: 1,
-    backgroundColor: '#0a0f1e',
+  },
+  // Controls Wrapper
+  controlsWrapper: {
+    backgroundColor: colors.retroCream,
+    borderTopWidth: 2,
+    borderTopColor: colors.retroBorder,
+    paddingBottom: 8,
   },
 });
 

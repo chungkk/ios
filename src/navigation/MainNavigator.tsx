@@ -7,11 +7,10 @@ import { colors } from '../styles/theme';
 import HomeScreen from '../screens/HomeScreen';
 import CategoryScreen from '../screens/CategoryScreen';
 import LessonScreen from '../screens/LessonScreen';
+import DictationScreen from '../screens/DictationScreen';
 import DailyPhraseScreen from '../screens/DailyPhraseScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-
-// Placeholder screens - will be implemented in later phases
-const SettingsScreen = () => null;
+import VocabularyScreen from '../screens/VocabularyScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 // Tab Bar Icons
 const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => (
@@ -32,6 +31,7 @@ const HomeStackNavigator = () => {
       <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
       <HomeStack.Screen name="Category" component={CategoryScreen} />
       <HomeStack.Screen name="Lesson" component={LessonScreen} />
+      <HomeStack.Screen name="Dictation" component={DictationScreen} />
     </HomeStack.Navigator>
   );
 };
@@ -62,8 +62,16 @@ export const MainNavigator = () => {
         name="Home"
         component={HomeStackNavigator}
         options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon iconName="home" focused={focused} />,
+          tabBarLabel: 'Học tập',
+          tabBarIcon: ({ focused }) => <TabIcon iconName="book" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Vocabulary"
+        component={VocabularyScreen}
+        options={{
+          tabBarLabel: 'Vocabulary',
+          tabBarIcon: ({ focused }) => <TabIcon iconName="book" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -72,14 +80,6 @@ export const MainNavigator = () => {
         options={{
           tabBarLabel: 'Phrase',
           tabBarIcon: ({ focused }) => <TabIcon iconName="chatbubble-ellipses" focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon iconName="person" focused={focused} />,
         }}
       />
       <Tab.Screen

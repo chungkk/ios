@@ -1,0 +1,63 @@
+// Custom hook for fetching homepage data - optimized single API call
+// Replaces separate useLessons + useCategories for homepage
+
+import { useState, useEffect, useCallback } from 'react';
+import { homepageService, CategoryWithLessons } from '../services/homepage.service';
+import type { Category } from '../types/lesson.types';
+
+type DifficultyFilter = 'all' | 'beginner' | 'experienced';
+
+interface UseHomepageDataResult {
+  categories: Category[];
+  categoriesWithLessons: Record<string, CategoryWithLessons>;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+}
+
+export const useHomepageData = (
+  difficultyFilter: DifficultyFilter = 'all',
+  lessonsPerCategory: number = 6
+): UseHomepageDataResult => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesWithLessons, setCategoriesWithLessons] = useState<Record<string, CategoryWithLessons>>({});
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await homepageService.fetchHomepageData(difficultyFilter, lessonsPerCategory);
+      
+      setCategories(data.categories || []);
+      setCategoriesWithLessons(data.categoriesWithLessons || {});
+    } catch (err) {
+      console.error('[useHomepageData] Error:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch homepage data'));
+      setCategories([]);
+      setCategoriesWithLessons({});
+    } finally {
+      setLoading(false);
+    }
+  }, [difficultyFilter, lessonsPerCategory]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const refetch = useCallback(async () => {
+    await fetchData();
+  }, [fetchData]);
+
+  return {
+    categories,
+    categoriesWithLessons,
+    loading,
+    error,
+    refetch,
+  };
+};
+
+export default useHomepageData;

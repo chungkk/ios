@@ -20,8 +20,8 @@ export type AuthStackParamList = {
 // Main Tab Navigator (Bottom Tabs)
 export type MainTabParamList = {
   Home: undefined;
+  Vocabulary: undefined;
   DailyPhrase: undefined;
-  Profile: undefined;
   Settings: undefined;
 };
 

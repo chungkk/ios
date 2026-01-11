@@ -56,10 +56,10 @@ export const layout = {
   thumbnailLarge: 150,
   thumbnailXLarge: 200,
 
-  // Lesson card dimensions
-  lessonCardWidth: SCREEN_WIDTH * 0.65, // 65% of screen width for horizontal scroll - more compact
-  lessonCardHeight: 180,
-  lessonCardImageHeight: 100,
+  // Lesson card dimensions - Neo-Retro compact style
+  lessonCardWidth: SCREEN_WIDTH * 0.48, // ~48% of screen width for compact cards
+  lessonCardHeight: 160,
+  lessonCardImageHeight: 85,
 };
 
 // Spacing scale (matches theme.ts)

@@ -4,8 +4,7 @@ import React from 'react';
 import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import type { Sentence } from '../../types/lesson.types';
-import { colors, spacing, borderRadius } from '../../styles/theme';
-import { textStyles } from '../../styles/typography';
+import { colors } from '../../styles/theme';
 
 interface SentenceItemProps {
   sentence: Sentence;
@@ -106,42 +105,43 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
   );
 };
 
+// Neo-Retro Style
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
+    padding: 12,
     marginVertical: 4,
-    marginHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#1a1e2e', // Dark card background (--bg-primary)
-    borderWidth: 1,
-    borderColor: 'transparent',
-    opacity: 0.7,
+    marginHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: colors.retroCream,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    opacity: 0.85,
   },
   containerActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.06)', // Subtle blue tint
+    backgroundColor: '#fff',
     opacity: 1,
-    borderWidth: 1,
-    borderColor: '#3b82f6', // Blue border
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 2,
+    borderColor: colors.retroCyan,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 0,
+    elevation: 4,
   },
   playIconContainer: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)', // Blue tint
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 188, 212, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     marginTop: 2,
   },
   playIconContainerActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)', // Brighter blue when active
+    backgroundColor: colors.retroCyan,
   },
   playIcon: {
     marginLeft: 2,
@@ -152,28 +152,28 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.7)', // Muted white for inactive
-    lineHeight: 26,
+    color: colors.retroDark,
+    lineHeight: 24,
     fontWeight: '500',
-    letterSpacing: 0.01,
+    opacity: 0.8,
   },
   textActive: {
     fontSize: 15,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.95)', // Bright white for active
+    color: colors.retroDark,
+    opacity: 1,
   },
   translation: {
     fontSize: 13,
-    color: 'rgba(148, 163, 184, 0.7)', // Muted for inactive
-    marginTop: 8,
+    color: colors.textSecondary,
+    marginTop: 6,
     fontStyle: 'italic',
-    lineHeight: 22,
-    letterSpacing: 0,
+    lineHeight: 20,
   },
   translationActive: {
     fontSize: 13,
-    color: 'rgba(148, 163, 184, 0.95)', // Slightly brighter for active
-    fontWeight: '400',
+    color: colors.retroPurple,
+    fontWeight: '500',
   },
   badge: {
     flexDirection: 'row',
@@ -181,20 +181,22 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     marginTop: 8,
     gap: 4,
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
   },
   badgeCorrect: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)', // Green background
+    backgroundColor: '#d4edda',
   },
   badgeIncorrect: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)', // Red background
+    backgroundColor: '#f8d7da',
   },
   badgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.retroDark,
   },
 });
 
