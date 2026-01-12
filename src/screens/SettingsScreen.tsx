@@ -25,8 +25,9 @@ import { colors, spacing } from '../styles/theme';
 import { BASE_URL } from '../services/api';
 
 const LANGUAGES = [
-  { value: 'vi', label: 'Vietnamese' },
+  { value: 'de', label: 'Deutsch' },
   { value: 'en', label: 'English' },
+  { value: 'vi', label: 'Tiếng Việt' },
 ];
 
 const LEVELS = [
@@ -42,7 +43,7 @@ const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
-  const { settings, toggleHaptic } = useSettings();
+  const { settings, toggleHaptic, setNativeLanguage } = useSettings();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const handleLogin = () => {
@@ -158,15 +159,17 @@ const SettingsScreen: React.FC = () => {
           text: lang.label,
           onPress: async () => {
             try {
-              if (updateUser) {
-                const result = await updateUser({ nativeLanguage: lang.value });
-                if (result.success) {
-                  // Message will be in new language since we changed it
-                  setTimeout(() => {
-                    Alert.alert(t('common.success'), t('settings.languageChanged'));
-                  }, 100);
-                }
+              // Save to local settings (works without login)
+              await setNativeLanguage(lang.value);
+              
+              // Also update on server if logged in
+              if (user && updateUser) {
+                await updateUser({ nativeLanguage: lang.value });
               }
+              
+              setTimeout(() => {
+                Alert.alert(t('common.success'), t('settings.languageChanged'));
+              }, 100);
             } catch {
               Alert.alert(t('common.error'), t('settings.updateFailed'));
             }
@@ -175,7 +178,7 @@ const SettingsScreen: React.FC = () => {
         { text: t('common.cancel'), style: 'cancel' },
       ]
     );
-  }, [updateUser, t]);
+  }, [user, updateUser, setNativeLanguage, t]);
 
   // Handle learning level change
   const handleChangeLevel = useCallback(() => {
@@ -242,7 +245,7 @@ const SettingsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>⚙️ Settings</Text>
+          <Text style={styles.headerTitle}>⚙️ {t('settings.title')}</Text>
         </View>
 
         {/* Profile Card */}
@@ -278,12 +281,12 @@ const SettingsScreen: React.FC = () => {
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{userPoints || 0}</Text>
-                  <Text style={styles.statLabel}>Points</Text>
+                  <Text style={styles.statLabel}>{t('profile.points')}</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{streakValue}</Text>
-                  <Text style={styles.statLabel}>Streak</Text>
+                  <Text style={styles.statLabel}>{t('profile.dayStreak')}</Text>
                 </View>
               </View>
             </View>
@@ -304,16 +307,16 @@ const SettingsScreen: React.FC = () => {
 
         {/* Settings Options */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
           
           <TouchableOpacity style={styles.settingItem} onPress={handleChangeLanguage} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="language" size={22} color={colors.retroCyan} />
-              <Text style={styles.settingText}>Native Language</Text>
+              <Text style={styles.settingText}>{t('settings.nativeLanguage')}</Text>
             </View>
             <View style={styles.settingRight}>
               <Text style={styles.settingValue}>
-                {(user?.nativeLanguage || 'vi').toUpperCase()}
+                {(user?.nativeLanguage || settings.nativeLanguage || 'de').toUpperCase()}
               </Text>
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
@@ -322,7 +325,7 @@ const SettingsScreen: React.FC = () => {
           <TouchableOpacity style={styles.settingItem} onPress={handleNotifications} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="notifications" size={22} color={colors.retroYellow} />
-              <Text style={styles.settingText}>Notifications</Text>
+              <Text style={styles.settingText}>{t('settings.notifications')}</Text>
             </View>
             <View style={styles.settingRight}>
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
@@ -344,12 +347,12 @@ const SettingsScreen: React.FC = () => {
 
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>{t('settings.about')}</Text>
           
           <TouchableOpacity style={styles.settingItem} onPress={handleAbout} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="information-circle" size={22} color={colors.retroCoral} />
-              <Text style={styles.settingText}>About App</Text>
+              <Text style={styles.settingText}>{t('settings.aboutApp')}</Text>
             </View>
             <View style={styles.settingRight}>
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
@@ -359,7 +362,7 @@ const SettingsScreen: React.FC = () => {
           <TouchableOpacity style={styles.settingItem} onPress={handleRateApp} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="star" size={22} color={colors.retroYellow} />
-              <Text style={styles.settingText}>Rate App</Text>
+              <Text style={styles.settingText}>{t('settings.rateApp')}</Text>
             </View>
             <View style={styles.settingRight}>
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
@@ -371,7 +374,7 @@ const SettingsScreen: React.FC = () => {
         {user && (
           <View style={styles.logoutSection}>
             <Button
-              title="Logout"
+              title={t('settings.logout')}
               variant="outline"
               onPress={handleLogout}
             />
@@ -379,7 +382,7 @@ const SettingsScreen: React.FC = () => {
         )}
 
         {/* Version */}
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>{t('settings.version')} 1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

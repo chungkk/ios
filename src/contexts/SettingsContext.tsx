@@ -1,20 +1,24 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../utils/i18n';
 
 const SETTINGS_STORAGE_KEY = '@app_settings';
 
 interface AppSettings {
   hapticEnabled: boolean;
+  nativeLanguage: string;
 }
 
 interface SettingsContextType {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => Promise<void>;
   toggleHaptic: () => Promise<void>;
+  setNativeLanguage: (lang: string) => Promise<void>;
 }
 
 const defaultSettings: AppSettings = {
   hapticEnabled: true,
+  nativeLanguage: 'de',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -33,7 +37,12 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         const stored = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          setSettings({ ...defaultSettings, ...parsed });
+          const loadedSettings = { ...defaultSettings, ...parsed };
+          setSettings(loadedSettings);
+          // Sync i18n language with saved setting
+          if (loadedSettings.nativeLanguage) {
+            i18n.changeLanguage(loadedSettings.nativeLanguage);
+          }
         }
       } catch (error) {
         console.error('[SettingsContext] Failed to load settings:', error);
@@ -65,8 +74,17 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     await saveSettings(updated);
   }, [settings, saveSettings]);
 
+  // Set native language
+  const setNativeLanguage = useCallback(async (lang: string) => {
+    const updated = { ...settings, nativeLanguage: lang };
+    setSettings(updated);
+    await saveSettings(updated);
+    // Update i18n language
+    i18n.changeLanguage(lang);
+  }, [settings, saveSettings]);
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage }}>
       {children}
     </SettingsContext.Provider>
   );

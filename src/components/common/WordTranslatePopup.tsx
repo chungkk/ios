@@ -17,6 +17,7 @@ import Tts from 'react-native-tts';
 import { translateWord } from '../../services/translate.service';
 import { vocabularyService } from '../../services/vocabulary.service';
 import { useAuth } from '../../hooks/useAuth';
+import { useSettings } from '../../contexts/SettingsContext';
 import { colors, spacing, borderRadius } from '../../styles/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -39,11 +40,15 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
   onClose,
 }) => {
   const { user } = useAuth();
+  const { settings } = useSettings();
   const [translation, setTranslation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get target language from user or settings
+  const targetLang = user?.nativeLanguage || settings.nativeLanguage || 'de';
 
   // Fetch translation when word changes
   useEffect(() => {
@@ -56,7 +61,6 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       setIsSaved(false);
 
       try {
-        const targetLang = user?.nativeLanguage || 'vi';
         const result = await translateWord(word, context, '', targetLang);
         setTranslation(result);
       } catch (err) {
@@ -68,7 +72,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     };
 
     fetchTranslation();
-  }, [visible, word, context, user?.nativeLanguage]);
+  }, [visible, word, context, targetLang]);
 
   // Save word to vocabulary
   const handleSaveWord = useCallback(async () => {
