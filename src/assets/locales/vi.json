@@ -9,7 +9,9 @@
     "back": "Quay lại",
     "next": "Tiếp theo",
     "previous": "Trước",
-    "loading": "Đang tải..."
+    "loading": "Đang tải...",
+    "retry": "Thử lại",
+    "finish": "Hoàn thành"
   },
   "settings": {
     "title": "Cài đặt",
@@ -35,7 +37,16 @@
   "home": {
     "welcome": "Chào mừng trở lại",
     "learning": "Học tập",
-    "viewAll": "Xem tất cả"
+    "viewAll": "Xem tất cả",
+    "lessons": "bài",
+    "student": "Học viên",
+    "noLessons": "Không tìm thấy bài học",
+    "noLessonsMessage": "Thử đổi bộ lọc độ khó hoặc quay lại sau.",
+    "resetFilter": "Đặt lại bộ lọc"
+  },
+  "category": {
+    "noLessons": "Chưa có bài học",
+    "noLessonsMessage": "Danh mục {{categoryName}} chưa có bài học nào."
   },
   "lesson": {
     "transcript": "Phụ đề",
@@ -43,7 +54,16 @@
     "complete": "Hoàn thành bài học!",
     "earned": "Bạn đã nhận được",
     "points": "điểm",
-    "studyTime": "Thời gian học"
+    "studyTime": "Thời gian học",
+    "notFound": "Không tìm thấy bài học",
+    "notFoundMessage": "Không thể tải bài học này.",
+    "invalidVideo": "Video không hợp lệ",
+    "invalidVideoMessage": "URL video của bài học này không hợp lệ.",
+    "selectMode": "Chọn chế độ học",
+    "shadowing": "Shadowing",
+    "shadowingDesc": "Nghe và lặp lại theo",
+    "dictation": "Nghe chép",
+    "dictationDesc": "Nghe và viết lại"
   },
   "dictation": {
     "title": "Nghe chép",
@@ -56,7 +76,9 @@
     "accuracy": "Độ chính xác",
     "correctAnswer": "Đáp án đúng",
     "hint": "Gợi ý",
-    "freeHint": "miễn phí"
+    "freeHint": "miễn phí",
+    "complete": "Hoàn thành nghe chép! 🎉",
+    "pointsEarned": "Điểm nhận được"
   },
   "vocabulary": {
     "title": "Từ vựng của tôi",
@@ -64,12 +86,51 @@
     "noWords": "Chưa có từ nào",
     "noWordsMessage": "Nhấn vào từ trong khi học để lưu vào danh sách từ vựng.",
     "deleteConfirm": "Xóa từ này?",
-    "deleteMessage": "Bạn có chắc muốn xóa từ này?"
+    "deleteMessage": "Bạn có chắc muốn xóa từ này?",
+    "deleteFailed": "Không thể xóa từ"
+  },
+  "profile": {
+    "title": "Hồ sơ",
+    "points": "Điểm",
+    "dayStreak": "Chuỗi ngày",
+    "answerStreak": "Chuỗi đúng",
+    "accountInfo": "Thông tin tài khoản",
+    "difficultyPreference": "Độ khó ưa thích",
+    "accountType": "Loại tài khoản",
+    "memberSince": "Thành viên từ",
+    "editProfile": "Sửa hồ sơ",
+    "loginRequired": "Vui lòng đăng nhập để xem hồ sơ",
+    "login": "Đăng nhập",
+    "comingSoon": "Sắp ra mắt",
+    "editComingSoon": "Tính năng sửa hồ sơ sẽ sớm ra mắt!"
   },
   "translate": {
     "translating": "Đang dịch...",
     "saveWord": "Lưu từ vựng",
     "saved": "Đã lưu",
-    "context": "Ngữ cảnh"
+    "context": "Ngữ cảnh",
+    "cannotTranslate": "Không thể dịch từ này"
+  },
+  "phrase": {
+    "title": "Cụm từ hàng ngày",
+    "previousDay": "Ngày trước",
+    "nextDay": "Ngày sau",
+    "today": "Hôm nay",
+    "explanation": "Giải thích chi tiết",
+    "loading": "Đang tải giải thích...",
+    "noExplanation": "Chưa có giải thích.",
+    "generate": "Tạo giải thích"
+  },
+  "filter": {
+    "beginner": "Người mới",
+    "experienced": "Có kinh nghiệm",
+    "all": "Tất cả"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "vocabulary": "Từ vựng",
+    "phrase": "Cụm từ",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt"
   }
 }

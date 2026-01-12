@@ -1,8 +1,8 @@
 // LessonScreen - Shadowing Mode with Neo-Retro Design
 // Video player with synchronized transcript for shadowing practice
 
-import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform } from 'react-native';
+import React, { useRef, useState, useCallback, useLayoutEffect, useEffect } from 'react';
+import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -91,6 +91,32 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     onError: (err) => Alert.alert('Recording Error', err),
   });
 
+  // Haptic feedback functions
+  const vibrateSuccess = useCallback(() => {
+    // Single short vibration for success
+    Vibration.vibrate(50);
+  }, []);
+
+  const vibrateError = useCallback(() => {
+    // Double short vibration for error
+    Vibration.vibrate([0, 50, 50, 50]);
+  }, []);
+
+  const vibrateRecord = useCallback(() => {
+    // Light tap for recording start/stop
+    Vibration.vibrate(30);
+  }, []);
+
+  const vibrateComplete = useCallback(() => {
+    // Celebration pattern for completion
+    Vibration.vibrate([0, 100, 50, 100, 50, 100]);
+  }, []);
+
+  const vibrateSentenceChange = useCallback(() => {
+    // Very light tap for sentence navigation
+    Vibration.vibrate(20);
+  }, []);
+
   // Transcript sync
   const { activeSentenceIndex } = useTranscriptSync({
     transcript: lesson?.transcript || [],
@@ -124,6 +150,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (completedReported) return;
 
     const pointsEarned = 10;
+    
+    // Celebration vibration
+    vibrateComplete();
 
     try {
       const response = await progressService.saveProgress({
@@ -147,7 +176,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, studyTime, formattedTime, completedReported, navigation]);
+  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete]);
 
   const handleStateChange = useCallback((state: string) => {
     const stateNum = parseInt(state, 10);
@@ -178,31 +207,37 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (activeSentenceIndex > 0 && transcript.length > 0) {
       const prevSentence = transcript[activeSentenceIndex - 1];
       if (prevSentence && videoPlayerRef.current) {
+        vibrateSentenceChange();
         videoPlayerRef.current.seekTo(prevSentence.startTime);
         setIsPlaying(true);
       }
     }
-  }, [activeSentenceIndex, lesson, setIsPlaying]);
+  }, [activeSentenceIndex, lesson, setIsPlaying, vibrateSentenceChange]);
 
   const handleNext = useCallback(() => {
     const transcript = lesson?.transcript || [];
     if (activeSentenceIndex < transcript.length - 1) {
       const nextSentence = transcript[activeSentenceIndex + 1];
       if (nextSentence && videoPlayerRef.current) {
+        vibrateSentenceChange();
         videoPlayerRef.current.seekTo(nextSentence.startTime);
         setIsPlaying(true);
       }
     }
-  }, [activeSentenceIndex, lesson, setIsPlaying]);
+  }, [activeSentenceIndex, lesson, setIsPlaying, vibrateSentenceChange]);
 
   const handleMicrophone = useCallback(() => {
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[activeSentenceIndex];
 
     if (!currentSentence) {
+      vibrateError();
       Alert.alert('Error', 'No sentence selected');
       return;
     }
+
+    // Haptic feedback for recording toggle
+    vibrateRecord();
 
     if (recordingState.isRecording) {
       stopRecording(currentSentence.text);
@@ -213,7 +248,22 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       setIsPlaying(false);
       startRecording();
     }
-  }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying]);
+  }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying, vibrateRecord, vibrateError]);
+
+  // Haptic feedback when voice comparison result changes
+  useEffect(() => {
+    if (recordingState.comparisonResult) {
+      const similarity = recordingState.comparisonResult.overallSimilarity || 0;
+      if (similarity >= 80) {
+        vibrateSuccess();
+      } else if (similarity >= 50) {
+        // Medium vibration for partial match
+        Vibration.vibrate(40);
+      } else {
+        vibrateError();
+      }
+    }
+  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError]);
 
   const handleSpeedSelect = useCallback((speed: number) => {
     setPlaybackSpeed(speed);

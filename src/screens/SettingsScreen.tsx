@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
@@ -38,8 +39,13 @@ const LEVELS = [
 
 const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
   const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleLogin = () => {
+    navigation.navigate('Auth', { screen: 'Login' });
+  };
 
   // Upload avatar to server
   const uploadAvatar = useCallback(async (uri: string, type: string, fileName: string) => {
@@ -238,7 +244,7 @@ const SettingsScreen: React.FC = () => {
         </View>
 
         {/* Profile Card */}
-        {user && (
+        {user ? (
           <View style={styles.profileCard}>
             <View style={styles.cardTopBar} />
             <View style={styles.cardContent}>
@@ -280,6 +286,18 @@ const SettingsScreen: React.FC = () => {
               </View>
             </View>
           </View>
+        ) : (
+          <View style={styles.loginCard}>
+            <View style={styles.cardTopBar} />
+            <View style={styles.cardContent}>
+              <Icon name="person-circle-outline" size={60} color={colors.retroPurple} />
+              <Text style={styles.loginTitle}>{t('profile.loginRequired')}</Text>
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Icon name="log-in-outline" size={20} color="#fff" />
+                <Text style={styles.loginButtonText}>{t('profile.login')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
         {/* Settings Options */}
@@ -294,19 +312,6 @@ const SettingsScreen: React.FC = () => {
             <View style={styles.settingRight}>
               <Text style={styles.settingValue}>
                 {(user?.nativeLanguage || 'vi').toUpperCase()}
-              </Text>
-              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleChangeLevel} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <Icon name="school" size={22} color={colors.retroPurple} />
-              <Text style={styles.settingText}>Learning Level</Text>
-            </View>
-            <View style={styles.settingRight}>
-              <Text style={styles.settingValue}>
-                {user?.level || 'Beginner'}
               </Text>
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
@@ -375,11 +380,19 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
     backgroundColor: colors.retroCream,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.retroBorder,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 3,
   },
   headerTitle: {
     fontSize: 20,
@@ -398,6 +411,43 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 0,
     elevation: 3,
+  },
+  loginCard: {
+    margin: spacing.md,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  loginTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginTop: 12,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroPurple,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 8,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
   cardTopBar: {
     height: 4,

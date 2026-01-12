@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../hooks/useAuth';
 import Button from '../components/common/Button';
 import {Loading} from '../components/common/Loading';
@@ -18,6 +19,7 @@ import type {MainTabScreenProps} from '../navigation/types';
 type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
+  const {t} = useTranslation();
   const {user, loading, userPoints, logout, refreshUser} = useAuth();
 
   // Refresh user data on mount
@@ -27,19 +29,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('settings.logout'),
+      t('settings.logoutConfirm'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: t('settings.logout'),
           style: 'destructive',
           onPress: async () => {
             await logout();
-            // Navigation will be handled by RootNavigator
           },
         },
       ],
@@ -48,8 +49,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
   };
 
   const handleEditProfile = () => {
-    // TODO: Navigate to EditProfileScreen
-    Alert.alert('Coming Soon', 'Profile editing is coming soon!');
+    Alert.alert(t('profile.comingSoon'), t('profile.editComingSoon'));
   };
 
   if (loading) {
@@ -60,9 +60,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Please login to view your profile</Text>
+          <Text style={styles.emptyText}>{t('profile.loginRequired')}</Text>
           <Button
-            title="Login"
+            title={t('profile.login')}
             variant="primary"
             onPress={() => {
               // @ts-ignore - Navigation type issue
@@ -107,54 +107,54 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{userPoints || 0}</Text>
-            <Text style={styles.statLabel}>Points</Text>
+            <Text style={styles.statLabel}>{t('profile.points')}</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{streakValue}</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={styles.statLabel}>{t('profile.dayStreak')}</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{answerStreakValue}</Text>
-            <Text style={styles.statLabel}>Answer Streak</Text>
+            <Text style={styles.statLabel}>{t('profile.answerStreak')}</Text>
           </View>
         </View>
 
         {/* Profile Info */}
         <View style={styles.infoContainer}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
+          <Text style={styles.sectionTitle}>{t('profile.accountInfo')}</Text>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Native Language</Text>
+            <Text style={styles.infoLabel}>{t('settings.nativeLanguage')}</Text>
             <Text style={styles.infoValue}>
               {(user.nativeLanguage || 'N/A').toUpperCase()}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Learning Level</Text>
+            <Text style={styles.infoLabel}>{t('settings.learningLevel')}</Text>
             <Text style={styles.infoValue}>
               {user.level ? user.level.charAt(0).toUpperCase() + user.level.slice(1) : 'N/A'}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Difficulty Preference</Text>
+            <Text style={styles.infoLabel}>{t('profile.difficultyPreference')}</Text>
             <Text style={styles.infoValue}>
               {(user.preferredDifficultyLevel || 'N/A').toUpperCase()}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Account Type</Text>
+            <Text style={styles.infoLabel}>{t('profile.accountType')}</Text>
             <Text style={styles.infoValue}>
               {user.authProvider === 'email' ? 'Email/Password' : user.authProvider === 'google' ? 'Google' : 'N/A'}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Member Since</Text>
+            <Text style={styles.infoLabel}>{t('profile.memberSince')}</Text>
             <Text style={styles.infoValue}>
               {user.createdAt 
                 ? new Date(user.createdAt).toLocaleDateString('en-US', {
@@ -171,14 +171,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
           <Button
-            title="Edit Profile"
+            title={t('profile.editProfile')}
             variant="secondary"
             onPress={handleEditProfile}
             style={styles.actionButton}
           />
 
           <Button
-            title="Logout"
+            title={t('settings.logout')}
             variant="outline"
             onPress={handleLogout}
             style={styles.actionButton}

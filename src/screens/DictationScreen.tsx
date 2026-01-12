@@ -12,6 +12,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Vibration,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -63,6 +64,32 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     lessonId,
     mode: 'dictation',
   });
+
+  // Haptic feedback functions
+  const vibrateSuccess = () => {
+    // Single short vibration for success
+    Vibration.vibrate(50);
+  };
+
+  const vibrateError = () => {
+    // Double short vibration for error
+    Vibration.vibrate([0, 50, 50, 50]);
+  };
+
+  const vibrateHint = () => {
+    // Light tap for hint reveal
+    Vibration.vibrate(30);
+  };
+
+  const vibrateComplete = () => {
+    // Celebration pattern for completion
+    Vibration.vibrate([0, 100, 50, 100, 50, 100]);
+  };
+
+  const vibratePartial = () => {
+    // Medium vibration for partial match
+    Vibration.vibrate(40);
+  };
 
   // Hide navigation header and tab bar
   useLayoutEffect(() => {
@@ -132,7 +159,12 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     setShowResult(true);
 
     if (result.isPassed) {
+      vibrateSuccess();
       setCompletedSentences(prev => new Set([...prev, currentIndex]));
+    } else if (result.overallSimilarity >= 70) {
+      vibratePartial();
+    } else {
+      vibrateError();
     }
   }, [currentSentence, userInput, currentIndex]);
 
@@ -175,6 +207,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     const accuracy = Math.round(progress);
     const basePoints = Math.floor(completedSentences.size * 2);
     const finalPoints = Math.max(0, basePoints - pointsDeducted);
+
+    // Celebration vibration
+    vibrateComplete();
 
     try {
       await progressService.saveProgress({
@@ -348,6 +383,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                     if (!isFullyCorrect && !isRevealedByClick) {
                       const currentCount = revealCount[currentIndex] || 0;
                       const newCount = currentCount + 1;
+                      
+                      // Haptic feedback for hint
+                      vibrateHint();
                       
                       // Update reveal count for this sentence
                       setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));

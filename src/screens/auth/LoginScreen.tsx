@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
+  Vibration,
 } from 'react-native';
 import {useAuth} from '../../hooks/useAuth';
 import TextInput from '../../components/common/TextInput';
@@ -42,9 +43,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
     return !emailErr && !passwordErr;
   };
 
+  // Trigger error vibration
+  const triggerErrorVibration = () => {
+    // Short vibration pattern for error feedback
+    Vibration.vibrate([0, 50, 50, 50]);
+  };
+
   // Handle login submit
   const handleLogin = async () => {
     if (!validateForm()) {
+      triggerErrorVibration();
       return;
     }
 
@@ -57,10 +65,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
         console.log('[LoginScreen] Login successful');
         navigation.navigate('Main');
       } else {
+        triggerErrorVibration();
         Alert.alert('Login Failed', result.error || 'Invalid email or password');
       }
     } catch (error) {
       console.error('[LoginScreen] Login error:', error);
+      triggerErrorVibration();
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -78,10 +88,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
         console.log('[LoginScreen] Google Sign-In successful');
         navigation.navigate('Main');
       } else {
+        triggerErrorVibration();
         Alert.alert('Sign In Failed', result.error || 'Google Sign-In failed');
       }
     } catch (error) {
       console.error('[LoginScreen] Google Sign-In error:', error);
+      triggerErrorVibration();
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setGoogleLoading(false);

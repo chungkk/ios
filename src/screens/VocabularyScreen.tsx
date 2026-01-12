@@ -12,8 +12,10 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { vocabularyService, VocabularyItem } from '../services/vocabulary.service';
+import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
@@ -21,12 +23,20 @@ import { colors, spacing } from '../styles/theme';
 const ITEMS_PER_PAGE = 10;
 
 const VocabularyScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchVocabulary = useCallback(async () => {
+    // Don't fetch if user is not logged in
+    if (!user) {
+      setVocabulary([]);
+      setLoading(false);
+      return;
+    }
     try {
       const data = await vocabularyService.fetchVocabulary();
       setVocabulary(data);
@@ -35,7 +45,7 @@ const VocabularyScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchVocabulary();
@@ -62,25 +72,25 @@ const VocabularyScreen: React.FC = () => {
 
   const handleDelete = useCallback(async (id: string) => {
     Alert.alert(
-      'Delete Word',
-      'Are you sure you want to delete this word?',
+      t('vocabulary.deleteConfirm'),
+      t('vocabulary.deleteMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await vocabularyService.deleteVocabulary(id);
               setVocabulary(prev => prev.filter(item => item.id !== id));
             } catch {
-              Alert.alert('Error', 'Failed to delete word');
+              Alert.alert(t('common.error'), t('vocabulary.deleteFailed'));
             }
           },
         },
       ]
     );
-  }, []);
+  }, [t]);
 
   const renderItem = ({ item }: { item: VocabularyItem }) => (
     <View style={styles.wordCard}>
@@ -117,15 +127,15 @@ const VocabularyScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📚 My Vocabulary</Text>
-        <Text style={styles.wordCount}>{vocabulary.length} words</Text>
+        <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
+        <Text style={styles.wordCount}>{vocabulary.length} {t('vocabulary.words')}</Text>
       </View>
 
       {vocabulary.length === 0 ? (
         <EmptyState
           icon="book-outline"
-          title="No Words Yet"
-          message="Tap on words while studying to save them to your vocabulary list."
+          title={t('vocabulary.noWords')}
+          message={t('vocabulary.noWordsMessage')}
         />
       ) : (
         <>
@@ -211,11 +221,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
     backgroundColor: colors.retroCream,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.retroBorder,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 0,
+    elevation: 3,
   },
   headerTitle: {
     fontSize: 20,

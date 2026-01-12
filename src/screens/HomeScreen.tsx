@@ -13,6 +13,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useHomepageData } from '../hooks/useHomepageData';
 import { useAuth } from '../hooks/useAuth';
 import { lessonService } from '../services/lesson.service';
@@ -29,6 +30,7 @@ import { BASE_URL } from '../services/api';
 type HomeScreenProps = HomeStackScreenProps<'HomeScreen'>;
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'experienced'>('beginner');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -102,7 +104,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Top Header Bar */}
       <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>Học tập</Text>
+        <Text style={styles.topBarTitle}>{t('home.learning')}</Text>
       </View>
 
       <ScrollView 
@@ -134,8 +136,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             
             {/* Welcome Text */}
             <View style={styles.welcomeText}>
-              <Text style={styles.welcomeLabel}>Chào mừng trở lại</Text>
-              <Text style={styles.userName}>{user?.name || 'Học viên'}</Text>
+              <Text style={styles.welcomeLabel}>{t('home.welcome')}</Text>
+              <Text style={styles.userName}>{user?.name || t('home.student')}</Text>
             </View>
             
             {/* Stats */}
@@ -181,9 +183,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         ) : categories.length === 0 ? (
           <EmptyState
             icon="book"
-            title="No lessons found"
-            message="Try changing the difficulty filter or check back later."
-            actionLabel="Reset Filter"
+            title={t('home.noLessons')}
+            message={t('home.noLessonsMessage')}
+            actionLabel={t('home.resetFilter')}
             onAction={() => setDifficultyFilter('all')}
           />
         ) : (
@@ -195,14 +197,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <View key={category.slug} style={styles.categorySection}>
                 <View style={styles.categoryHeader}>
                   <Text style={styles.categoryTitle}>
-                    {category.name} ({categoryData.totalCount} lessons)
+                    {category.name} ({categoryData.totalCount} {t('home.lessons')})
                   </Text>
                   <TouchableOpacity
                     style={styles.viewAllButton}
                     onPress={() => handleViewAll(category.slug, category.name)}
                     activeOpacity={0.9}
                   >
-                    <Text style={styles.viewAllButtonText}>View all ›</Text>
+                    <Text style={styles.viewAllButtonText}>{t('home.viewAll')} ›</Text>
                   </TouchableOpacity>
                 </View>
 

@@ -79,6 +79,7 @@ export const MainNavigator = () => {
           tabBarIcon: ({ focused }) => <TabIcon iconName="book" focused={focused} />,
         }}
       />
+      {/* Temporarily hidden
       <Tab.Screen
         name="DailyPhrase"
         component={DailyPhraseScreen}
@@ -87,6 +88,7 @@ export const MainNavigator = () => {
           tabBarIcon: ({ focused }) => <TabIcon iconName="chatbubble-ellipses" focused={focused} />,
         }}
       />
+      */}
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}

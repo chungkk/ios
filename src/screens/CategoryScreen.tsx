@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useLessons } from '../hooks/useLessons';
 import { lessonService } from '../services/lesson.service';
@@ -25,6 +26,7 @@ import type { Lesson } from '../types/lesson.types';
 type CategoryScreenProps = HomeStackScreenProps<'Category'>;
 
 export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { categorySlug = '', categoryName = '' } = route.params || {};
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -79,13 +81,13 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Icon name="chevron-back" size={18} color="#fff" />
-          <Text style={styles.backText}>Back</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
         
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{categoryName}</Text>
           <View style={styles.countBadge}>
-            <Text style={styles.countText}>{lessons.length} bài</Text>
+            <Text style={styles.countText}>{lessons.length} {t('home.lessons')}</Text>
           </View>
         </View>
         
@@ -95,9 +97,9 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
       {lessons.length === 0 ? (
         <EmptyState
           icon="book"
-          title="Chưa có bài học"
-          message={`Danh mục ${categoryName} chưa có bài học nào.`}
-          actionLabel="Quay lại"
+          title={t('category.noLessons')}
+          message={t('category.noLessonsMessage', { categoryName })}
+          actionLabel={t('common.back')}
           onAction={handleBack}
         />
       ) : (

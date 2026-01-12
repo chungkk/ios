@@ -9,7 +9,9 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "retry": "Retry",
+    "finish": "Finish"
   },
   "settings": {
     "title": "Settings",
@@ -35,7 +37,16 @@
   "home": {
     "welcome": "Welcome back",
     "learning": "Learning",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "lessons": "lessons",
+    "student": "Student",
+    "noLessons": "No lessons found",
+    "noLessonsMessage": "Try changing the difficulty filter or check back later.",
+    "resetFilter": "Reset Filter"
+  },
+  "category": {
+    "noLessons": "No lessons yet",
+    "noLessonsMessage": "Category {{categoryName}} has no lessons yet."
   },
   "lesson": {
     "transcript": "Transcript",
@@ -43,7 +54,16 @@
     "complete": "Lesson Complete!",
     "earned": "You earned",
     "points": "points",
-    "studyTime": "Study Time"
+    "studyTime": "Study Time",
+    "notFound": "Lesson Not Found",
+    "notFoundMessage": "Could not load this lesson.",
+    "invalidVideo": "Invalid Video",
+    "invalidVideoMessage": "This lesson's video URL is invalid.",
+    "selectMode": "Select Learning Mode",
+    "shadowing": "Shadowing",
+    "shadowingDesc": "Listen and repeat",
+    "dictation": "Dictation",
+    "dictationDesc": "Listen and write"
   },
   "dictation": {
     "title": "Dictation",
@@ -56,7 +76,9 @@
     "accuracy": "Accuracy",
     "correctAnswer": "Correct answer",
     "hint": "Hint",
-    "freeHint": "free"
+    "freeHint": "free",
+    "complete": "Dictation Complete! 🎉",
+    "pointsEarned": "Points Earned"
   },
   "vocabulary": {
     "title": "My Vocabulary",
@@ -64,12 +86,51 @@
     "noWords": "No Words Yet",
     "noWordsMessage": "Tap on words while studying to save them to your vocabulary list.",
     "deleteConfirm": "Delete Word",
-    "deleteMessage": "Are you sure you want to delete this word?"
+    "deleteMessage": "Are you sure you want to delete this word?",
+    "deleteFailed": "Failed to delete word"
+  },
+  "profile": {
+    "title": "Profile",
+    "points": "Points",
+    "dayStreak": "Day Streak",
+    "answerStreak": "Answer Streak",
+    "accountInfo": "Account Information",
+    "difficultyPreference": "Difficulty Preference",
+    "accountType": "Account Type",
+    "memberSince": "Member Since",
+    "editProfile": "Edit Profile",
+    "loginRequired": "Please login to view your profile",
+    "login": "Login",
+    "comingSoon": "Coming Soon",
+    "editComingSoon": "Profile editing is coming soon!"
   },
   "translate": {
     "translating": "Translating...",
     "saveWord": "Save to vocabulary",
     "saved": "Saved",
-    "context": "Context"
+    "context": "Context",
+    "cannotTranslate": "Cannot translate this word"
+  },
+  "phrase": {
+    "title": "Daily German Phrase",
+    "previousDay": "Previous Day",
+    "nextDay": "Next Day",
+    "today": "Today",
+    "explanation": "Detailed Explanation",
+    "loading": "Loading explanation...",
+    "noExplanation": "No explanation available yet.",
+    "generate": "Generate Explanation"
+  },
+  "filter": {
+    "beginner": "Beginner",
+    "experienced": "Experienced",
+    "all": "All"
+  },
+  "nav": {
+    "home": "Home",
+    "vocabulary": "Vocabulary",
+    "phrase": "Phrase",
+    "profile": "Profile",
+    "settings": "Settings"
   }
 }
