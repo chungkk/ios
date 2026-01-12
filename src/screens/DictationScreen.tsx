@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -309,6 +310,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         {/* Centered content wrapper when keyboard hidden */}
         <View style={[styles.centerWrapper, isKeyboardVisible && styles.centerWrapperKeyboard]}>
           {/* Hint box - above input */}
@@ -498,6 +500,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             />
           </View>
         </View>
+        </TouchableWithoutFeedback>
 
         {/* Bottom Controls - Inside KeyboardAvoidingView to move with keyboard */}
         <View style={[
@@ -728,15 +731,15 @@ const styles = StyleSheet.create({
   },
   maskedSentenceBox: {
     backgroundColor: '#fff',
-    padding: 8,
-    borderRadius: 10,
+    padding: 14,
+    borderRadius: 12,
     marginBottom: spacing.sm,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
   maskedSentenceBoxAboveInput: {
     marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   maskedSentenceBoxKeyboard: {
     marginHorizontal: spacing.sm,
@@ -751,7 +754,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   maskedLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.textMuted,
   },
@@ -773,16 +776,16 @@ const styles = StyleSheet.create({
   maskedWordsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 6,
   },
   maskedWordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   wordBox: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
@@ -804,35 +807,35 @@ const styles = StyleSheet.create({
     borderColor: colors.retroCyan,
   },
   hiddenAsterisks: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.textMuted,
     letterSpacing: 1,
   },
   wrongAsterisks: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.retroCoral,
     letterSpacing: 1,
   },
   matchedChars: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.retroCyan,
   },
   remainingAsterisks: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.textMuted,
     letterSpacing: 1,
   },
   revealedWord: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.retroCyan,
   },
   punctuation: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.retroDark,
     marginLeft: 1,
   },
@@ -855,10 +858,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   textInput: {
-    padding: 16,
-    fontSize: 16,
+    padding: 18,
+    fontSize: 17,
     color: colors.retroDark,
-    minHeight: 100,
+    minHeight: 120,
     textAlignVertical: 'top',
   },
   textInputKeyboard: {
