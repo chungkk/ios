@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Tts from 'react-native-tts';
 import { translateWord } from '../../services/translate.service';
 import { vocabularyService } from '../../services/vocabulary.service';
 import { useAuth } from '../../hooks/useAuth';
@@ -90,6 +91,15 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     }
   }, [user, word, translation, context, lessonId, lessonTitle, isSaving]);
 
+  // Speak word using TTS
+  const handleSpeak = useCallback(() => {
+    const cleanW = word.replace(/[.,!?;:"""''„\-]/g, '').trim();
+    if (cleanW) {
+      Tts.setDefaultLanguage('en-US');
+      Tts.speak(cleanW);
+    }
+  }, [word]);
+
   // Clean word (remove punctuation for display)
   const cleanWord = word.replace(/[.,!?;:"""''„\-]/g, '').trim();
 
@@ -114,7 +124,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.wordText}>{cleanWord}</Text>
-              <TouchableOpacity style={styles.speakButton}>
+              <TouchableOpacity style={styles.speakButton} onPress={handleSpeak}>
                 <Icon name="volume-high" size={18} color={colors.retroCyan} />
               </TouchableOpacity>
             </View>

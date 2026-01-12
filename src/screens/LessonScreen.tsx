@@ -209,24 +209,22 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (activeSentenceIndex > 0 && transcript.length > 0) {
       const prevSentence = transcript[activeSentenceIndex - 1];
       if (prevSentence && videoPlayerRef.current) {
-        vibrateSentenceChange();
         videoPlayerRef.current.seekTo(prevSentence.startTime);
         setIsPlaying(true);
       }
     }
-  }, [activeSentenceIndex, lesson, setIsPlaying, vibrateSentenceChange]);
+  }, [activeSentenceIndex, lesson, setIsPlaying]);
 
   const handleNext = useCallback(() => {
     const transcript = lesson?.transcript || [];
     if (activeSentenceIndex < transcript.length - 1) {
       const nextSentence = transcript[activeSentenceIndex + 1];
       if (nextSentence && videoPlayerRef.current) {
-        vibrateSentenceChange();
         videoPlayerRef.current.seekTo(nextSentence.startTime);
         setIsPlaying(true);
       }
     }
-  }, [activeSentenceIndex, lesson, setIsPlaying, vibrateSentenceChange]);
+  }, [activeSentenceIndex, lesson, setIsPlaying]);
 
   const handleMicrophone = useCallback(() => {
     const transcript = lesson?.transcript || [];
@@ -345,18 +343,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         </View>
       )}
 
-      {/* Sentence Counter */}
-      <View style={styles.sentenceCounter}>
-        <View style={styles.counterBox}>
-          <Text style={styles.counterCurrent}>#{activeSentenceIndex + 1}</Text>
-          <Text style={styles.counterSeparator}>/</Text>
-          <Text style={styles.counterTotal}>{transcript.length}</Text>
-        </View>
-        <View style={styles.speedBadge}>
-          <Text style={styles.speedText}>{playbackSpeed}x</Text>
-        </View>
-      </View>
-
       {/* Settings Menu */}
       <SettingsMenu
         visible={showSettingsMenu}
@@ -385,16 +371,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         <View style={styles.transcriptTopBar} />
         <View style={styles.transcriptHeader}>
           <Text style={styles.transcriptTitle}>📝 Transcript</Text>
-          <TouchableOpacity 
-            style={styles.translationToggle}
-            onPress={() => setShowTranslation(!showTranslation)}
-          >
-            <Icon 
-              name={showTranslation ? 'eye' : 'eye-off'} 
-              size={16} 
-              color={colors.retroDark} 
-            />
-          </TouchableOpacity>
+          <View style={styles.counterBox}>
+            <Text style={styles.counterCurrent}>{activeSentenceIndex + 1}</Text>
+            <Text style={styles.counterSeparator}>/</Text>
+            <Text style={styles.counterTotal}>{transcript.length}</Text>
+          </View>
         </View>
         <View style={styles.transcriptContent}>
           <TranscriptView
@@ -512,53 +493,34 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#000',
   },
-  // Sentence Counter
-  sentenceCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
+  // Sentence Counter (in transcript header)
   counterBox: {
     flexDirection: 'row',
     alignItems: 'baseline',
     backgroundColor: colors.retroCream,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
   counterCurrent: {
     color: colors.retroPurple,
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: '800',
   },
   counterSeparator: {
     color: colors.textMuted,
-    fontSize: 18,
+    fontSize: 13,
     fontWeight: '600',
-    marginHorizontal: 4,
+    marginHorizontal: 2,
   },
   counterTotal: {
     color: colors.textMuted,
-    fontSize: 18,
+    fontSize: 13,
     fontWeight: '600',
   },
-  speedBadge: {
-    backgroundColor: colors.retroYellow,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.retroBorder,
-  },
-  speedText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.retroDark,
-  },
+
   // Transcript Section - Full Width
   transcriptSection: {
     flex: 1,
@@ -582,17 +544,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.retroDark,
-  },
-  translationToggle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.retroCream,
-    borderWidth: 1,
+    backgroundColor: colors.retroCoral,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
   },
+
   transcriptContent: {
     flex: 1,
   },
