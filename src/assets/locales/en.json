@@ -30,6 +30,7 @@
     "aboutDescription": "PPGeil - Learn German with fun!\n\nVersion 1.0.0\n\nA neo-retro German learning app.",
     "rateApp": "Rate App",
     "rateDescription": "Thank you for using PPGeil! Rating feature coming soon.",
+    "hapticFeedback": "Haptic Feedback",
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to logout?",
     "version": "Version"

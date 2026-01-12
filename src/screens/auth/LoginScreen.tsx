@@ -12,6 +12,7 @@ import {
   Vibration,
 } from 'react-native';
 import {useAuth} from '../../hooks/useAuth';
+import {useSettings} from '../../contexts/SettingsContext';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
 import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
@@ -24,6 +25,7 @@ type LoginScreenProps = AuthStackScreenProps<'Login'>;
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   const {login, loginWithGoogle} = useAuth();
+  const {settings} = useSettings();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,9 +45,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
     return !emailErr && !passwordErr;
   };
 
-  // Trigger error vibration
+  // Trigger error vibration (only if enabled in settings)
   const triggerErrorVibration = () => {
-    // Short vibration pattern for error feedback
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 50, 50, 50]);
   };
 

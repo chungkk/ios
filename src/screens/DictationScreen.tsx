@@ -25,6 +25,7 @@ import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
+import { useSettings } from '../contexts/SettingsContext';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
@@ -35,6 +36,7 @@ type DictationScreenProps = HomeStackScreenProps<'Dictation'>;
 const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
   const { lesson, loading, error } = useLessonData(lessonId);
+  const { settings } = useSettings();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
   
@@ -65,29 +67,29 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     mode: 'dictation',
   });
 
-  // Haptic feedback functions
+  // Haptic feedback functions (only vibrate if enabled in settings)
   const vibrateSuccess = () => {
-    // Single short vibration for success
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate(50);
   };
 
   const vibrateError = () => {
-    // Double short vibration for error
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 50, 50, 50]);
   };
 
   const vibrateHint = () => {
-    // Light tap for hint reveal
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate(30);
   };
 
   const vibrateComplete = () => {
-    // Celebration pattern for completion
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 100, 50, 100, 50, 100]);
   };
 
   const vibratePartial = () => {
-    // Medium vibration for partial match
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate(40);
   };
 

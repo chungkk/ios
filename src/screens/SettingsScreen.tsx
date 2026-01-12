@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { useAuth } from '../hooks/useAuth';
+import { useSettings } from '../contexts/SettingsContext';
 import { Loading } from '../components/common/Loading';
 import Button from '../components/common/Button';
 import { colors, spacing } from '../styles/theme';
@@ -41,6 +42,7 @@ const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
+  const { settings, toggleHaptic } = useSettings();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const handleLogin = () => {
@@ -326,6 +328,18 @@ const SettingsScreen: React.FC = () => {
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} onPress={toggleHaptic} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <Icon name="phone-portrait-outline" size={22} color={colors.retroPurple} />
+              <Text style={styles.settingText}>{t('settings.hapticFeedback')}</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <View style={[styles.toggleSwitch, settings.hapticEnabled && styles.toggleSwitchOn]}>
+                <View style={[styles.toggleKnob, settings.hapticEnabled && styles.toggleKnobOn]} />
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* About Section */}
@@ -577,6 +591,30 @@ const styles = StyleSheet.create({
   settingValue: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  toggleSwitch: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.textMuted,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleSwitchOn: {
+    backgroundColor: colors.retroCyan,
+  },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
+  },
+  toggleKnobOn: {
+    alignSelf: 'flex-end',
   },
   logoutSection: {
     marginHorizontal: spacing.md,

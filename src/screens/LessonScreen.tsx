@@ -20,6 +20,7 @@ import SettingsMenu from '../components/lesson/SettingsMenu';
 import SpeedSelector from '../components/lesson/SpeedSelector';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
+import { useSettings } from '../contexts/SettingsContext';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
@@ -28,6 +29,7 @@ type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
+  const { settings } = useSettings();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
 
@@ -91,31 +93,31 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     onError: (err) => Alert.alert('Recording Error', err),
   });
 
-  // Haptic feedback functions
+  // Haptic feedback functions (only vibrate if enabled in settings)
   const vibrateSuccess = useCallback(() => {
-    // Single short vibration for success
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate(50);
-  }, []);
+  }, [settings.hapticEnabled]);
 
   const vibrateError = useCallback(() => {
-    // Double short vibration for error
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 50, 50, 50]);
-  }, []);
+  }, [settings.hapticEnabled]);
 
   const vibrateRecord = useCallback(() => {
-    // Light tap for recording start/stop
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate(30);
-  }, []);
+  }, [settings.hapticEnabled]);
 
   const vibrateComplete = useCallback(() => {
-    // Celebration pattern for completion
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 100, 50, 100, 50, 100]);
-  }, []);
+  }, [settings.hapticEnabled]);
 
   const vibrateSentenceChange = useCallback(() => {
-    // Very light tap for sentence navigation
+    if (!settings.hapticEnabled) return;
     Vibration.vibrate(20);
-  }, []);
+  }, [settings.hapticEnabled]);
 
   // Transcript sync
   const { activeSentenceIndex } = useTranscriptSync({
@@ -258,12 +260,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         vibrateSuccess();
       } else if (similarity >= 50) {
         // Medium vibration for partial match
-        Vibration.vibrate(40);
+        if (settings.hapticEnabled) {
+          Vibration.vibrate(40);
+        }
       } else {
         vibrateError();
       }
     }
-  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError]);
+  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled]);
 
   const handleSpeedSelect = useCallback((speed: number) => {
     setPlaybackSpeed(speed);
