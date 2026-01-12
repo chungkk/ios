@@ -18,10 +18,13 @@ import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
 
+const ITEMS_PER_PAGE = 10;
+
 const VocabularyScreen: React.FC = () => {
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchVocabulary = useCallback(async () => {
     try {
@@ -40,9 +43,22 @@ const VocabularyScreen: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setCurrentPage(1);
     await fetchVocabulary();
     setRefreshing(false);
   }, [fetchVocabulary]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(vocabulary.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedVocabulary = vocabulary.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const handleDelete = useCallback(async (id: string) => {
     Alert.alert(
@@ -112,20 +128,75 @@ const VocabularyScreen: React.FC = () => {
           message="Tap on words while studying to save them to your vocabulary list."
         />
       ) : (
-        <FlatList
-          data={vocabulary}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.retroCyan}
-            />
-          }
-        />
+        <>
+          <FlatList
+            data={paginatedVocabulary}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.retroCyan}
+              />
+            }
+          />
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <View style={styles.pagination}>
+              <TouchableOpacity
+                style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
+                onPress={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <Icon name="chevron-back" size={20} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
+              </TouchableOpacity>
+
+              <View style={styles.pageNumbers}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    if (totalPages <= 5) return true;
+                    if (page === 1 || page === totalPages) return true;
+                    if (Math.abs(page - currentPage) <= 1) return true;
+                    return false;
+                  })
+                  .map((page, index, arr) => (
+                    <React.Fragment key={page}>
+                      {index > 0 && arr[index - 1] !== page - 1 && (
+                        <Text style={styles.ellipsis}>...</Text>
+                      )}
+                      <TouchableOpacity
+                        style={[
+                          styles.pageNumber,
+                          currentPage === page && styles.pageNumberActive,
+                        ]}
+                        onPress={() => goToPage(page)}
+                      >
+                        <Text
+                          style={[
+                            styles.pageNumberText,
+                            currentPage === page && styles.pageNumberTextActive,
+                          ]}
+                        >
+                          {page}
+                        </Text>
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
+              </View>
+
+              <TouchableOpacity
+                style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
+                onPress={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <Icon name="chevron-forward" size={20} color={currentPage === totalPages ? colors.textMuted : colors.retroDark} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
       )}
     </SafeAreaView>
   );
@@ -230,6 +301,63 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.retroPurple,
     fontWeight: '600',
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.retroCream,
+    borderTopWidth: 3,
+    borderTopColor: colors.retroBorder,
+    gap: spacing.sm,
+  },
+  pageButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.bgCard,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pageButtonDisabled: {
+    opacity: 0.4,
+  },
+  pageNumbers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  pageNumber: {
+    minWidth: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: colors.bgCard,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  pageNumberActive: {
+    backgroundColor: colors.retroCyan,
+    borderColor: colors.retroBorder,
+  },
+  pageNumberText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  pageNumberTextActive: {
+    color: colors.retroDark,
+  },
+  ellipsis: {
+    fontSize: 14,
+    color: colors.textMuted,
+    paddingHorizontal: 4,
   },
 });
 

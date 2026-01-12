@@ -21,8 +21,22 @@ import Button from '../components/common/Button';
 import { colors, spacing } from '../styles/theme';
 import { BASE_URL } from '../services/api';
 
+const LANGUAGES = [
+  { value: 'vi', label: 'Vietnamese' },
+  { value: 'en', label: 'English' },
+];
+
+const LEVELS = [
+  { value: 'A1', label: 'A1 - Beginner' },
+  { value: 'A2', label: 'A2 - Elementary' },
+  { value: 'B1', label: 'B1 - Intermediate' },
+  { value: 'B2', label: 'B2 - Upper Intermediate' },
+  { value: 'C1', label: 'C1 - Advanced' },
+  { value: 'C2', label: 'C2 - Proficient' },
+];
+
 const SettingsScreen: React.FC = () => {
-  const { user, loading, userPoints, logout, refreshUser } = useAuth();
+  const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Upload avatar to server
@@ -124,6 +138,81 @@ const SettingsScreen: React.FC = () => {
     );
   }, [logout]);
 
+  // Handle native language change
+  const handleChangeLanguage = useCallback(() => {
+    Alert.alert(
+      'Native Language',
+      'Select your native language',
+      [
+        ...LANGUAGES.map(lang => ({
+          text: lang.label,
+          onPress: async () => {
+            try {
+              if (updateUser) {
+                await updateUser({ nativeLanguage: lang.value });
+                Alert.alert('Success', `Language changed to ${lang.label}`);
+              }
+            } catch {
+              Alert.alert('Error', 'Failed to update language');
+            }
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  }, [updateUser]);
+
+  // Handle learning level change
+  const handleChangeLevel = useCallback(() => {
+    Alert.alert(
+      'Learning Level',
+      'Select your German level',
+      [
+        ...LEVELS.map(level => ({
+          text: level.label,
+          onPress: async () => {
+            try {
+              if (updateUser) {
+                await updateUser({ level: level.value });
+                Alert.alert('Success', `Level changed to ${level.label}`);
+              }
+            } catch {
+              Alert.alert('Error', 'Failed to update level');
+            }
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  }, [updateUser]);
+
+  // Handle notifications
+  const handleNotifications = useCallback(() => {
+    Alert.alert(
+      'Notifications',
+      'Notification settings coming soon!',
+      [{ text: 'OK' }]
+    );
+  }, []);
+
+  // Handle about
+  const handleAbout = useCallback(() => {
+    Alert.alert(
+      'About PPGeil',
+      'PPGeil - Learn German with fun!\n\nVersion 1.0.0\n\nA neo-retro German learning app.',
+      [{ text: 'OK' }]
+    );
+  }, []);
+
+  // Handle rate app
+  const handleRateApp = useCallback(() => {
+    Alert.alert(
+      'Rate App',
+      'Thank you for using PPGeil! Rating feature coming soon.',
+      [{ text: 'OK' }]
+    );
+  }, []);
+
   if (loading) return <Loading />;
 
   // Get streak value safely
@@ -188,7 +277,7 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleChangeLanguage} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="language" size={22} color={colors.retroCyan} />
               <Text style={styles.settingText}>Native Language</Text>
@@ -201,7 +290,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleChangeLevel} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="school" size={22} color={colors.retroPurple} />
               <Text style={styles.settingText}>Learning Level</Text>
@@ -214,7 +303,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleNotifications} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="notifications" size={22} color={colors.retroYellow} />
               <Text style={styles.settingText}>Notifications</Text>
@@ -229,7 +318,7 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
           
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleAbout} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="information-circle" size={22} color={colors.retroCoral} />
               <Text style={styles.settingText}>About App</Text>
@@ -239,7 +328,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleRateApp} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="star" size={22} color={colors.retroYellow} />
               <Text style={styles.settingText}>Rate App</Text>

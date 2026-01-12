@@ -84,21 +84,29 @@ const ExplanationView: React.FC<ExplanationViewProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.retroCream,
     borderRadius: borderRadius.medium,
     marginHorizontal: spacing.md,
     marginVertical: spacing.sm,
-    ...shadows.sm,
+    borderWidth: 4,
+    borderColor: colors.retroBorder,
+    ...shadows.md,
   },
   headerButton: {
     padding: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.retroPink,
+    borderRadius: borderRadius.small,
+    margin: spacing.sm,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
   },
   headerText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.accentBlue,
+    fontWeight: '700',
+    color: colors.retroDark,
+    textTransform: 'uppercase',
   },
   contentContainer: {
     paddingHorizontal: spacing.md,
@@ -112,13 +120,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.retroDark,
     marginLeft: spacing.sm,
+    fontWeight: '500',
   },
   explanationText: {
     fontSize: 15,
-    color: colors.textSecondary,
+    color: colors.retroDark,
     lineHeight: 24,
+    fontWeight: '500',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -126,19 +136,24 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.retroDark,
     marginBottom: spacing.md,
+    fontWeight: '500',
   },
   requestButton: {
-    backgroundColor: colors.accentBlue,
+    backgroundColor: colors.retroCyan,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.small,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    ...shadows.sm,
   },
   requestButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: colors.retroDark,
+    textTransform: 'uppercase',
   },
 });
 

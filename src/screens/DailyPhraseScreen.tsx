@@ -16,7 +16,7 @@ import {
   formatPhraseDate,
 } from '../utils/phraseUtils';
 import phraseService from '../services/phrase.service';
-import { colors, spacing, borderRadius } from '../styles/theme';
+import { colors, spacing, borderRadius, shadows } from '../styles/theme';
 
 /**
  * DailyPhraseScreen
@@ -170,18 +170,22 @@ const styles = StyleSheet.create({
   header: {
     padding: spacing.lg,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    backgroundColor: colors.retroCyan,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.retroBorder,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: colors.textPrimary,
+    color: colors.retroDark,
     marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   dateText: {
     fontSize: 16,
-    color: colors.textMuted,
+    fontWeight: '600',
+    color: colors.retroDark,
   },
   navigation: {
     flexDirection: 'row',
@@ -193,42 +197,46 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
-    backgroundColor: colors.bgSecondary,
+    backgroundColor: colors.retroCream,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.small,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
     alignItems: 'center',
+    ...shadows.sm,
   },
   navButtonDisabled: {
     opacity: 0.3,
   },
   navButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: colors.retroDark,
   },
   navButtonTextDisabled: {
     color: colors.textMuted,
   },
   todayButton: {
-    backgroundColor: colors.bgSecondary,
+    backgroundColor: colors.retroYellow,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.small,
-    borderWidth: 2,
-    borderColor: colors.borderColor,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    ...shadows.sm,
   },
   todayButtonActive: {
-    backgroundColor: colors.accentBlue,
-    borderColor: colors.accentBlue,
+    backgroundColor: colors.retroCoral,
+    borderColor: colors.retroBorder,
   },
   todayButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: colors.retroDark,
   },
   todayButtonTextActive: {
-    color: colors.textPrimary,
+    color: colors.retroCream,
   },
 });
 

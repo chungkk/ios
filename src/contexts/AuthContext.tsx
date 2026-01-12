@@ -23,6 +23,7 @@ interface AuthContextType {
   updateUserPoints: (newPoints: number) => void;
   updateDifficultyLevel: (difficultyLevel: string) => Promise<{success: boolean; error?: string}>;
   refreshUser: () => Promise<void>;
+  updateUser: (data: Partial<UpdateProfileRequest>) => Promise<{success: boolean; error?: string}>;
 }
 
 // Create context with undefined default
@@ -217,6 +218,23 @@ export function AuthProvider({children}: AuthProviderProps) {
     }
   }, []);
 
+  // Update user profile
+  const updateUser = async (
+    data: Partial<UpdateProfileRequest>,
+  ): Promise<{success: boolean; error?: string}> => {
+    try {
+      const updatedUser = await authService.updateProfile(data as UpdateProfileRequest);
+      setUser(updatedUser);
+      return {success: true};
+    } catch (error: any) {
+      console.error('[AuthContext] Update user error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || 'Update failed',
+      };
+    }
+  };
+
   // Logout user
   const logout = async () => {
     await authService.logout();
@@ -239,6 +257,7 @@ export function AuthProvider({children}: AuthProviderProps) {
         updateUserPoints,
         updateDifficultyLevel,
         refreshUser,
+        updateUser,
       }}>
       {children}
     </AuthContext.Provider>
