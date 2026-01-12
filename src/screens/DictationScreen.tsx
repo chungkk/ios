@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Vibration,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -57,6 +58,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [selectedWord, setSelectedWord] = useState('');
   const [selectedContext, setSelectedContext] = useState('');
   const [showTranslatePopup, setShowTranslatePopup] = useState(false);
+  
+  // Keyboard state
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Study timer
   const { studyTime, formattedTime, isTimerRunning } = useStudyTimer({
@@ -110,6 +114,17 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       });
     };
   }, [navigation, parentNavigation]);
+
+  // Listen for keyboard show/hide
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false));
+    
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const transcript = lesson?.transcript || [];
   const currentSentence: Sentence | undefined = transcript[currentIndex];
@@ -276,141 +291,203 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         </View>
       )}
 
+      {/* Diktat Header - outside KeyboardAvoidingView */}
+      <View style={styles.diktatSection}>
+        <View style={styles.diktatTopBar} />
+        <View style={styles.diktatHeader}>
+          <Text style={styles.diktatTitle}>✏️ Diktat</Text>
+          <View style={styles.counterBox}>
+            <Text style={styles.counterCurrent}>{currentIndex + 1}</Text>
+            <Text style={styles.counterSeparator}>/</Text>
+            <Text style={styles.counterTotal}>{totalSentences}</Text>
+          </View>
+        </View>
+      </View>
+
       <KeyboardAvoidingView 
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Progress */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progress}%` }]} />
+        {/* Centered content wrapper when keyboard hidden */}
+        <View style={[styles.centerWrapper, isKeyboardVisible && styles.centerWrapperKeyboard]}>
+          {/* Hint box - above input */}
+          {currentSentence && !isKeyboardVisible && (
+            <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxAboveInput]}>
+            <View style={styles.hintHeader}>
+              <Text style={styles.maskedLabel}>💡 Hint</Text>
+              <Text style={[
+                styles.freeHintText,
+                (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
+              ]}>
+                {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
+              </Text>
             </View>
-            <Text style={styles.progressText}>
-              {completedSentences.size}/{totalSentences} sentences
-            </Text>
-          </View>
-
-          {/* Sentence Counter */}
-          <View style={styles.sentenceHeader}>
-            <Text style={styles.sentenceNumber}>
-              #{currentIndex + 1}
-              <Text style={styles.sentenceTotal}> / {totalSentences}</Text>
-            </Text>
-          </View>
-
-          {/* Masked Sentence Hint */}
-          {currentSentence && (
-            <View style={styles.maskedSentenceBox}>
-              <View style={styles.hintHeader}>
-                <Text style={styles.maskedLabel}>💡 Hint</Text>
-                <Text style={[
-                  styles.freeHintText,
-                  (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
-                ]}>
-                  {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
-                </Text>
-              </View>
-              <View style={styles.maskedWordsContainer}>
-                {currentSentence.text.split(' ').map((word, index) => {
-                  const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
-                  const punctuation = word.replace(pureWord, '');
-                  const wordKey = `${currentIndex}-${index}`;
-                  const isRevealedByClick = revealedWords[wordKey];
-                  
-                  // Check user input for this word position
-                  const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                  const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                  const correctWord = pureWord.toLowerCase();
-                  
-                  // Calculate matched characters from start
-                  let matchedChars = 0;
-                  for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
-                    if (userWord[i] === correctWord[i]) {
-                      matchedChars++;
-                    } else {
-                      break;
-                    }
+            <View style={styles.maskedWordsContainer}>
+              {currentSentence.text.split(' ').map((word, index) => {
+                const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
+                const punctuation = word.replace(pureWord, '');
+                const wordKey = `${currentIndex}-${index}`;
+                const isRevealedByClick = revealedWords[wordKey];
+                
+                // Check user input for this word position
+                const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                const correctWord = pureWord.toLowerCase();
+                
+                // Calculate matched characters from start
+                let matchedChars = 0;
+                for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
+                  if (userWord[i] === correctWord[i]) {
+                    matchedChars++;
+                  } else {
+                    break;
                   }
-                  
-                  const isFullyCorrect = userWord === correctWord;
-                  const isWrong = userWord.length > 0 && matchedChars === 0;
-                  const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
-                  
-                  // Handle tap to reveal
-                  const handleReveal = () => {
-                    if (!isFullyCorrect && !isRevealedByClick) {
-                      const currentCount = revealCount[currentIndex] || 0;
-                      const newCount = currentCount + 1;
-                      
-                      // Haptic feedback for hint
-                      vibrateHint();
-                      
-                      // Update reveal count for this sentence
-                      setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-                      
-                      // Deduct 1 point from 3rd reveal onwards
-                      if (newCount > 2) {
-                        setPointsDeducted(prev => prev + 1);
-                      }
-                      
-                      setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                }
+                
+                const isFullyCorrect = userWord === correctWord;
+                const isWrong = userWord.length > 0 && matchedChars === 0;
+                const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
+                
+                // Handle tap to reveal
+                const handleReveal = () => {
+                  if (!isFullyCorrect && !isRevealedByClick) {
+                    const currentCount = revealCount[currentIndex] || 0;
+                    const newCount = currentCount + 1;
+                    
+                    // Haptic feedback for hint
+                    vibrateHint();
+                    
+                    // Update reveal count for this sentence
+                    setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
+                    
+                    // Deduct 1 point from 3rd reveal onwards
+                    if (newCount > 2) {
+                      setPointsDeducted(prev => prev + 1);
                     }
-                  };
-                  
-                  return (
-                    <View key={index} style={styles.maskedWordWrapper}>
-                      {isFullyCorrect || isRevealedByClick ? (
-                        // Revealed - show word (clickable for translation)
-                        <TouchableOpacity 
-                          style={[styles.wordBox, styles.wordBoxRevealed]}
-                          onPress={() => handleWordPress(word, pureWord)}
-                        >
-                          <Text style={styles.revealedWord}>{pureWord}</Text>
-                        </TouchableOpacity>
-                      ) : isWrong ? (
-                        // Wrong - red box
-                        <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
-                          <Text style={styles.wrongAsterisks}>
-                            {'*'.repeat(pureWord.length)}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : hasPartialMatch ? (
-                        // Partial match
-                        <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
-                          <Text style={styles.matchedChars}>
-                            {pureWord.substring(0, matchedChars)}
-                          </Text>
-                          <Text style={styles.remainingAsterisks}>
-                            {'*'.repeat(pureWord.length - matchedChars)}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : (
-                        // Not started - hidden box
-                        <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
-                          <Text style={styles.hiddenAsterisks}>
-                            {'*'.repeat(pureWord.length)}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                      {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
-                    </View>
-                  );
-                })}
+                    
+                    setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                  }
+                };
+                
+                return (
+                  <View key={index} style={styles.maskedWordWrapper}>
+                    {isFullyCorrect || isRevealedByClick ? (
+                      // Revealed - show word (clickable for translation)
+                      <TouchableOpacity 
+                        style={[styles.wordBox, styles.wordBoxRevealed]}
+                        onPress={() => handleWordPress(word, pureWord)}
+                      >
+                        <Text style={styles.revealedWord}>{pureWord}</Text>
+                      </TouchableOpacity>
+                    ) : isWrong ? (
+                      // Wrong - red box
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
+                        <Text style={styles.wrongAsterisks}>
+                          {'*'.repeat(pureWord.length)}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : hasPartialMatch ? (
+                      // Partial match
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
+                        <Text style={styles.matchedChars}>
+                          {pureWord.substring(0, matchedChars)}
+                        </Text>
+                        <Text style={styles.remainingAsterisks}>
+                          {'*'.repeat(pureWord.length - matchedChars)}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      // Not started - hidden box
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
+                        <Text style={styles.hiddenAsterisks}>
+                          {'*'.repeat(pureWord.length)}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
+                  </View>
+                );
+              })}
+              </View>
+            </View>
+          )}
+
+          {/* Hint box - floats above input when keyboard visible */}
+          {currentSentence && isKeyboardVisible && (
+            <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxKeyboard]}>
+            <View style={styles.hintHeader}>
+              <Text style={styles.maskedLabel}>💡 Hint</Text>
+              <Text style={[
+                styles.freeHintText,
+                (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
+              ]}>
+                {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
+              </Text>
+            </View>
+            <View style={styles.maskedWordsContainer}>
+              {currentSentence.text.split(' ').map((word, index) => {
+                const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
+                const punctuation = word.replace(pureWord, '');
+                const wordKey = `${currentIndex}-${index}`;
+                const isRevealedByClick = revealedWords[wordKey];
+                const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                const correctWord = pureWord.toLowerCase();
+                let matchedChars = 0;
+                for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
+                  if (userWord[i] === correctWord[i]) matchedChars++;
+                  else break;
+                }
+                const isFullyCorrect = userWord === correctWord;
+                const isWrong = userWord.length > 0 && matchedChars === 0;
+                const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
+                const handleReveal = () => {
+                  if (!isFullyCorrect && !isRevealedByClick) {
+                    const currentCount = revealCount[currentIndex] || 0;
+                    const newCount = currentCount + 1;
+                    vibrateHint();
+                    setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
+                    if (newCount > 2) setPointsDeducted(prev => prev + 1);
+                    setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                  }
+                };
+                return (
+                  <View key={index} style={styles.maskedWordWrapper}>
+                    {isFullyCorrect || isRevealedByClick ? (
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxRevealed]} onPress={() => handleWordPress(word, pureWord)}>
+                        <Text style={styles.revealedWord}>{pureWord}</Text>
+                      </TouchableOpacity>
+                    ) : isWrong ? (
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
+                        <Text style={styles.wrongAsterisks}>{'*'.repeat(pureWord.length)}</Text>
+                      </TouchableOpacity>
+                    ) : hasPartialMatch ? (
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
+                        <Text style={styles.matchedChars}>{pureWord.substring(0, matchedChars)}</Text>
+                        <Text style={styles.remainingAsterisks}>{'*'.repeat(pureWord.length - matchedChars)}</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
+                        <Text style={styles.hiddenAsterisks}>{'*'.repeat(pureWord.length)}</Text>
+                      </TouchableOpacity>
+                    )}
+                    {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
+                  </View>
+                );
+              })}
               </View>
             </View>
           )}
 
           {/* Input Area */}
-          <View style={styles.inputContainer}>
+          <View style={[
+            styles.inputContainer,
+            isKeyboardVisible && styles.inputContainerKeyboard
+          ]}>
             <TextInput
               ref={inputRef}
-              style={styles.textInput}
+              style={[styles.textInput, isKeyboardVisible && styles.textInputKeyboard]}
               placeholder="Type what you hear..."
               placeholderTextColor={colors.textMuted}
               value={userInput}
@@ -420,12 +497,14 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
               autoCorrect={false}
             />
           </View>
-
-
-        </ScrollView>
+        </View>
 
         {/* Bottom Controls - Inside KeyboardAvoidingView to move with keyboard */}
-        <View style={[styles.bottomControls, { paddingBottom: insets.bottom || 14 }]}>
+        <View style={[
+          styles.bottomControls, 
+          { paddingBottom: isKeyboardVisible ? 4 : (insets.bottom || 14) },
+          isKeyboardVisible && styles.bottomControlsKeyboard
+        ]}>
           {/* Previous */}
           <TouchableOpacity 
             style={[styles.controlBtn, styles.controlBtnNav, currentIndex === 0 && styles.controlBtnDisabled]}
@@ -561,12 +640,70 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  scrollView: {
+  centerWrapper: {
     flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
-  scrollContent: {
-    padding: spacing.md,
-    paddingBottom: 20,
+  centerWrapperKeyboard: {
+    justifyContent: 'flex-end',
+  },
+  // Diktat Header Section - like Shadowing
+  diktatSection: {
+    backgroundColor: '#fff',
+  },
+  diktatTopBar: {
+    height: 4,
+    backgroundColor: colors.retroPurple,
+  },
+  diktatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(155, 89, 182, 0.08)',
+    borderBottomWidth: 2,
+    borderBottomColor: colors.retroBorder,
+  },
+  diktatTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroDark,
+    backgroundColor: colors.retroPurple,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+    color: '#fff',
+  },
+  counterBox: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    backgroundColor: colors.retroCream,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
+  },
+  counterCurrent: {
+    color: colors.retroPurple,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  counterSeparator: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+    marginHorizontal: 2,
+  },
+  counterTotal: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
   },
   progressContainer: {
     marginBottom: spacing.md,
@@ -589,22 +726,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'right',
   },
-  sentenceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  sentenceNumber: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.retroPurple,
-  },
-  sentenceTotal: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
   maskedSentenceBox: {
     backgroundColor: '#fff',
     padding: 8,
@@ -612,6 +733,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
+  },
+  maskedSentenceBoxAboveInput: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  maskedSentenceBoxKeyboard: {
+    marginHorizontal: spacing.sm,
+    marginBottom: 6,
+    borderRadius: 8,
+    padding: 6,
   },
   hintHeader: {
     flexDirection: 'row',
@@ -710,12 +841,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    marginBottom: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 0,
     elevation: 3,
+  },
+  inputContainerKeyboard: {
+    marginHorizontal: spacing.sm,
+    marginBottom: 6,
+    borderRadius: 12,
   },
   textInput: {
     padding: 16,
@@ -723,6 +860,10 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  textInputKeyboard: {
+    minHeight: 60,
+    padding: 12,
   },
   resultBox: {
     padding: 16,
@@ -820,12 +961,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 2,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.retroCream,
-    borderTopWidth: 2,
+    borderTopWidth: 1,
     borderTopColor: colors.retroBorder,
-    gap: 20,
+    gap: 14,
+  },
+  bottomControlsKeyboard: {
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    paddingVertical: 6,
   },
   controlBtn: {
     justifyContent: 'center',
