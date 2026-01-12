@@ -22,11 +22,15 @@ export const useHomepageData = (
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesWithLessons, setCategoriesWithLessons] = useState<Record<string, CategoryWithLessons>>({});
   const [loading, setLoading] = useState<boolean>(true);
+  const [initialLoad, setInitialLoad] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isInitial: boolean = false) => {
     try {
-      setLoading(true);
+      // Only show full loading on initial load
+      if (isInitial) {
+        setLoading(true);
+      }
       setError(null);
 
       const data = await homepageService.fetchHomepageData(difficultyFilter, lessonsPerCategory);
@@ -40,12 +44,13 @@ export const useHomepageData = (
       setCategoriesWithLessons({});
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
   }, [difficultyFilter, lessonsPerCategory]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(initialLoad);
+  }, [difficultyFilter, lessonsPerCategory]);
 
   const refetch = useCallback(async () => {
     await fetchData();

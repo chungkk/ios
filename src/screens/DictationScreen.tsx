@@ -25,6 +25,7 @@ import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { colors, spacing } from '../styles/theme';
+import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { Sentence } from '../types/lesson.types';
 
@@ -50,6 +51,11 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [revealedWords, setRevealedWords] = useState<{[key: string]: boolean}>({});
   const [revealCount, setRevealCount] = useState<{[key: number]: number}>({}); // Track reveals per sentence
   const [pointsDeducted, setPointsDeducted] = useState(0); // Total points deducted
+  
+  // Word translation popup state
+  const [selectedWord, setSelectedWord] = useState('');
+  const [selectedContext, setSelectedContext] = useState('');
+  const [showTranslatePopup, setShowTranslatePopup] = useState(false);
 
   // Study timer
   const { studyTime, formattedTime, isTimerRunning } = useStudyTimer({
@@ -210,6 +216,13 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
   }, [playbackSpeed]);
 
+  // Handle word press for translation
+  const handleWordPress = useCallback((word: string, pureWord: string) => {
+    setSelectedWord(pureWord);
+    setSelectedContext(currentSentence?.text || '');
+    setShowTranslatePopup(true);
+  }, [currentSentence]);
+
   if (loading) return <Loading />;
 
   if (error || !lesson) {
@@ -351,10 +364,13 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                   return (
                     <View key={index} style={styles.maskedWordWrapper}>
                       {isFullyCorrect || isRevealedByClick ? (
-                        // Revealed - show word
-                        <View style={[styles.wordBox, styles.wordBoxRevealed]}>
+                        // Revealed - show word (clickable for translation)
+                        <TouchableOpacity 
+                          style={[styles.wordBox, styles.wordBoxRevealed]}
+                          onPress={() => handleWordPress(word, pureWord)}
+                        >
                           <Text style={styles.revealedWord}>{pureWord}</Text>
-                        </View>
+                        </TouchableOpacity>
                       ) : isWrong ? (
                         // Wrong - red box
                         <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
@@ -506,6 +522,16 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : '#fff'} />
         </TouchableOpacity>
       </View>
+
+      {/* Word Translation Popup */}
+      <WordTranslatePopup
+        visible={showTranslatePopup}
+        word={selectedWord}
+        context={selectedContext}
+        lessonId={lessonId}
+        lessonTitle={lesson?.title}
+        onClose={() => setShowTranslatePopup(false)}
+      />
 
       </View>
   );

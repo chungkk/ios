@@ -10,6 +10,7 @@ interface SentenceItemProps {
   sentence: Sentence;
   isActive: boolean;
   onPress?: () => void;
+  onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
   voiceRecordingResult?: {
     transcribed: string;
@@ -24,39 +25,48 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
   sentence,
   isActive,
   onPress,
+  onWordPress,
   showTranslation = true,
   voiceRecordingResult = null,
 }) => {
+  // Handle word click for translation
+  const handleWordPress = (word: string) => {
+    if (onWordPress) {
+      const cleanWord = word.replace(/[.,!?;:"""''„\-()[\]]/g, '').trim();
+      if (cleanWord.length > 0) {
+        onWordPress(cleanWord, sentence.text);
+      }
+    }
+  };
   // Render text with word-by-word highlighting based on voice recording result
   const renderText = () => {
-    if (!voiceRecordingResult) {
-      return (
-        <Text style={[styles.text, isActive && styles.textActive]}>
-          {sentence.text}
-        </Text>
-      );
-    }
-
     // Split text into words while preserving punctuation
     const words = sentence.text.split(/\s+/);
-    const wordComparison = voiceRecordingResult.wordComparison;
+    const wordComparison = voiceRecordingResult?.wordComparison;
 
     return (
       <Text style={[styles.text, isActive && styles.textActive]}>
         {words.map((word, idx) => {
-          const status = wordComparison[idx];
-          let wordColor = undefined;
+          let wordStyle: any = onWordPress ? styles.clickableWord : undefined;
           
-          if (status === 'correct') {
-            wordColor = '#10b981'; // Green
-          } else if (status === 'incorrect') {
-            wordColor = '#ef4444'; // Red
-          } else if (status === 'missing') {
-            wordColor = '#f59e0b'; // Orange
+          // Apply voice recording color if available
+          if (wordComparison) {
+            const status = wordComparison[idx];
+            if (status === 'correct') {
+              wordStyle = [wordStyle, { color: '#10b981' }]; // Green
+            } else if (status === 'incorrect') {
+              wordStyle = [wordStyle, { color: '#ef4444' }]; // Red
+            } else if (status === 'missing') {
+              wordStyle = [wordStyle, { color: '#f59e0b' }]; // Orange
+            }
           }
 
           return (
-            <Text key={idx} style={wordColor ? { color: wordColor } : undefined}>
+            <Text
+              key={idx}
+              style={wordStyle}
+              onPress={onWordPress ? () => handleWordPress(word) : undefined}
+            >
               {word}{idx < words.length - 1 ? ' ' : ''}
             </Text>
           );
@@ -162,6 +172,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.retroDark,
     opacity: 1,
+  },
+  clickableWord: {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'dotted',
+    textDecorationColor: colors.retroCyan,
   },
   translation: {
     fontSize: 13,

@@ -21,6 +21,7 @@ import SpeedSelector from '../components/lesson/SpeedSelector';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { colors, spacing } from '../styles/theme';
+import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
 
 type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
@@ -60,6 +61,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [showSpeedSelector, setShowSpeedSelector] = useState(false);
   const [autoStop, setAutoStop] = useState(false);
   const [showTranslation, setShowTranslation] = useState(true);
+  
+  // Word translation popup state
+  const [selectedWord, setSelectedWord] = useState('');
+  const [selectedContext, setSelectedContext] = useState('');
+  const [showTranslatePopup, setShowTranslatePopup] = useState(false);
 
   const {
     isPlaying,
@@ -213,6 +219,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     setPlaybackSpeed(speed);
   }, [setPlaybackSpeed]);
 
+  // Handle word press for translation
+  const handleWordPress = useCallback((word: string, context: string) => {
+    setSelectedWord(word);
+    setSelectedContext(context);
+    setShowTranslatePopup(true);
+  }, []);
+
   if (loading) return <Loading />;
 
   if (error || !lesson) {
@@ -334,6 +347,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             transcript={transcript}
             activeSentenceIndex={activeSentenceIndex}
             onSentencePress={handleSentencePress}
+            onWordPress={handleWordPress}
             showTranslation={showTranslation}
             voiceRecordingResult={recordingState.comparisonResult}
           />
@@ -355,6 +369,16 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           onPlayRecording={playRecording}
         />
       </View>
+
+      {/* Word Translation Popup */}
+      <WordTranslatePopup
+        visible={showTranslatePopup}
+        word={selectedWord}
+        context={selectedContext}
+        lessonId={lessonId}
+        lessonTitle={lesson?.title}
+        onClose={() => setShowTranslatePopup(false)}
+      />
     </View>
   );
 };

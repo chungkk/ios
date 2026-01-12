@@ -11,6 +11,7 @@ interface TranscriptViewProps {
   transcript: Sentence[];
   activeSentenceIndex: number;
   onSentencePress?: (index: number) => void;
+  onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
   voiceRecordingResult?: {
     transcribed: string;
@@ -25,6 +26,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   transcript,
   activeSentenceIndex,
   onSentencePress,
+  onWordPress,
   showTranslation = true,
   voiceRecordingResult = null,
 }) => {
@@ -70,6 +72,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
             sentence={item}
             isActive={isActive}
             onPress={() => handleSentencePress(index)}
+            onWordPress={onWordPress}
             showTranslation={showTranslation}
             voiceRecordingResult={hasRecording ? voiceRecordingResult : null}
           />

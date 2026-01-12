@@ -33,6 +33,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
   
   // Get user data
   const { user, userPoints } = useAuth();
@@ -44,6 +45,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
   // Use optimized single API call instead of separate calls
   const { categories, categoriesWithLessons, loading, refetch } = useHomepageData(difficultyFilter, 6);
+
+  // Handle filter change with smooth transition
+  const handleFilterChange = useCallback((filter: 'all' | 'beginner' | 'experienced') => {
+    setIsFilterChanging(true);
+    setDifficultyFilter(filter);
+    // Reset filter changing state after data loads
+    setTimeout(() => setIsFilterChanging(false), 300);
+  }, []);
 
   const handleLessonPress = useCallback((lesson: Lesson) => {
     // Increment view count (non-blocking)
@@ -82,7 +91,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setRefreshing(false);
   }, [refetch]);
 
-  if (loading && !refreshing) {
+  // Only show full loading on initial load (when no data yet)
+  const isInitialLoading = loading && !refreshing && categories.length === 0;
+  
+  if (isInitialLoading) {
     return <Loading />;
   }
 
@@ -143,21 +155,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         {/* Difficulty Filter */}
         <DifficultyFilter
           selected={difficultyFilter}
-          onSelect={setDifficultyFilter}
+          onSelect={handleFilterChange}
         />
 
         {/* Categories with Lessons */}
-        {loading ? (
-          <View style={styles.categorySection}>
-            <FlatList
-              horizontal
-              data={[1, 2, 3]}
-              renderItem={() => <SkeletonCard style={styles.skeletonCard} />}
-              keyExtractor={(item) => `skeleton-${item}`}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-            />
-          </View>
+        {(loading || isFilterChanging) && categories.length > 0 ? (
+          // Show skeleton placeholders when filter is changing (but we have old data)
+          <>
+            {[1, 2].map((i) => (
+              <View key={`skeleton-section-${i}`} style={[styles.categorySection, { opacity: 0.6 }]}>
+                <View style={styles.categoryHeader}>
+                  <View style={{ width: 150, height: 16, backgroundColor: colors.retroBorder, borderRadius: 4 }} />
+                </View>
+                <FlatList
+                  horizontal
+                  data={[1, 2, 3]}
+                  renderItem={() => <SkeletonCard style={styles.skeletonCard} />}
+                  keyExtractor={(item) => `skeleton-${i}-${item}`}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                />
+              </View>
+            ))}
+          </>
         ) : categories.length === 0 ? (
           <EmptyState
             icon="book"
