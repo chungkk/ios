@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Vibration,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {useAuth} from '../../hooks/useAuth';
 import {useSettings} from '../../contexts/SettingsContext';
 import TextInput from '../../components/common/TextInput';
@@ -107,8 +108,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
     navigation.navigate('Register');
   };
 
+  // Close modal
+  const handleClose = () => {
+    navigation.getParent()?.goBack();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Close Button */}
+      <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+        <Icon name="close" size={24} color={colors.retroDark} />
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}>
@@ -194,6 +205,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bgPrimary,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.retroCream,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 0,
+    elevation: 3,
   },
   keyboardView: {
     flex: 1,

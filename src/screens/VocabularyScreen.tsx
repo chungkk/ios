@@ -239,15 +239,38 @@ const VocabularyScreen: React.FC = () => {
 
   if (loading) return <Loading />;
 
-  // Not logged in state
+  // Not logged in state - Neo Retro Style
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
-        <EmptyState
-          icon="person-outline"
-          title={t('profile.loginRequired')}
-          message={t('vocabulary.noWordsMessage')}
-        />
+        <View style={styles.notLoggedInContainer}>
+          <View style={styles.notLoggedInCard}>
+            <View style={styles.notLoggedInAccent} />
+            <View style={styles.notLoggedInContent}>
+              <Text style={styles.notLoggedInEmoji}>📚</Text>
+              <Text style={styles.notLoggedInTitle}>{t('vocabulary.title')}</Text>
+              <View style={styles.notLoggedInDivider} />
+              <Icon name="lock-closed" size={40} color={colors.retroPurple} style={styles.notLoggedInIcon} />
+              <Text style={styles.notLoggedInMessage}>{t('profile.loginRequired')}</Text>
+              <Text style={styles.notLoggedInHint}>{t('vocabulary.noWordsMessage')}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.notLoggedInFeatures}>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>✨</Text>
+              <Text style={styles.featureText}>{t('vocabulary.filterNew')}</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>📖</Text>
+              <Text style={styles.featureText}>{t('vocabulary.filterLearning')}</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🎯</Text>
+              <Text style={styles.featureText}>{t('vocabulary.flashcard')}</Text>
+            </View>
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
@@ -613,6 +636,92 @@ const styles = StyleSheet.create({
   pageText: {
     fontSize: 13,
     fontWeight: '700',
+    color: colors.retroDark,
+  },
+  // Not Logged In State - Neo Retro
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  notLoggedInCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 5,
+  },
+  notLoggedInAccent: {
+    height: 6,
+    backgroundColor: colors.retroPurple,
+  },
+  notLoggedInContent: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  notLoggedInEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  notLoggedInTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.retroDark,
+    marginBottom: 16,
+  },
+  notLoggedInDivider: {
+    width: 60,
+    height: 3,
+    backgroundColor: colors.retroYellow,
+    borderRadius: 2,
+    marginBottom: 20,
+  },
+  notLoggedInIcon: {
+    marginBottom: 12,
+  },
+  notLoggedInMessage: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.retroDark,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  notLoggedInHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  notLoggedInFeatures: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 24,
+  },
+  featureItem: {
+    alignItems: 'center',
+    backgroundColor: colors.retroCream,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+  },
+  featureIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  featureText: {
+    fontSize: 11,
+    fontWeight: '600',
     color: colors.retroDark,
   },
 });
