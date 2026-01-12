@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -18,6 +19,7 @@ import { vocabularyService, VocabularyItem } from '../services/vocabulary.servic
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
+import FlashcardMode from '../components/vocabulary/FlashcardMode';
 import { colors, spacing } from '../styles/theme';
 
 const ITEMS_PER_PAGE = 10;
@@ -29,6 +31,7 @@ const VocabularyScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showFlashcard, setShowFlashcard] = useState(false);
 
   const fetchVocabulary = useCallback(async () => {
     // Don't fetch if user is not logged in
@@ -127,8 +130,19 @@ const VocabularyScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
-        <Text style={styles.wordCount}>{vocabulary.length} {t('vocabulary.words')}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
+          <Text style={styles.wordCount}>{vocabulary.length} {t('vocabulary.words')}</Text>
+        </View>
+        {vocabulary.length > 0 && (
+          <TouchableOpacity 
+            style={styles.flashcardButton} 
+            onPress={() => setShowFlashcard(true)}
+          >
+            <Icon name="albums-outline" size={18} color="#fff" />
+            <Text style={styles.flashcardButtonText}>{t('vocabulary.flashcard')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {vocabulary.length === 0 ? (
@@ -208,6 +222,18 @@ const VocabularyScreen: React.FC = () => {
           )}
         </>
       )}
+
+      {/* Flashcard Modal */}
+      <Modal
+        visible={showFlashcard}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <FlashcardMode
+          vocabulary={vocabulary}
+          onClose={() => setShowFlashcard(false)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -235,22 +261,40 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
+  headerLeft: {
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
     color: colors.retroDark,
   },
   wordCount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: colors.retroPurple,
-    backgroundColor: colors.retroYellow,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  flashcardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroPurple,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: colors.retroBorder,
-    overflow: 'hidden',
+    gap: 6,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  flashcardButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
   },
   list: {
     padding: spacing.md,

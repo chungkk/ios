@@ -88,7 +88,15 @@
     "noWordsMessage": "Nhấn vào từ trong khi học để lưu vào danh sách từ vựng.",
     "deleteConfirm": "Xóa từ này?",
     "deleteMessage": "Bạn có chắc muốn xóa từ này?",
-    "deleteFailed": "Không thể xóa từ"
+    "deleteFailed": "Không thể xóa từ",
+    "flashcard": "Học thẻ",
+    "flashcardComplete": "Hoàn thành!",
+    "flashcardCompleteMsg": "Bạn đã ôn {{count}} thẻ trong phiên này",
+    "forgot": "Quên",
+    "hard": "Khó",
+    "good": "Tốt",
+    "easy": "Dễ",
+    "tapToFlip": "Nhấn để xem nghĩa"
   },
   "profile": {
     "title": "Hồ sơ",

@@ -10,11 +10,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <I18nextProvider i18n={i18n}>
-        <SettingsProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <SettingsProvider>
             <RootNavigator />
-          </AuthProvider>
-        </SettingsProvider>
+          </SettingsProvider>
+        </AuthProvider>
       </I18nextProvider>
     </SafeAreaProvider>
   );
