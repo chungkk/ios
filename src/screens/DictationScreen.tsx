@@ -423,44 +423,44 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
 
 
         </ScrollView>
+
+        {/* Bottom Controls - Inside KeyboardAvoidingView to move with keyboard */}
+        <View style={[styles.bottomControls, { paddingBottom: insets.bottom || 14 }]}>
+          {/* Previous */}
+          <TouchableOpacity 
+            style={[styles.controlBtn, styles.controlBtnNav, currentIndex === 0 && styles.controlBtnDisabled]}
+            onPress={goToPrevious}
+            disabled={currentIndex === 0}
+          >
+            <Icon name="chevron-back" size={24} color={currentIndex === 0 ? colors.textMuted : '#fff'} />
+          </TouchableOpacity>
+
+          {/* Replay Current Sentence */}
+          <TouchableOpacity 
+            style={[styles.controlBtn, styles.controlBtnReplay]}
+            onPress={playSentence}
+          >
+            <Icon name="refresh" size={22} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Play/Pause - Center Large */}
+          <TouchableOpacity 
+            style={[styles.controlBtn, styles.controlBtnPlay]}
+            onPress={togglePlayPause}
+          >
+            <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" style={!isPlaying && { marginLeft: 3 }} />
+          </TouchableOpacity>
+
+          {/* Next */}
+          <TouchableOpacity 
+            style={[styles.controlBtn, styles.controlBtnNav, currentIndex >= totalSentences - 1 && styles.controlBtnDisabled]}
+            onPress={goToNext}
+            disabled={currentIndex >= totalSentences - 1}
+          >
+            <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : '#fff'} />
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
-
-      {/* Bottom Controls - Fixed */}
-      <View style={[styles.bottomControls, { paddingBottom: insets.bottom || 14 }]}>
-        {/* Previous */}
-        <TouchableOpacity 
-          style={[styles.controlBtn, styles.controlBtnNav, currentIndex === 0 && styles.controlBtnDisabled]}
-          onPress={goToPrevious}
-          disabled={currentIndex === 0}
-        >
-          <Icon name="chevron-back" size={24} color={currentIndex === 0 ? colors.textMuted : '#fff'} />
-        </TouchableOpacity>
-
-        {/* Replay Current Sentence */}
-        <TouchableOpacity 
-          style={[styles.controlBtn, styles.controlBtnReplay]}
-          onPress={playSentence}
-        >
-          <Icon name="refresh" size={22} color="#fff" />
-        </TouchableOpacity>
-
-        {/* Play/Pause - Center Large */}
-        <TouchableOpacity 
-          style={[styles.controlBtn, styles.controlBtnPlay]}
-          onPress={togglePlayPause}
-        >
-          <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" style={!isPlaying && { marginLeft: 3 }} />
-        </TouchableOpacity>
-
-        {/* Next */}
-        <TouchableOpacity 
-          style={[styles.controlBtn, styles.controlBtnNav, currentIndex >= totalSentences - 1 && styles.controlBtnDisabled]}
-          onPress={goToNext}
-          disabled={currentIndex >= totalSentences - 1}
-        >
-          <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : '#fff'} />
-        </TouchableOpacity>
-      </View>
 
       {/* Word Translation Popup */}
       <WordTranslatePopup
