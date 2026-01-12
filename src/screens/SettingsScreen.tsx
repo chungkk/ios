@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
@@ -36,6 +37,7 @@ const LEVELS = [
 ];
 
 const SettingsScreen: React.FC = () => {
+  const { t } = useTranslation();
   const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -123,12 +125,12 @@ const SettingsScreen: React.FC = () => {
 
   const handleLogout = useCallback(() => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('settings.logout'),
+      t('settings.logoutConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Logout',
+          text: t('settings.logout'),
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -136,82 +138,89 @@ const SettingsScreen: React.FC = () => {
         },
       ]
     );
-  }, [logout]);
+  }, [logout, t]);
 
   // Handle native language change
   const handleChangeLanguage = useCallback(() => {
     Alert.alert(
-      'Native Language',
-      'Select your native language',
+      t('settings.nativeLanguage'),
+      t('settings.selectLanguage'),
       [
         ...LANGUAGES.map(lang => ({
           text: lang.label,
           onPress: async () => {
             try {
               if (updateUser) {
-                await updateUser({ nativeLanguage: lang.value });
-                Alert.alert('Success', `Language changed to ${lang.label}`);
+                const result = await updateUser({ nativeLanguage: lang.value });
+                if (result.success) {
+                  // Message will be in new language since we changed it
+                  setTimeout(() => {
+                    Alert.alert(t('common.success'), t('settings.languageChanged'));
+                  }, 100);
+                }
               }
             } catch {
-              Alert.alert('Error', 'Failed to update language');
+              Alert.alert(t('common.error'), t('settings.updateFailed'));
             }
           },
         })),
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]
     );
-  }, [updateUser]);
+  }, [updateUser, t]);
 
   // Handle learning level change
   const handleChangeLevel = useCallback(() => {
     Alert.alert(
-      'Learning Level',
-      'Select your German level',
+      t('settings.learningLevel'),
+      t('settings.selectLevel'),
       [
         ...LEVELS.map(level => ({
           text: level.label,
           onPress: async () => {
             try {
               if (updateUser) {
-                await updateUser({ level: level.value });
-                Alert.alert('Success', `Level changed to ${level.label}`);
+                const result = await updateUser({ level: level.value });
+                if (result.success) {
+                  Alert.alert(t('common.success'), t('settings.levelChanged'));
+                }
               }
             } catch {
-              Alert.alert('Error', 'Failed to update level');
+              Alert.alert(t('common.error'), t('settings.updateFailed'));
             }
           },
         })),
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]
     );
-  }, [updateUser]);
+  }, [updateUser, t]);
 
   // Handle notifications
   const handleNotifications = useCallback(() => {
     Alert.alert(
-      'Notifications',
-      'Notification settings coming soon!',
-      [{ text: 'OK' }]
+      t('settings.notifications'),
+      t('settings.notificationsComingSoon'),
+      [{ text: t('common.ok') }]
     );
-  }, []);
+  }, [t]);
 
   // Handle about
   const handleAbout = useCallback(() => {
     Alert.alert(
-      'About PPGeil',
-      'PPGeil - Learn German with fun!\n\nVersion 1.0.0\n\nA neo-retro German learning app.',
-      [{ text: 'OK' }]
+      t('settings.aboutApp'),
+      t('settings.aboutDescription'),
+      [{ text: t('common.ok') }]
     );
-  }, []);
+  }, [t]);
 
   // Handle rate app
   const handleRateApp = useCallback(() => {
     Alert.alert(
-      'Rate App',
-      'Thank you for using PPGeil! Rating feature coming soon.',
-      [{ text: 'OK' }]
+      t('settings.rateApp'),
+      t('settings.rateDescription'),
+      [{ text: t('common.ok') }]
     );
-  }, []);
+  }, [t]);
 
   if (loading) return <Loading />;
 

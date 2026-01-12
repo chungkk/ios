@@ -1,1 +1,75 @@
-{}
+{
+  "common": {
+    "success": "Thành công",
+    "error": "Lỗi",
+    "cancel": "Hủy",
+    "ok": "OK",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước",
+    "loading": "Đang tải..."
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "preferences": "Tùy chọn",
+    "about": "Giới thiệu",
+    "nativeLanguage": "Ngôn ngữ mẹ đẻ",
+    "selectLanguage": "Chọn ngôn ngữ của bạn",
+    "languageChanged": "Đã đổi ngôn ngữ thành công",
+    "learningLevel": "Trình độ học",
+    "selectLevel": "Chọn trình độ tiếng Đức của bạn",
+    "levelChanged": "Đã đổi trình độ thành công",
+    "updateFailed": "Không thể cập nhật",
+    "notifications": "Thông báo",
+    "notificationsComingSoon": "Tính năng thông báo sẽ sớm ra mắt!",
+    "aboutApp": "Về ứng dụng",
+    "aboutDescription": "PPGeil - Học tiếng Đức vui vẻ!\n\nPhiên bản 1.0.0\n\nỨng dụng học tiếng Đức phong cách retro.",
+    "rateApp": "Đánh giá ứng dụng",
+    "rateDescription": "Cảm ơn bạn đã sử dụng PPGeil! Tính năng đánh giá sẽ sớm ra mắt.",
+    "logout": "Đăng xuất",
+    "logoutConfirm": "Bạn có chắc muốn đăng xuất?",
+    "version": "Phiên bản"
+  },
+  "home": {
+    "welcome": "Chào mừng trở lại",
+    "learning": "Học tập",
+    "viewAll": "Xem tất cả"
+  },
+  "lesson": {
+    "transcript": "Phụ đề",
+    "sentences": "câu",
+    "complete": "Hoàn thành bài học!",
+    "earned": "Bạn đã nhận được",
+    "points": "điểm",
+    "studyTime": "Thời gian học"
+  },
+  "dictation": {
+    "title": "Nghe chép",
+    "typeHere": "Gõ những gì bạn nghe...",
+    "check": "Kiểm tra",
+    "show": "Hiện đáp án",
+    "retry": "Thử lại",
+    "correct": "Chính xác!",
+    "tryAgain": "Thử lại",
+    "accuracy": "Độ chính xác",
+    "correctAnswer": "Đáp án đúng",
+    "hint": "Gợi ý",
+    "freeHint": "miễn phí"
+  },
+  "vocabulary": {
+    "title": "Từ vựng của tôi",
+    "words": "từ",
+    "noWords": "Chưa có từ nào",
+    "noWordsMessage": "Nhấn vào từ trong khi học để lưu vào danh sách từ vựng.",
+    "deleteConfirm": "Xóa từ này?",
+    "deleteMessage": "Bạn có chắc muốn xóa từ này?"
+  },
+  "translate": {
+    "translating": "Đang dịch...",
+    "saveWord": "Lưu từ vựng",
+    "saved": "Đã lưu",
+    "context": "Ngữ cảnh"
+  }
+}

@@ -5,6 +5,7 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
+import i18n from '../utils/i18n';
 import {User, RegisterRequest, LoginRequest, UpdateProfileRequest} from '../types/user.types';
 import * as authService from '../services/auth.service';
 import {getToken, getData, STORAGE_KEYS} from '../services/storage.service';
@@ -81,6 +82,11 @@ export function AuthProvider({children}: AuthProviderProps) {
           const freshUser = await authService.fetchMe();
           setUser(freshUser);
           setUserPoints(freshUser.points || 0);
+          
+          // Sync app language with user's native language
+          if (freshUser.nativeLanguage && freshUser.nativeLanguage !== i18n.language) {
+            i18n.changeLanguage(freshUser.nativeLanguage);
+          }
         } catch (error) {
           console.error('[AuthContext] Failed to fetch user data:', error);
           // If cached user exists, keep it (offline mode)
@@ -225,6 +231,13 @@ export function AuthProvider({children}: AuthProviderProps) {
     try {
       const updatedUser = await authService.updateProfile(data as UpdateProfileRequest);
       setUser(updatedUser);
+      
+      // If native language changed, update app language
+      if (data.nativeLanguage && data.nativeLanguage !== i18n.language) {
+        console.log('[AuthContext] Changing app language to:', data.nativeLanguage);
+        i18n.changeLanguage(data.nativeLanguage);
+      }
+      
       return {success: true};
     } catch (error: any) {
       console.error('[AuthContext] Update user error:', error);
