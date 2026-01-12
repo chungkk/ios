@@ -18,7 +18,7 @@ interface SettingsMenuProps {
   
   // Speed control
   playbackSpeed: number;
-  onSpeedPress: () => void;
+  onSpeedCycle: () => void;
   
   // Auto-stop control
   autoStop: boolean;
@@ -33,7 +33,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
   visible,
   onClose,
   playbackSpeed,
-  onSpeedPress,
+  onSpeedCycle,
   autoStop,
   onAutoStopToggle,
   showTranslation,
@@ -71,10 +71,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
           {/* Divider */}
           <View style={styles.divider} />
 
-          {/* Speed Control */}
+          {/* Speed Control - tap to cycle */}
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={onSpeedPress}
+            onPress={onSpeedCycle}
             activeOpacity={0.8}
           >
             <View style={[styles.iconContainer, { backgroundColor: colors.retroPink }]}>

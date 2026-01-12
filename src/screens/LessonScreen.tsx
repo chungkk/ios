@@ -17,7 +17,6 @@ import PlaybackControls from '../components/player/PlaybackControls';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import SettingsMenu from '../components/lesson/SettingsMenu';
-import SpeedSelector from '../components/lesson/SpeedSelector';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
@@ -60,9 +59,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [showSpeedSelector, setShowSpeedSelector] = useState(false);
-  const [autoStop, setAutoStop] = useState(false);
-  const [showTranslation, setShowTranslation] = useState(true);
+  
+  // Get autoStop and showTranslation from global settings
+  const { toggleAutoStop, toggleShowTranslation } = useSettings();
+  
+  // Cycle through speed options
+  const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
   
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
@@ -119,8 +121,28 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     Vibration.vibrate(20);
   }, [settings.hapticEnabled]);
 
+  // Handle sentence end for auto-stop
+  const handleSentenceEnd = useCallback((sentenceIndex: number) => {
+    if (!settings.autoStop) return;
+    
+    console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
+    const transcript = lesson?.transcript || [];
+    const currentSentence = transcript[sentenceIndex];
+    
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.pause();
+      // Seek back to start of sentence so it stays on current sentence
+      if (currentSentence) {
+        setTimeout(() => {
+          videoPlayerRef.current?.seekTo(currentSentence.startTime);
+        }, 100);
+      }
+    }
+    setIsPlaying(false);
+  }, [settings.autoStop, setIsPlaying, lesson]);
+
   // Transcript sync
-  const { activeSentenceIndex } = useTranscriptSync({
+  const { activeSentenceIndex, resetSentenceEndFlag } = useTranscriptSync({
     transcript: lesson?.transcript || [],
     isPlaying,
     getCurrentTime: async () => {
@@ -131,6 +153,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       }
       return 0;
     },
+    onSentenceEnd: handleSentenceEnd,
   });
 
   // Clear recording when sentence changes
@@ -267,9 +290,35 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
   }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled]);
 
-  const handleSpeedSelect = useCallback((speed: number) => {
-    setPlaybackSpeed(speed);
-  }, [setPlaybackSpeed]);
+  // Cycle to next speed
+  const cycleSpeed = useCallback(() => {
+    const currentIndex = SPEED_OPTIONS.indexOf(playbackSpeed);
+    const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+    setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
+  }, [playbackSpeed, setPlaybackSpeed]);
+
+  // Custom play/pause handler for auto-stop mode
+  const handlePlayPause = useCallback(() => {
+    if (!isPlaying && settings.autoStop) {
+      // When auto-stop is ON and pressing play:
+      const transcript = lesson?.transcript || [];
+      const currentSentence = transcript[activeSentenceIndex];
+      
+      if (currentSentence && videoPlayerRef.current) {
+        // 1. Reset the flag so onSentenceEnd can be called again
+        resetSentenceEndFlag();
+        // 2. Seek to start of current sentence
+        videoPlayerRef.current.seekTo(currentSentence.startTime);
+        // 3. Small delay to ensure seek completes before play
+        setTimeout(() => {
+          setIsPlaying(true);
+        }, 100);
+        return;
+      }
+    }
+    
+    togglePlayPause();
+  }, [lesson, activeSentenceIndex, isPlaying, settings.autoStop, togglePlayPause, resetSentenceEndFlag, setIsPlaying]);
 
   // Handle word press for translation
   const handleWordPress = useCallback((word: string, context: string) => {
@@ -348,22 +397,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         visible={showSettingsMenu}
         onClose={() => setShowSettingsMenu(false)}
         playbackSpeed={playbackSpeed}
-        onSpeedPress={() => {
-          setShowSettingsMenu(false);
-          setShowSpeedSelector(true);
-        }}
-        autoStop={autoStop}
-        onAutoStopToggle={() => setAutoStop(!autoStop)}
-        showTranslation={showTranslation}
-        onTranslationToggle={() => setShowTranslation(!showTranslation)}
-      />
-
-      {/* Speed Selector */}
-      <SpeedSelector
-        visible={showSpeedSelector}
-        onClose={() => setShowSpeedSelector(false)}
-        currentSpeed={playbackSpeed}
-        onSelectSpeed={handleSpeedSelect}
+        onSpeedCycle={cycleSpeed}
+        autoStop={settings.autoStop}
+        onAutoStopToggle={toggleAutoStop}
+        showTranslation={settings.showTranslation}
+        onTranslationToggle={toggleShowTranslation}
       />
 
       {/* Transcript Section - Full Width */}
@@ -383,7 +421,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             activeSentenceIndex={activeSentenceIndex}
             onSentencePress={handleSentencePress}
             onWordPress={handleWordPress}
-            showTranslation={showTranslation}
+            showTranslation={settings.showTranslation}
             voiceRecordingResult={recordingState.comparisonResult}
           />
         </View>
@@ -393,7 +431,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       <View style={[styles.controlsWrapper, { paddingBottom: insets.bottom || 14 }]}>
         <PlaybackControls
           isPlaying={isPlaying}
-          onPlayPause={togglePlayPause}
+          onPlayPause={handlePlayPause}
           onPrevious={handlePrevious}
           onNext={handleNext}
           onMicrophone={handleMicrophone}

@@ -7,6 +7,8 @@ const SETTINGS_STORAGE_KEY = '@app_settings';
 interface AppSettings {
   hapticEnabled: boolean;
   nativeLanguage: string;
+  autoStop: boolean;
+  showTranslation: boolean;
 }
 
 interface SettingsContextType {
@@ -14,11 +16,15 @@ interface SettingsContextType {
   updateSettings: (newSettings: Partial<AppSettings>) => Promise<void>;
   toggleHaptic: () => Promise<void>;
   setNativeLanguage: (lang: string) => Promise<void>;
+  toggleAutoStop: () => Promise<void>;
+  toggleShowTranslation: () => Promise<void>;
 }
 
 const defaultSettings: AppSettings = {
   hapticEnabled: true,
   nativeLanguage: 'de',
+  autoStop: false,
+  showTranslation: true,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -83,8 +89,22 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     i18n.changeLanguage(lang);
   }, [settings, saveSettings]);
 
+  // Toggle auto-stop
+  const toggleAutoStop = useCallback(async () => {
+    const updated = { ...settings, autoStop: !settings.autoStop };
+    setSettings(updated);
+    await saveSettings(updated);
+  }, [settings, saveSettings]);
+
+  // Toggle show translation
+  const toggleShowTranslation = useCallback(async () => {
+    const updated = { ...settings, showTranslation: !settings.showTranslation };
+    setSettings(updated);
+    await saveSettings(updated);
+  }, [settings, saveSettings]);
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage, toggleAutoStop, toggleShowTranslation }}>
       {children}
     </SettingsContext.Provider>
   );

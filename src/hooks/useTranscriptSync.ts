@@ -9,11 +9,13 @@ interface UseTranscriptSyncParams {
   transcript: Sentence[];
   isPlaying: boolean;
   getCurrentTime: () => Promise<number>;
+  onSentenceEnd?: (sentenceIndex: number) => void;
 }
 
 interface UseTranscriptSyncResult {
   activeSentenceIndex: number;
   activeWord: number; // For word-level highlighting (future feature)
+  resetSentenceEndFlag: () => void;
 }
 
 const SYNC_INTERVAL = 200; // 200ms polling interval for ±200ms accuracy
@@ -22,10 +24,17 @@ export const useTranscriptSync = ({
   transcript,
   isPlaying,
   getCurrentTime,
+  onSentenceEnd,
 }: UseTranscriptSyncParams): UseTranscriptSyncResult => {
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number>(-1);
   const [_activeWord, _setActiveWord] = useState<number>(-1); // For future word-level highlighting
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sentenceEndCalledRef = useRef<number>(-1);
+
+  // Reset flag so onSentenceEnd can be called again for the same sentence
+  const resetSentenceEndFlag = useCallback(() => {
+    sentenceEndCalledRef.current = -1;
+  }, []);
 
   const updateActiveSentence = useCallback(async () => {
     try {
@@ -36,6 +45,15 @@ export const useTranscriptSync = ({
       }
 
       const newIndex = findActiveSentence(transcript, currentTime);
+      
+      // Check if current sentence has ended (time passed endTime)
+      if (activeSentenceIndex >= 0 && activeSentenceIndex < transcript.length) {
+        const currentSentence = transcript[activeSentenceIndex];
+        if (currentSentence && currentTime >= currentSentence.endTime && sentenceEndCalledRef.current !== activeSentenceIndex) {
+          sentenceEndCalledRef.current = activeSentenceIndex;
+          onSentenceEnd?.(activeSentenceIndex);
+        }
+      }
       
       if (newIndex !== activeSentenceIndex) {
         console.log('[useTranscriptSync] Active sentence changed:', {
@@ -48,7 +66,7 @@ export const useTranscriptSync = ({
     } catch (error) {
       console.error('[useTranscriptSync] Error updating active sentence:', error);
     }
-  }, [transcript, activeSentenceIndex, getCurrentTime]);
+  }, [transcript, activeSentenceIndex, getCurrentTime, onSentenceEnd]);
 
   useEffect(() => {
     if (!isPlaying || !transcript || transcript.length === 0) {
@@ -83,6 +101,7 @@ export const useTranscriptSync = ({
   return {
     activeSentenceIndex,
     activeWord: _activeWord, // For future word-level highlighting
+    resetSentenceEndFlag,
   };
 };
 

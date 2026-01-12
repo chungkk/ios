@@ -47,8 +47,6 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showResult, setShowResult] = useState(false);
-  const [checkResult, setCheckResult] = useState<any>(null);
   const [completedSentences, setCompletedSentences] = useState<Set<number>>(new Set());
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [revealedWords, setRevealedWords] = useState<{[key: string]: boolean}>({});
@@ -152,31 +150,11 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     return () => clearInterval(checkInterval);
   }, [isPlaying, currentSentence]);
 
-  // Check answer
-  const checkAnswer = useCallback(() => {
-    if (!currentSentence || !userInput.trim()) return;
-
-    const result = compareTexts(currentSentence.text, userInput.trim());
-    setCheckResult(result);
-    setShowResult(true);
-
-    if (result.isPassed) {
-      vibrateSuccess();
-      setCompletedSentences(prev => new Set([...prev, currentIndex]));
-    } else if (result.overallSimilarity >= 70) {
-      vibratePartial();
-    } else {
-      vibrateError();
-    }
-  }, [currentSentence, userInput, currentIndex]);
-
   // Go to next sentence
   const goToNext = useCallback(() => {
     if (currentIndex < totalSentences - 1) {
       setCurrentIndex(currentIndex + 1);
       setUserInput('');
-      setShowResult(false);
-      setCheckResult(null);
     }
   }, [currentIndex, totalSentences]);
 
@@ -185,24 +163,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setUserInput('');
-      setShowResult(false);
-      setCheckResult(null);
     }
   }, [currentIndex]);
-
-  // Show answer
-  const showAnswer = useCallback(() => {
-    if (currentSentence) {
-      setUserInput(currentSentence.text);
-    }
-  }, [currentSentence]);
-
-  // Retry current sentence
-  const retry = useCallback(() => {
-    setUserInput('');
-    setShowResult(false);
-    setCheckResult(null);
-  }, []);
 
   // Save progress on complete
   const handleComplete = useCallback(async () => {
@@ -454,75 +416,12 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
               value={userInput}
               onChangeText={setUserInput}
               multiline
-              editable={!showResult}
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
 
-          {/* Result Display */}
-          {showResult && checkResult && (
-            <View style={[
-              styles.resultBox,
-              checkResult.isPassed ? styles.resultSuccess : styles.resultError
-            ]}>
-              <Text style={styles.resultTitle}>
-                {checkResult.isPassed ? '✅ Correct!' : '❌ Try Again'}
-              </Text>
-              <Text style={styles.resultScore}>
-                Accuracy: {Math.round(checkResult.overallSimilarity)}%
-              </Text>
-              <Text style={styles.resultFeedback}>
-                {getSimilarityFeedback(checkResult.overallSimilarity, 'en')}
-              </Text>
-              
-              {/* Show correct answer if wrong */}
-              {!checkResult.isPassed && (
-                <View style={styles.correctAnswer}>
-                  <Text style={styles.correctLabel}>Correct answer:</Text>
-                  <Text style={styles.correctText}>{currentSentence?.text}</Text>
-                </View>
-              )}
-            </View>
-          )}
 
-          {/* Action Buttons */}
-          <View style={styles.actions}>
-            {!showResult ? (
-              <>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.hintButton]} 
-                  onPress={showAnswer}
-                >
-                  <Text style={styles.actionButtonText}>👁️ Show</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.checkButton]} 
-                  onPress={checkAnswer}
-                  disabled={!userInput.trim()}
-                >
-                  <Text style={styles.checkButtonText}>Check ✓</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.retryButton]} 
-                  onPress={retry}
-                >
-                  <Text style={styles.actionButtonText}>🔄 Retry</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.nextButton]} 
-                  onPress={currentIndex < totalSentences - 1 ? goToNext : handleComplete}
-                >
-                  <Text style={styles.nextButtonText}>
-                    {currentIndex < totalSentences - 1 ? 'Next →' : 'Finish 🎉'}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
