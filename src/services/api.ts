@@ -3,8 +3,7 @@ import { getToken, saveToken, removeToken } from './storage.service';
 import { API_BASE_URL } from '@env';
 
 // Get API base URL from environment
-// Hardcode for now since @env might not load correctly
-export const BASE_URL = 'http://192.168.2.212:3000';
+export const BASE_URL = API_BASE_URL || 'https://ckk.pro';
 console.log('[API] ENV API_BASE_URL:', API_BASE_URL);
 console.log('[API] Using BASE_URL:', BASE_URL);
 
