@@ -1,7 +1,7 @@
-// VocabularyScreen - My Vocabulary List
-// Neo-Retro Design
+// VocabularyScreen - Smart Vocabulary Learning
+// Neo-Retro Design with SRS Integration
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   RefreshControl,
   Alert,
   Modal,
+  TextInput,
+  Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -22,19 +24,27 @@ import EmptyState from '../components/common/EmptyState';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
 import { colors, spacing } from '../styles/theme';
 
-const ITEMS_PER_PAGE = 10;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ITEMS_PER_PAGE = 15;
+
+// Word status types
+type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
 
 const VocabularyScreen: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  
+  // State
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showFlashcard, setShowFlashcard] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<WordStatus>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
+  // Fetch vocabulary
   const fetchVocabulary = useCallback(async () => {
-    // Don't fetch if user is not logged in
     if (!user) {
       setVocabulary([]);
       setLoading(false);
@@ -56,23 +66,85 @@ const VocabularyScreen: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setCurrentPage(1);
     await fetchVocabulary();
     setRefreshing(false);
   }, [fetchVocabulary]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(vocabulary.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedVocabulary = vocabulary.slice(startIndex, endIndex);
+  // Calculate stats
+  const stats = useMemo(() => {
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * oneDay;
 
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+    return {
+      total: vocabulary.length,
+      new: vocabulary.filter(v => {
+        const created = new Date(v.createdAt || Date.now());
+        return now.getTime() - created.getTime() < oneDay;
+      }).length,
+      learning: vocabulary.filter(v => {
+        const created = new Date(v.createdAt || Date.now());
+        const age = now.getTime() - created.getTime();
+        return age >= oneDay && age < oneWeek;
+      }).length,
+      mastered: vocabulary.filter(v => {
+        const created = new Date(v.createdAt || Date.now());
+        return now.getTime() - created.getTime() >= oneWeek;
+      }).length,
+    };
+  }, [vocabulary]);
+
+  // Filter and search
+  const filteredVocabulary = useMemo(() => {
+    let filtered = vocabulary;
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * oneDay;
+
+    // Filter by status
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter(v => {
+        const created = new Date(v.createdAt || Date.now());
+        const age = now.getTime() - created.getTime();
+        
+        switch (activeFilter) {
+          case 'new':
+            return age < oneDay;
+          case 'learning':
+            return age >= oneDay && age < oneWeek;
+          case 'mastered':
+            return age >= oneWeek;
+          default:
+            return true;
+        }
+      });
     }
-  };
 
+    // Search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(v =>
+        v.word.toLowerCase().includes(query) ||
+        v.translation.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [vocabulary, activeFilter, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredVocabulary.length / ITEMS_PER_PAGE);
+  const paginatedVocabulary = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredVocabulary.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredVocabulary, currentPage]);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchQuery]);
+
+  // Delete word
   const handleDelete = useCallback(async (id: string) => {
     Alert.alert(
       t('vocabulary.deleteConfirm'),
@@ -95,68 +167,165 @@ const VocabularyScreen: React.FC = () => {
     );
   }, [t]);
 
-  const renderItem = ({ item }: { item: VocabularyItem }) => (
-    <View style={styles.wordCard}>
-      <View style={styles.cardTopBar} />
-      <View style={styles.cardContent}>
-        <View style={styles.wordHeader}>
-          <Text style={styles.word}>{item.word}</Text>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDelete(item.id)}
-          >
-            <Icon name="trash-outline" size={18} color={colors.retroCoral} />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.translation}>{item.translation}</Text>
-        {item.context && (
-          <Text style={styles.context} numberOfLines={2}>
-            "{item.context}"
-          </Text>
-        )}
-        {item.lessonTitle && (
-          <View style={styles.lessonBadge}>
-            <Icon name="book-outline" size={12} color={colors.retroPurple} />
-            <Text style={styles.lessonTitle}>{item.lessonTitle}</Text>
+  // Get word status
+  const getWordStatus = (item: VocabularyItem): WordStatus => {
+    const now = new Date();
+    const created = new Date(item.createdAt || Date.now());
+    const age = now.getTime() - created.getTime();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * oneDay;
+
+    if (age < oneDay) return 'new';
+    if (age < oneWeek) return 'learning';
+    return 'mastered';
+  };
+
+  // Render word card
+  const renderItem = ({ item }: { item: VocabularyItem }) => {
+    const status = getWordStatus(item);
+    const statusConfig = {
+      new: { icon: '🆕', color: colors.retroCoral, label: 'Mới' },
+      learning: { icon: '📖', color: colors.retroYellow, label: 'Đang học' },
+      mastered: { icon: '✅', color: colors.retroCyan, label: 'Đã thuộc' },
+    };
+    const config = statusConfig[status];
+
+    return (
+      <View style={styles.wordCard}>
+        <View style={[styles.cardAccent, { backgroundColor: config.color }]} />
+        <View style={styles.cardBody}>
+          <View style={styles.cardHeader}>
+            <View style={styles.wordInfo}>
+              <Text style={styles.word}>{item.word}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: config.color + '20' }]}>
+                <Text style={styles.statusIcon}>{config.icon}</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={() => handleDelete(item.id)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon name="trash-outline" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
           </View>
-        )}
+          
+          <Text style={styles.translation}>{item.translation}</Text>
+          
+          {item.context && (
+            <Text style={styles.context} numberOfLines={2}>
+              „{item.context}"
+            </Text>
+          )}
+          
+          {item.lessonTitle && (
+            <View style={styles.sourceTag}>
+              <Icon name="videocam-outline" size={11} color={colors.retroPurple} />
+              <Text style={styles.sourceText} numberOfLines={1}>{item.lessonTitle}</Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
+
+  // Filter tabs
+  const filterTabs: { key: WordStatus; label: string; count: number }[] = [
+    { key: 'all', label: t('vocabulary.filterAll'), count: stats.total },
+    { key: 'new', label: t('vocabulary.filterNew'), count: stats.new },
+    { key: 'learning', label: t('vocabulary.filterLearning'), count: stats.learning },
+    { key: 'mastered', label: t('vocabulary.filterMastered'), count: stats.mastered },
+  ];
 
   if (loading) return <Loading />;
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
-          <Text style={styles.wordCount}>{vocabulary.length} {t('vocabulary.words')}</Text>
-        </View>
-        {vocabulary.length > 0 && (
-          <TouchableOpacity 
-            style={styles.flashcardButton} 
-            onPress={() => setShowFlashcard(true)}
-          >
-            <Icon name="albums-outline" size={18} color="#fff" />
-            <Text style={styles.flashcardButtonText}>{t('vocabulary.flashcard')}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {vocabulary.length === 0 ? (
+  // Not logged in state
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
         <EmptyState
-          icon="book-outline"
-          title={t('vocabulary.noWords')}
+          icon="person-outline"
+          title={t('profile.loginRequired')}
           message={t('vocabulary.noWordsMessage')}
         />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header Card */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('vocabulary.wordsSaved', { count: stats.total })}</Text>
+          </View>
+          {vocabulary.length > 0 && (
+            <TouchableOpacity
+              style={styles.flashcardBtn}
+              onPress={() => setShowFlashcard(true)}
+            >
+              <Icon name="albums" size={18} color="#fff" />
+              <Text style={styles.flashcardBtnText}>{t('vocabulary.study')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchBox}>
+          <Icon name="search" size={16} color={colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('vocabulary.searchPlaceholder')}
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Icon name="close-circle" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Simple Filter Chips */}
+        <View style={styles.filterRow}>
+          {filterTabs.map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
+              onPress={() => setActiveFilter(tab.key)}
+            >
+              <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
+                {tab.label} ({tab.count})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Word List */}
+      {filteredVocabulary.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>
+            {searchQuery ? '🔍' : activeFilter === 'new' ? '🆕' : activeFilter === 'learning' ? '📖' : activeFilter === 'mastered' ? '✅' : '📚'}
+          </Text>
+          <Text style={styles.emptyTitle}>
+            {searchQuery ? t('vocabulary.notFound') : t('vocabulary.noWords')}
+          </Text>
+          <Text style={styles.emptyText}>
+            {searchQuery 
+              ? t('vocabulary.tryOtherKeyword')
+              : t('vocabulary.noWordsMessage')}
+          </Text>
+        </View>
       ) : (
         <>
           <FlatList
             data={paginatedVocabulary}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -167,56 +336,28 @@ const VocabularyScreen: React.FC = () => {
               />
             }
           />
-          {/* Pagination Controls */}
+
+          {/* Pagination */}
           {totalPages > 1 && (
             <View style={styles.pagination}>
               <TouchableOpacity
-                style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
-                onPress={() => goToPage(currentPage - 1)}
+                style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
+                onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                <Icon name="chevron-back" size={20} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
+                <Icon name="chevron-back" size={18} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
               </TouchableOpacity>
-
-              <View style={styles.pageNumbers}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(page => {
-                    if (totalPages <= 5) return true;
-                    if (page === 1 || page === totalPages) return true;
-                    if (Math.abs(page - currentPage) <= 1) return true;
-                    return false;
-                  })
-                  .map((page, index, arr) => (
-                    <React.Fragment key={page}>
-                      {index > 0 && arr[index - 1] !== page - 1 && (
-                        <Text style={styles.ellipsis}>...</Text>
-                      )}
-                      <TouchableOpacity
-                        style={[
-                          styles.pageNumber,
-                          currentPage === page && styles.pageNumberActive,
-                        ]}
-                        onPress={() => goToPage(page)}
-                      >
-                        <Text
-                          style={[
-                            styles.pageNumberText,
-                            currentPage === page && styles.pageNumberTextActive,
-                          ]}
-                        >
-                          {page}
-                        </Text>
-                      </TouchableOpacity>
-                    </React.Fragment>
-                  ))}
+              
+              <View style={styles.pageInfo}>
+                <Text style={styles.pageText}>{currentPage} / {totalPages}</Text>
               </View>
-
+              
               <TouchableOpacity
-                style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
-                onPress={() => goToPage(currentPage + 1)}
+                style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
+                onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >
-                <Icon name="chevron-forward" size={20} color={currentPage === totalPages ? colors.textMuted : colors.retroDark} />
+                <Icon name="chevron-forward" size={18} color={currentPage === totalPages ? colors.textMuted : colors.retroDark} />
               </TouchableOpacity>
             </View>
           )}
@@ -243,13 +384,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgPrimary,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
+  // Header Card
+  headerCard: {
+    margin: spacing.md,
     padding: spacing.md,
     backgroundColor: colors.retroCream,
     borderRadius: 16,
@@ -261,26 +398,28 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
-  headerLeft: {
-    flex: 1,
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: colors.retroDark,
   },
-  wordCount: {
-    fontSize: 12,
-    fontWeight: '600',
+  headerSubtitle: {
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },
-  flashcardButton: {
+  flashcardBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.retroPurple,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
@@ -291,135 +430,190 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 2,
   },
-  flashcardButtonText: {
-    fontSize: 13,
+  flashcardBtnText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#fff',
   },
-  list: {
-    padding: spacing.md,
-    paddingBottom: 20,
-  },
-  wordCard: {
+  // Search
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 2,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
     borderColor: colors.retroBorder,
-    overflow: 'hidden',
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 0,
-    elevation: 3,
+    height: 40,
+    gap: 8,
+    marginBottom: spacing.sm,
   },
-  cardTopBar: {
-    height: 4,
-    backgroundColor: colors.retroCyan,
-  },
-  cardContent: {
-    padding: 14,
-  },
-  wordHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  word: {
-    fontSize: 18,
-    fontWeight: '700',
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
     color: colors.retroDark,
+    padding: 0,
   },
-  deleteButton: {
-    padding: 6,
-  },
-  translation: {
-    fontSize: 15,
-    color: colors.retroPurple,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  context: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    marginBottom: 8,
-    lineHeight: 18,
-  },
-  lessonBadge: {
+  // Filter Chips
+  filterRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.retroCream,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: colors.retroBorder,
   },
-  lessonTitle: {
-    fontSize: 11,
-    color: colors.retroPurple,
-    fontWeight: '600',
+  filterChipActive: {
+    backgroundColor: colors.retroCyan,
+    borderColor: colors.retroCyan,
   },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  // Word List
+  list: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  wordCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+  },
+  cardAccent: {
+    width: 5,
+  },
+  cardBody: {
+    flex: 1,
+    padding: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  wordInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  word: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  statusBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusIcon: {
+    fontSize: 10,
+  },
+  deleteBtn: {
+    padding: 4,
+  },
+  translation: {
+    fontSize: 14,
+    color: colors.retroPurple,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  context: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: 6,
+    lineHeight: 16,
+  },
+  sourceTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  sourceText: {
+    fontSize: 10,
+    color: colors.retroPurple,
+    fontWeight: '500',
+    maxWidth: SCREEN_WIDTH * 0.5,
+  },
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.retroDark,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  // Pagination
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.retroCream,
-    borderTopWidth: 3,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+    borderTopWidth: 1,
     borderTopColor: colors.retroBorder,
-    gap: spacing.sm,
+    backgroundColor: colors.retroCream,
   },
-  pageButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: colors.bgCard,
-    borderWidth: 2,
-    borderColor: colors.retroBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pageButtonDisabled: {
-    opacity: 0.4,
-  },
-  pageNumbers: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  pageNumber: {
-    minWidth: 36,
+  pageBtn: {
+    width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: colors.bgCard,
+    backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
   },
-  pageNumberActive: {
-    backgroundColor: colors.retroCyan,
+  pageBtnDisabled: {
+    opacity: 0.4,
+  },
+  pageInfo: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 2,
     borderColor: colors.retroBorder,
   },
-  pageNumberText: {
-    fontSize: 14,
+  pageText: {
+    fontSize: 13,
     fontWeight: '700',
     color: colors.retroDark,
-  },
-  pageNumberTextActive: {
-    color: colors.retroDark,
-  },
-  ellipsis: {
-    fontSize: 14,
-    color: colors.textMuted,
-    paddingHorizontal: 4,
   },
 });
 

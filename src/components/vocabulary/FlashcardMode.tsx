@@ -9,6 +9,7 @@ import {
   Vibration,
   SafeAreaView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSettings } from '../../contexts/SettingsContext';
 import { colors, spacing } from '../../styles/theme';
@@ -32,6 +33,7 @@ interface FlashcardModeProps {
 }
 
 const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUpdateCard }) => {
+  const { t } = useTranslation();
   const { settings } = useSettings();
   const flipAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -172,32 +174,32 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
         <View style={styles.completeContainer}>
           <View style={styles.completeCard}>
             <Text style={styles.completeEmoji}>🎉</Text>
-            <Text style={styles.completeTitle}>Hoàn thành!</Text>
+            <Text style={styles.completeTitle}>{t('vocabulary.flashcardComplete')}</Text>
             <Text style={styles.completeSubtitle}>
-              Bạn đã ôn {completedCount} thẻ trong phiên này
+              {t('vocabulary.flashcardCompleteMsg', { count: completedCount })}
             </Text>
 
             <View style={styles.statsGrid}>
               <View style={[styles.statBox, { backgroundColor: '#ffebee' }]}>
                 <Text style={styles.statValue}>{sessionStats.again}</Text>
-                <Text style={styles.statLabel}>Quên</Text>
+                <Text style={styles.statLabel}>{t('vocabulary.forgot')}</Text>
               </View>
               <View style={[styles.statBox, { backgroundColor: '#fff3e0' }]}>
                 <Text style={styles.statValue}>{sessionStats.hard}</Text>
-                <Text style={styles.statLabel}>Khó</Text>
+                <Text style={styles.statLabel}>{t('vocabulary.hard')}</Text>
               </View>
               <View style={[styles.statBox, { backgroundColor: '#e8f5e9' }]}>
                 <Text style={styles.statValue}>{sessionStats.good}</Text>
-                <Text style={styles.statLabel}>Tốt</Text>
+                <Text style={styles.statLabel}>{t('vocabulary.good')}</Text>
               </View>
               <View style={[styles.statBox, { backgroundColor: '#e3f2fd' }]}>
                 <Text style={styles.statValue}>{sessionStats.easy}</Text>
-                <Text style={styles.statLabel}>Dễ</Text>
+                <Text style={styles.statLabel}>{t('vocabulary.easy')}</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>Quay lại</Text>
+              <Text style={styles.closeButtonText}>{t('vocabulary.back')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -235,13 +237,13 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             <View style={styles.cardTopBar} />
             <View style={styles.cardContent}>
               <Text style={styles.cardWord}>{currentCard?.word}</Text>
-              <Text style={styles.cardHint}>Nhấn để xem nghĩa</Text>
+              <Text style={styles.cardHint}>{t('vocabulary.tapToFlip')}</Text>
             </View>
             <View style={styles.cardStateTag}>
               <Text style={styles.cardStateText}>
-                {currentCard?.state === CardState.NEW ? '🆕 Mới' :
-                 currentCard?.state === CardState.LEARNING ? '📖 Đang học' :
-                 currentCard?.state === CardState.REVIEW ? '🔄 Ôn tập' : '📝 Học lại'}
+                {currentCard?.state === CardState.NEW ? `🆕 ${t('vocabulary.filterNew')}` :
+                 currentCard?.state === CardState.LEARNING ? `📖 ${t('vocabulary.filterLearning')}` :
+                 currentCard?.state === CardState.REVIEW ? `🔄 ${t('vocabulary.filterMastered')}` : `📝 ${t('vocabulary.filterLearning')}`}
               </Text>
             </View>
           </Animated.View>
@@ -269,7 +271,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             onPress={() => handleRating(Rating.AGAIN)}
           >
             <Text style={styles.ratingTime}>{reviewTexts.again}</Text>
-            <Text style={styles.ratingLabel}>Quên</Text>
+            <Text style={styles.ratingLabel}>{t('vocabulary.forgot')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -277,7 +279,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             onPress={() => handleRating(Rating.HARD)}
           >
             <Text style={styles.ratingTime}>{reviewTexts.hard}</Text>
-            <Text style={styles.ratingLabel}>Khó</Text>
+            <Text style={styles.ratingLabel}>{t('vocabulary.hard')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -285,7 +287,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             onPress={() => handleRating(Rating.GOOD)}
           >
             <Text style={styles.ratingTime}>{reviewTexts.good}</Text>
-            <Text style={styles.ratingLabel}>Tốt</Text>
+            <Text style={styles.ratingLabel}>{t('vocabulary.good')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -293,7 +295,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             onPress={() => handleRating(Rating.EASY)}
           >
             <Text style={styles.ratingTime}>{reviewTexts.easy}</Text>
-            <Text style={styles.ratingLabel}>Dễ</Text>
+            <Text style={styles.ratingLabel}>{t('vocabulary.easy')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -301,7 +303,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
       {/* Tap hint when not flipped */}
       {!isFlipped && (
         <View style={styles.tapHintContainer}>
-          <Text style={styles.tapHint}>👆 Nhấn vào thẻ để lật</Text>
+          <Text style={styles.tapHint}>👆 {t('vocabulary.tapToFlip')}</Text>
         </View>
       )}
     </SafeAreaView>
