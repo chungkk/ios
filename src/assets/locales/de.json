@@ -33,7 +33,46 @@
     "hapticFeedback": "Haptisches Feedback",
     "logout": "Abmelden",
     "logoutConfirm": "Bist du sicher, dass du dich abmelden möchtest?",
-    "version": "Version"
+    "version": "Version",
+    "termsOfService": "Allgemeine Geschäftsbedingungen",
+    "privacyPolicy": "Datenschutzrichtlinie"
+  },
+  "legal": {
+    "termsTitle": "Allgemeine Geschäftsbedingungen",
+    "privacyTitle": "Datenschutzrichtlinie",
+    "lastUpdated": "Stand: Januar 2026",
+    "terms": {
+      "scope": "1. Geltungsbereich",
+      "scopeText": "Diese Allgemeinen Geschäftsbedingungen gelten für die Nutzung der ppgeil App zum Erlernen der deutschen Sprache.",
+      "subject": "2. Vertragsgegenstand",
+      "subjectText": "Die App bietet Sprachlernfunktionen wie Diktat, Shadowing und Vokabeltraining an. Der Zugang zu bestimmten Funktionen kann ein Benutzerkonto erfordern.",
+      "rights": "3. Nutzungsrechte",
+      "rightsText": "Mit der Registrierung erhält der Nutzer ein nicht übertragbares Recht zur Nutzung der App für persönliche, nicht-kommerzielle Zwecke.",
+      "obligations": "4. Pflichten des Nutzers",
+      "obligationsText": "Der Nutzer verpflichtet sich, die App nur für rechtmäßige Zwecke zu nutzen und keine Inhalte hochzuladen, die gegen geltendes Recht verstoßen.",
+      "liability": "5. Haftung",
+      "liabilityText": "Die Haftung für Schäden wird auf Vorsatz und grobe Fahrlässigkeit beschränkt, soweit gesetzlich zulässig.",
+      "changes": "6. Änderungen",
+      "changesText": "Wir behalten uns vor, diese AGB jederzeit zu ändern. Änderungen werden dem Nutzer rechtzeitig mitgeteilt.",
+      "final": "7. Schlussbestimmungen",
+      "finalText": "Es gilt deutsches Recht. Gerichtsstand ist, soweit gesetzlich zulässig, der Sitz des Anbieters."
+    },
+    "privacy": {
+      "controller": "1. Verantwortlicher",
+      "controllerText": "Verantwortlich für die Datenverarbeitung ist der Betreiber der ppgeil App.",
+      "dataCollected": "2. Erhobene Daten",
+      "dataCollectedText": "Wir erheben folgende Daten:\n• Registrierungsdaten (Name, E-Mail)\n• Lernfortschritt und Statistiken\n• Geräteinformationen für die App-Funktion",
+      "purpose": "3. Zweck der Datenverarbeitung",
+      "purposeText": "Die Daten werden verarbeitet für:\n• Bereitstellung der App-Funktionen\n• Speicherung des Lernfortschritts\n• Verbesserung unserer Dienste",
+      "sharing": "4. Datenweitergabe",
+      "sharingText": "Ihre Daten werden nicht an Dritte verkauft. Eine Weitergabe erfolgt nur an technische Dienstleister, die für den Betrieb der App notwendig sind.",
+      "rights": "5. Ihre Rechte",
+      "rightsText": "Sie haben das Recht auf:\n• Auskunft über Ihre gespeicherten Daten\n• Berichtigung unrichtiger Daten\n• Löschung Ihrer Daten\n• Widerspruch gegen die Verarbeitung",
+      "security": "6. Datensicherheit",
+      "securityText": "Wir setzen technische und organisatorische Maßnahmen ein, um Ihre Daten vor unbefugtem Zugriff zu schützen.",
+      "contact": "7. Kontakt",
+      "contactText": "Bei Fragen zum Datenschutz kontaktieren Sie uns unter: datenschutz@ppgeil.de"
+    }
   },
   "home": {
     "welcome": "Willkommen zurück",

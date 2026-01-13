@@ -33,7 +33,46 @@
     "hapticFeedback": "Haptic Feedback",
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to logout?",
-    "version": "Version"
+    "version": "Version",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy"
+  },
+  "legal": {
+    "termsTitle": "Terms of Service",
+    "privacyTitle": "Privacy Policy",
+    "lastUpdated": "Last updated: January 2026",
+    "terms": {
+      "scope": "1. Scope",
+      "scopeText": "These Terms of Service apply to the use of the ppgeil app for learning German.",
+      "subject": "2. Subject Matter",
+      "subjectText": "The app offers language learning features such as dictation, shadowing, and vocabulary training. Access to certain features may require a user account.",
+      "rights": "3. Usage Rights",
+      "rightsText": "Upon registration, the user receives a non-transferable right to use the app for personal, non-commercial purposes.",
+      "obligations": "4. User Obligations",
+      "obligationsText": "The user agrees to use the app only for lawful purposes and not to upload content that violates applicable laws.",
+      "liability": "5. Liability",
+      "liabilityText": "Liability for damages is limited to intent and gross negligence, to the extent permitted by law.",
+      "changes": "6. Changes",
+      "changesText": "We reserve the right to change these Terms at any time. Changes will be communicated to users in a timely manner.",
+      "final": "7. Final Provisions",
+      "finalText": "German law applies. The place of jurisdiction is, to the extent permitted by law, the registered office of the provider."
+    },
+    "privacy": {
+      "controller": "1. Data Controller",
+      "controllerText": "The operator of the ppgeil app is responsible for data processing.",
+      "dataCollected": "2. Data Collected",
+      "dataCollectedText": "We collect the following data:\n• Registration data (name, email)\n• Learning progress and statistics\n• Device information for app functionality",
+      "purpose": "3. Purpose of Data Processing",
+      "purposeText": "Data is processed for:\n• Providing app features\n• Storing learning progress\n• Improving our services",
+      "sharing": "4. Data Sharing",
+      "sharingText": "Your data will not be sold to third parties. Sharing only occurs with technical service providers necessary for app operation.",
+      "rights": "5. Your Rights",
+      "rightsText": "You have the right to:\n• Access your stored data\n• Correct inaccurate data\n• Delete your data\n• Object to processing",
+      "security": "6. Data Security",
+      "securityText": "We implement technical and organizational measures to protect your data from unauthorized access.",
+      "contact": "7. Contact",
+      "contactText": "For privacy questions, contact us at: datenschutz@ppgeil.de"
+    }
   },
   "home": {
     "welcome": "Welcome back",

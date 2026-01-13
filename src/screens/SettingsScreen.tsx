@@ -12,6 +12,8 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Modal,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +47,8 @@ const SettingsScreen: React.FC = () => {
   const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
   const { settings, toggleHaptic, setNativeLanguage } = useSettings();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showAGBModal, setShowAGBModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleLogin = () => {
     navigation.navigate('Auth', { screen: 'Login' });
@@ -279,14 +283,13 @@ const SettingsScreen: React.FC = () => {
               
               {/* Stats */}
               <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{userPoints || 0}</Text>
-                  <Text style={styles.statLabel}>{t('profile.points')}</Text>
+                <View style={styles.statBadge}>
+                  <Icon name="diamond" size={16} color="#fff" />
+                  <Text style={styles.statBadgeValue}>{userPoints || 0}</Text>
                 </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{streakValue}</Text>
-                  <Text style={styles.statLabel}>{t('profile.dayStreak')}</Text>
+                <View style={styles.statBadge}>
+                  <Icon name="flame" size={16} color="#fff" />
+                  <Text style={styles.statBadgeValue}>{streakValue}</Text>
                 </View>
               </View>
             </View>
@@ -368,6 +371,26 @@ const SettingsScreen: React.FC = () => {
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowAGBModal(true)} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <Icon name="document-text" size={22} color={colors.retroCyan} />
+              <Text style={styles.settingText}>{t('settings.termsOfService')}</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowPrivacyModal(true)} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <Icon name="shield-checkmark" size={22} color={colors.retroPurple} />
+              <Text style={styles.settingText}>{t('settings.privacyPolicy')}</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Logout */}
@@ -384,6 +407,78 @@ const SettingsScreen: React.FC = () => {
         {/* Version */}
         <Text style={styles.version}>{t('settings.version')} 1.0.0</Text>
       </ScrollView>
+
+      {/* AGB Modal */}
+      <Modal visible={showAGBModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t('legal.termsTitle')}</Text>
+            <TouchableOpacity onPress={() => setShowAGBModal(false)} style={styles.modalCloseBtn}>
+              <Icon name="close" size={24} color={colors.retroDark} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
+            <Text style={styles.modalHeading}>{t('legal.terms.scope')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.scopeText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.terms.subject')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.subjectText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.terms.rights')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.rightsText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.terms.obligations')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.obligationsText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.terms.liability')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.liabilityText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.terms.changes')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.changesText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.terms.final')}</Text>
+            <Text style={styles.modalText}>{t('legal.terms.finalText')}</Text>
+            
+            <Text style={styles.modalDate}>{t('legal.lastUpdated')}</Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Privacy Policy Modal */}
+      <Modal visible={showPrivacyModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t('legal.privacyTitle')}</Text>
+            <TouchableOpacity onPress={() => setShowPrivacyModal(false)} style={styles.modalCloseBtn}>
+              <Icon name="close" size={24} color={colors.retroDark} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
+            <Text style={styles.modalHeading}>{t('legal.privacy.controller')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.controllerText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.privacy.dataCollected')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.dataCollectedText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.privacy.purpose')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.purposeText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.privacy.sharing')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.sharingText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.privacy.rights')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.rightsText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.privacy.security')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.securityText')}</Text>
+            
+            <Text style={styles.modalHeading}>{t('legal.privacy.contact')}</Text>
+            <Text style={styles.modalText}>{t('legal.privacy.contactText')}</Text>
+            
+            <Text style={styles.modalDate}>{t('legal.lastUpdated')}</Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -527,6 +622,23 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroDark,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 6,
+  },
+  statBadgeValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#fff',
   },
   statItem: {
     alignItems: 'center',
@@ -628,6 +740,63 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: spacing.lg,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.retroBorder,
+    backgroundColor: colors.retroCream,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.retroDark,
+    flex: 1,
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: spacing.lg,
+    paddingBottom: 40,
+  },
+  modalHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.retroDark,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  modalText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textSecondary,
+  },
+  modalDate: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: spacing.xl,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

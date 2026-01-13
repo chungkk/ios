@@ -33,7 +33,46 @@
     "hapticFeedback": "Phản hồi rung",
     "logout": "Đăng xuất",
     "logoutConfirm": "Bạn có chắc muốn đăng xuất?",
-    "version": "Phiên bản"
+    "version": "Phiên bản",
+    "termsOfService": "Điều khoản dịch vụ",
+    "privacyPolicy": "Chính sách bảo mật"
+  },
+  "legal": {
+    "termsTitle": "Điều khoản dịch vụ",
+    "privacyTitle": "Chính sách bảo mật",
+    "lastUpdated": "Cập nhật: Tháng 1/2026",
+    "terms": {
+      "scope": "1. Phạm vi áp dụng",
+      "scopeText": "Các điều khoản dịch vụ này áp dụng cho việc sử dụng ứng dụng ppgeil để học tiếng Đức.",
+      "subject": "2. Đối tượng hợp đồng",
+      "subjectText": "Ứng dụng cung cấp các tính năng học ngôn ngữ như nghe chép, shadowing và luyện từ vựng. Một số tính năng có thể yêu cầu tài khoản người dùng.",
+      "rights": "3. Quyền sử dụng",
+      "rightsText": "Khi đăng ký, người dùng được cấp quyền sử dụng không thể chuyển nhượng để sử dụng ứng dụng cho mục đích cá nhân, phi thương mại.",
+      "obligations": "4. Nghĩa vụ của người dùng",
+      "obligationsText": "Người dùng cam kết chỉ sử dụng ứng dụng cho mục đích hợp pháp và không tải lên nội dung vi phạm pháp luật.",
+      "liability": "5. Trách nhiệm",
+      "liabilityText": "Trách nhiệm bồi thường thiệt hại được giới hạn ở hành vi cố ý và sơ suất nghiêm trọng, trong phạm vi pháp luật cho phép.",
+      "changes": "6. Thay đổi",
+      "changesText": "Chúng tôi có quyền thay đổi các điều khoản này bất cứ lúc nào. Các thay đổi sẽ được thông báo cho người dùng kịp thời.",
+      "final": "7. Điều khoản cuối",
+      "finalText": "Áp dụng luật pháp Đức. Tòa án có thẩm quyền là nơi đặt trụ sở của nhà cung cấp, trong phạm vi pháp luật cho phép."
+    },
+    "privacy": {
+      "controller": "1. Người chịu trách nhiệm",
+      "controllerText": "Người vận hành ứng dụng ppgeil chịu trách nhiệm về việc xử lý dữ liệu.",
+      "dataCollected": "2. Dữ liệu thu thập",
+      "dataCollectedText": "Chúng tôi thu thập các dữ liệu sau:\n• Thông tin đăng ký (tên, email)\n• Tiến trình học tập và thống kê\n• Thông tin thiết bị để vận hành ứng dụng",
+      "purpose": "3. Mục đích xử lý dữ liệu",
+      "purposeText": "Dữ liệu được xử lý để:\n• Cung cấp tính năng ứng dụng\n• Lưu trữ tiến trình học tập\n• Cải thiện dịch vụ",
+      "sharing": "4. Chia sẻ dữ liệu",
+      "sharingText": "Dữ liệu của bạn không được bán cho bên thứ ba. Việc chia sẻ chỉ xảy ra với các nhà cung cấp dịch vụ kỹ thuật cần thiết cho hoạt động của ứng dụng.",
+      "rights": "5. Quyền của bạn",
+      "rightsText": "Bạn có quyền:\n• Truy cập dữ liệu đã lưu\n• Sửa dữ liệu không chính xác\n• Xóa dữ liệu của bạn\n• Phản đối việc xử lý",
+      "security": "6. Bảo mật dữ liệu",
+      "securityText": "Chúng tôi áp dụng các biện pháp kỹ thuật và tổ chức để bảo vệ dữ liệu của bạn khỏi truy cập trái phép.",
+      "contact": "7. Liên hệ",
+      "contactText": "Nếu có câu hỏi về bảo mật, liên hệ: datenschutz@ppgeil.de"
+    }
   },
   "home": {
     "welcome": "Chào mừng trở lại",
