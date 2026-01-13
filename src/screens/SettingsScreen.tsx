@@ -294,7 +294,7 @@ const SettingsScreen: React.FC = () => {
                   </View>
                 )}
                 <View style={styles.editBadge}>
-                  <Icon name="camera" size={12} color="#fff" />
+                  <Icon name="camera" size={14} color="#fff" />
                 </View>
               </TouchableOpacity>
               <Text style={styles.userName}>{user.name || 'User'}</Text>
@@ -303,11 +303,11 @@ const SettingsScreen: React.FC = () => {
               {/* Stats */}
               <View style={styles.statsRow}>
                 <View style={styles.statBadge}>
-                  <Icon name="diamond" size={16} color="#fff" />
+                  <Icon name="diamond" size={18} color={colors.retroYellow} />
                   <Text style={styles.statBadgeValue}>{userPoints || 0}</Text>
                 </View>
                 <View style={styles.statBadge}>
-                  <Icon name="flame" size={16} color="#fff" />
+                  <Icon name="flame" size={18} color={colors.retroCoral} />
                   <Text style={styles.statBadgeValue}>{streakValue}</Text>
                 </View>
               </View>
@@ -331,16 +331,18 @@ const SettingsScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.statisticsCard}
           onPress={() => navigation.navigate('Home', { screen: 'Statistics' })}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <View style={styles.statisticsLeft}>
-            <Icon name="stats-chart" size={28} color={colors.retroCyan} />
+            <View style={styles.statisticsIconWrapper}>
+              <Icon name="stats-chart" size={26} color={colors.retroCyan} />
+            </View>
             <View>
               <Text style={styles.statisticsTitle}>{t('settings.statistics')}</Text>
               <Text style={styles.statisticsSubtitle}>{t('statistics.today')}, {t('statistics.thisWeek')}, {t('statistics.thisMonth')}</Text>
             </View>
           </View>
-          <Icon name="chevron-forward" size={22} color={colors.textMuted} />
+          <Icon name="chevron-forward" size={24} color={colors.retroCyan} />
         </TouchableOpacity>
 
         {/* Settings Options */}
@@ -552,16 +554,16 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     margin: spacing.md,
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: colors.retroBorder,
+    borderColor: colors.retroPurple,
     overflow: 'hidden',
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 0,
-    elevation: 3,
+    shadowColor: colors.retroPurple,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   loginCard: {
     margin: spacing.md,
@@ -582,26 +584,43 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.retroCyan + '20',
-    borderRadius: 16,
+    padding: spacing.lg,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: colors.retroCyan,
+    shadowColor: colors.retroCyan,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   statisticsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
+  statisticsIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 188, 212, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 188, 212, 0.3)',
+  },
   statisticsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.retroDark,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   statisticsSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
+    fontSize: 13,
+    color: colors.retroCyan,
+    marginTop: 4,
+    fontWeight: '500',
   },
   loginTitle: {
     fontSize: 16,
@@ -628,81 +647,99 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   cardTopBar: {
-    height: 4,
-    backgroundColor: colors.retroCyan,
+    height: 5,
+    backgroundColor: colors.retroPurple,
   },
   cardContent: {
-    padding: spacing.lg,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: colors.retroPurple,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: colors.retroBorder,
+    borderWidth: 4,
+    borderColor: colors.retroPurple,
+    shadowColor: colors.retroPurple,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   avatarImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 3,
-    borderColor: colors.retroBorder,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 4,
+    borderColor: colors.retroPurple,
   },
   editBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: 2,
+    right: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.retroCyan,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#fff',
+    shadowColor: colors.retroCyan,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: '800',
     color: '#fff',
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: colors.retroDark,
     marginBottom: 4,
+    letterSpacing: 0.5,
   },
   userEmail: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   statBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.retroDark,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    backgroundColor: '#1a1a2e',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 25,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    gap: 6,
+    gap: 8,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   statBadgeValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
     color: '#fff',
   },
