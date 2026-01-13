@@ -59,7 +59,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const [completedReported, setCompletedReported] = useState(false);
-  const [viewedSentences, setViewedSentences] = useState<Set<number>>(new Set());
+  const [recordedSentences, setRecordedSentences] = useState<Set<number>>(new Set()); // Track sentences user has recorded
   const [rewardedSentences, setRewardedSentences] = useState<Set<number>>(new Set()); // Track sentences that got 80%+ reward
   const [progressLoaded, setProgressLoaded] = useState(false);
   // Store recording results for each sentence
@@ -138,13 +138,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Handle sentence end for auto-stop
   const handleSentenceEnd = useCallback((sentenceIndex: number) => {
-    // Mark sentence as viewed
-    if (!viewedSentences.has(sentenceIndex)) {
-      setViewedSentences(prev => new Set([...prev, sentenceIndex]));
-      // Note: Statistics are recorded ONLY when user actually records and gets comparison result
-      // See useEffect with recordingState.comparisonResult below
-    }
-
     if (!settings.autoStop) return;
 
     console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
@@ -161,7 +154,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       }
     }
     setIsPlaying(false);
-  }, [settings.autoStop, setIsPlaying, lesson, viewedSentences]);
+  }, [settings.autoStop, setIsPlaying, lesson]);
 
   // Transcript sync
   const { activeSentenceIndex, resetSentenceEndFlag } = useTranscriptSync({
@@ -192,8 +185,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       try {
         const { progress: savedProgress } = await progressService.getProgress(lessonId, 'shadowing');
         if (savedProgress) {
-          if (savedProgress.viewedSentences) {
-            setViewedSentences(new Set(savedProgress.viewedSentences));
+          if (savedProgress.recordedSentences) {
+            setRecordedSentences(new Set(savedProgress.recordedSentences));
           }
           if (savedProgress.rewardedSentences) {
             setRewardedSentences(new Set(savedProgress.rewardedSentences));
@@ -213,21 +206,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     loadProgress();
   }, [lessonId]);
 
-  // Mark sentence as viewed when it ends (auto-stop) or when moving to next
-  useEffect(() => {
-    if (!progressLoaded) return;
-    if (activeSentenceIndex >= 0 && !viewedSentences.has(activeSentenceIndex)) {
-      // Mark previous sentence as viewed when moving to a new one
-      if (activeSentenceIndex > 0 && !viewedSentences.has(activeSentenceIndex - 1)) {
-        setViewedSentences(prev => new Set([...prev, activeSentenceIndex - 1]));
-      }
-    }
-  }, [activeSentenceIndex, progressLoaded]);
-
-  // Save progress when viewedSentences, rewardedSentences, or recordingResults changes
+  // Save progress when recordedSentences, rewardedSentences, or recordingResults changes
   const saveProgressRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (!progressLoaded || (viewedSentences.size === 0 && rewardedSentences.size === 0 && Object.keys(recordingResults).length === 0)) return;
+    if (!progressLoaded || (recordedSentences.size === 0 && rewardedSentences.size === 0 && Object.keys(recordingResults).length === 0)) return;
 
     if (saveProgressRef.current) {
       clearTimeout(saveProgressRef.current);
@@ -238,7 +220,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         await progressService.saveDictationProgress(
           lessonId,
           {
-            viewedSentences: Array.from(viewedSentences),
+            recordedSentences: Array.from(recordedSentences),
             rewardedSentences: Array.from(rewardedSentences),
             recordingResults: recordingResults,
           },
@@ -250,7 +232,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         console.error('[LessonScreen] Error saving progress:', error);
       }
     }, 1000);
-  }, [viewedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded]);
+  }, [recordedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded]);
 
   const handleReady = useCallback(async () => {
     if (videoPlayerRef.current) {
@@ -293,7 +275,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete, lesson, viewedSentences, rewardedSentences]);
+  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete, lesson]);
 
   const handleStateChange = useCallback((state: string) => {
     const stateNum = parseInt(state, 10);
@@ -363,9 +345,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       setIsPlaying(false);
       // Save which sentence we're recording for (so result goes to correct index)
       setRecordingSentenceIndex(activeSentenceIndex);
+      // Mark this sentence as recorded for progress tracking
+      if (!recordedSentences.has(activeSentenceIndex)) {
+        setRecordedSentences(prev => new Set([...prev, activeSentenceIndex]));
+      }
       startRecording();
     }
-  }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying, vibrateRecord, vibrateError]);
+  }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying, vibrateRecord, vibrateError, recordedSentences]);
 
   // Haptic feedback and reward when voice comparison result changes
   useEffect(() => {
@@ -490,7 +476,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }
 
   const transcript = lesson.transcript || [];
-  const shadowingProgress = transcript.length > 0 ? (viewedSentences.size / transcript.length) * 100 : 0;
+  const shadowingProgress = transcript.length > 0 ? (recordedSentences.size / transcript.length) * 100 : 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

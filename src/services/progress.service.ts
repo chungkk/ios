@@ -126,7 +126,7 @@ export const saveDictationProgress = async (
     revealCount?: { [key: number]: number };
     pointsDeducted?: number;
     currentIndex?: number;
-    viewedSentences?: number[];
+    recordedSentences?: number[];
     rewardedSentences?: number[];
     recordingResults?: Record<number, any>;
     userInputs?: { [key: number]: string };
