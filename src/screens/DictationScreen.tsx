@@ -25,7 +25,7 @@ import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
-import { recordDictationSession } from '../services/statistics.service';
+import { recordDictationSession, recordSingleDictationSentence } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { useSettings } from '../contexts/SettingsContext';
@@ -245,6 +245,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           updateUserPoints(result.points);
         }
       });
+
+      // Record statistics for this single sentence
+      recordSingleDictationSentence({ correct: true, pointsEarned: 1 });
     }
   }, [userInput, currentSentence, currentIndex, completedSentences, updateUserPoints]);
 
@@ -326,13 +329,13 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         accuracy,
       });
 
-      // Record statistics
+      // Record study time only (sentences already tracked real-time)
       await recordDictationSession({
-        sentencesCompleted: completedSentences.size,
-        correctCount: completedSentences.size,
-        errorCount: errorCount,
-        totalAttempts: totalSentences,
-        pointsEarned: completedSentences.size, // 1 point per sentence
+        sentencesCompleted: 0, // Already tracked per sentence
+        correctCount: 0,
+        errorCount: 0,
+        totalAttempts: 0,
+        pointsEarned: 0,
         studyTimeSeconds: studyTime,
       });
 

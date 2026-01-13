@@ -146,6 +146,58 @@ export const recordDictationSession = async (data: {
 };
 
 /**
+ * Record a single dictation sentence completion (real-time tracking)
+ */
+export const recordSingleDictationSentence = async (data: {
+  correct: boolean;
+  pointsEarned: number;
+}): Promise<void> => {
+  const allStats = await getAllDailyStats();
+  const today = getTodayDateString();
+  
+  if (!allStats[today]) {
+    allStats[today] = getEmptyDayStats(today);
+  }
+  
+  allStats[today].dictation.sentencesCompleted += 1;
+  allStats[today].dictation.totalAttempts += 1;
+  if (data.correct) {
+    allStats[today].dictation.correctCount += 1;
+  } else {
+    allStats[today].dictation.errorCount += 1;
+  }
+  allStats[today].dictation.pointsEarned += data.pointsEarned;
+  
+  await saveDailyStats(allStats);
+  console.log('[StatisticsService] Recorded single dictation sentence');
+};
+
+/**
+ * Record a single shadowing sentence completion (real-time tracking)
+ */
+export const recordSingleShadowingSentence = async (data: {
+  correct: boolean;
+  pointsEarned: number;
+}): Promise<void> => {
+  const allStats = await getAllDailyStats();
+  const today = getTodayDateString();
+  
+  if (!allStats[today]) {
+    allStats[today] = getEmptyDayStats(today);
+  }
+  
+  allStats[today].shadowing.sentencesCompleted += 1;
+  allStats[today].shadowing.totalAttempts += 1;
+  if (data.correct) {
+    allStats[today].shadowing.correctCount += 1;
+  }
+  allStats[today].shadowing.pointsEarned += data.pointsEarned;
+  
+  await saveDailyStats(allStats);
+  console.log('[StatisticsService] Recorded single shadowing sentence');
+};
+
+/**
  * Aggregate stats for a date range
  */
 const aggregateStats = (allStats: Record<string, DailyStats>, startDate: Date, endDate: Date): DailyStats => {
@@ -224,6 +276,8 @@ export const statisticsService = {
   getStatsSummary,
   recordShadowingSession,
   recordDictationSession,
+  recordSingleShadowingSentence,
+  recordSingleDictationSentence,
   cleanupOldStats,
   getAllDailyStats,
 };
