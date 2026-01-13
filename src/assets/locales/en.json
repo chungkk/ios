@@ -36,7 +36,8 @@
     "logoutConfirm": "Are you sure you want to logout?",
     "version": "Version",
     "termsOfService": "Terms of Service",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "statistics": "Learning Statistics"
   },
   "legal": {
     "termsTitle": "Terms of Service",
@@ -190,5 +191,21 @@
     "phrase": "Phrase",
     "profile": "Profile",
     "settings": "Settings"
+  },
+  "statistics": {
+    "title": "Statistics",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "diamondsEarned": "Diamonds Earned",
+    "studyTime": "Study Time",
+    "shadowing": "Shadowing",
+    "dictation": "Dictation",
+    "sentencesCompleted": "Sentences",
+    "correctTotal": "Correct/Total",
+    "accuracy": "Accuracy",
+    "errors": "Errors",
+    "diamonds": "Diamonds",
+    "tip": "Practice daily to build your streak and earn more diamonds!"
   }
 }

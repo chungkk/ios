@@ -327,6 +327,22 @@ const SettingsScreen: React.FC = () => {
           </View>
         )}
 
+        {/* Statistics - First Item */}
+        <TouchableOpacity
+          style={styles.statisticsCard}
+          onPress={() => navigation.navigate('Home', { screen: 'Statistics' })}
+          activeOpacity={0.7}
+        >
+          <View style={styles.statisticsLeft}>
+            <Icon name="stats-chart" size={28} color={colors.retroCyan} />
+            <View>
+              <Text style={styles.statisticsTitle}>{t('settings.statistics')}</Text>
+              <Text style={styles.statisticsSubtitle}>{t('statistics.today')}, {t('statistics.thisWeek')}, {t('statistics.thisMonth')}</Text>
+            </View>
+          </View>
+          <Icon name="chevron-forward" size={22} color={colors.textMuted} />
+        </TouchableOpacity>
+
         {/* Settings Options */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
@@ -559,6 +575,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 0,
     elevation: 3,
+  },
+  statisticsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.retroCyan + '20',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.retroCyan,
+  },
+  statisticsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  statisticsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  statisticsSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   loginTitle: {
     fontSize: 16,

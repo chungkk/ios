@@ -36,7 +36,8 @@
     "logoutConfirm": "Bạn có chắc muốn đăng xuất?",
     "version": "Phiên bản",
     "termsOfService": "Điều khoản dịch vụ",
-    "privacyPolicy": "Chính sách bảo mật"
+    "privacyPolicy": "Chính sách bảo mật",
+    "statistics": "Thống kê học tập"
   },
   "legal": {
     "termsTitle": "Điều khoản dịch vụ",
@@ -190,5 +191,21 @@
     "phrase": "Cụm từ",
     "profile": "Hồ sơ",
     "settings": "Cài đặt"
+  },
+  "statistics": {
+    "title": "Thống kê",
+    "today": "Hôm nay",
+    "thisWeek": "Tuần này",
+    "thisMonth": "Tháng này",
+    "diamondsEarned": "Kim cương kiếm được",
+    "studyTime": "Thời gian học",
+    "shadowing": "Luyện nói",
+    "dictation": "Nghe chép",
+    "sentencesCompleted": "Số câu",
+    "correctTotal": "Đúng/Tổng",
+    "accuracy": "Độ chính xác",
+    "errors": "Số lỗi",
+    "diamonds": "Kim cương",
+    "tip": "Luyện tập hàng ngày để duy trì chuỗi và kiếm nhiều kim cương hơn!"
   }
 }

@@ -11,6 +11,7 @@ import DictationScreen from '../screens/DictationScreen';
 import DailyPhraseScreen from '../screens/DailyPhraseScreen';
 import VocabularyScreen from '../screens/VocabularyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import StatisticsScreen from '../screens/StatisticsScreen';
 
 // Tab Bar Icons - Neo-Retro Style
 const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => (
@@ -32,6 +33,7 @@ const HomeStackNavigator = () => {
       <HomeStack.Screen name="Category" component={CategoryScreen} />
       <HomeStack.Screen name="Lesson" component={LessonScreen} />
       <HomeStack.Screen name="Dictation" component={DictationScreen} />
+      <HomeStack.Screen name="Statistics" component={StatisticsScreen} />
     </HomeStack.Navigator>
   );
 };

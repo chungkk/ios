@@ -25,6 +25,7 @@ import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
+import { recordDictationSession } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { useSettings } from '../contexts/SettingsContext';
@@ -310,6 +311,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // Save progress on complete
   const handleComplete = useCallback(async () => {
     const accuracy = Math.round(progress);
+    const errorCount = totalSentences - completedSentences.size;
 
     // Celebration vibration
     vibrateComplete();
@@ -322,6 +324,16 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         pointsEarned: 0, // Points already awarded per sentence
         studyTime,
         accuracy,
+      });
+
+      // Record statistics
+      await recordDictationSession({
+        sentencesCompleted: completedSentences.size,
+        correctCount: completedSentences.size,
+        errorCount: errorCount,
+        totalAttempts: totalSentences,
+        pointsEarned: completedSentences.size, // 1 point per sentence
+        studyTimeSeconds: studyTime,
       });
 
       Alert.alert(

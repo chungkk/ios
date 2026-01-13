@@ -18,6 +18,7 @@ import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import SettingsMenu from '../components/lesson/SettingsMenu';
 import { progressService } from '../services/progress.service';
+import { recordShadowingSession } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
@@ -260,6 +261,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (completedReported) return;
 
     const pointsEarned = 10;
+    const totalSentences = lesson?.transcript?.length || 0;
 
     // Celebration vibration
     vibrateComplete();
@@ -271,6 +273,15 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         completed: true,
         pointsEarned,
         studyTime,
+      });
+
+      // Record statistics
+      await recordShadowingSession({
+        sentencesCompleted: viewedSentences.size,
+        correctCount: rewardedSentences.size,
+        totalAttempts: totalSentences,
+        pointsEarned: pointsEarned,
+        studyTimeSeconds: studyTime,
       });
 
       setCompletedReported(true);
@@ -286,7 +297,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete]);
+  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete, lesson, viewedSentences, rewardedSentences]);
 
   const handleStateChange = useCallback((state: string) => {
     const stateNum = parseInt(state, 10);

@@ -31,6 +31,7 @@ export type HomeStackParamList = {
   Category: { categorySlug: string; categoryName: string };
   Lesson: { lessonId: string };
   Dictation: { lessonId: string };
+  Statistics: undefined;
 };
 
 // Screen Props Types

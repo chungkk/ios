@@ -36,7 +36,8 @@
     "logoutConfirm": "Bist du sicher, dass du dich abmelden möchtest?",
     "version": "Version",
     "termsOfService": "Allgemeine Geschäftsbedingungen",
-    "privacyPolicy": "Datenschutzrichtlinie"
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "statistics": "Lernstatistiken"
   },
   "legal": {
     "termsTitle": "Allgemeine Geschäftsbedingungen",
@@ -190,5 +191,21 @@
     "phrase": "Satz",
     "profile": "Profil",
     "settings": "Einstellungen"
+  },
+  "statistics": {
+    "title": "Statistiken",
+    "today": "Heute",
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Dieser Monat",
+    "diamondsEarned": "Verdiente Diamanten",
+    "studyTime": "Lernzeit",
+    "shadowing": "Shadowing",
+    "dictation": "Diktat",
+    "sentencesCompleted": "Sätze",
+    "correctTotal": "Richtig/Gesamt",
+    "accuracy": "Genauigkeit",
+    "errors": "Fehler",
+    "diamonds": "Diamanten",
+    "tip": "Übe täglich, um deine Serie aufzubauen und mehr Diamanten zu verdienen!"
   }
 }
