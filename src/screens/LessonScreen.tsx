@@ -80,7 +80,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const { toggleAutoStop, toggleShowTranslation } = useSettings();
 
   // Cycle through speed options
-  const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
@@ -225,7 +225,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [activeSentenceIndex, progressLoaded]);
 
   // Save progress when viewedSentences, rewardedSentences, or recordingResults changes
-  const saveProgressRef = useRef<NodeJS.Timeout>();
+  const saveProgressRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (!progressLoaded || (viewedSentences.size === 0 && rewardedSentences.size === 0 && Object.keys(recordingResults).length === 0)) return;
 

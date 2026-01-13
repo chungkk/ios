@@ -54,7 +54,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [userInputs, setUserInputs] = useState<{ [key: number]: string }>({}); // Store input per sentence
   const [isPlaying, setIsPlaying] = useState(false);
   const [completedSentences, setCompletedSentences] = useState<Set<number>>(new Set());
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [playbackSpeed, setPlaybackSpeed] = useState<0.5 | 0.75 | 1 | 1.25 | 1.5 | 2>(1);
   const [revealedWords, setRevealedWords] = useState<{ [key: string]: boolean }>({});
   const [revealCount, setRevealCount] = useState<{ [key: number]: number }>({}); // Track reveals per sentence
   const [progressLoaded, setProgressLoaded] = useState(false); // Track if progress is loaded
@@ -175,7 +175,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const progress = totalSentences > 0 ? (completedSentences.size / totalSentences) * 100 : 0;
 
   // Save progress to server (debounced)
-  const saveProgressRef = useRef<NodeJS.Timeout>();
+  const saveProgressRef = useRef<NodeJS.Timeout | null>(null);
   const saveProgress = useCallback(() => {
     if (!progressLoaded) return; // Don't save until loaded
 
@@ -360,7 +360,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   }, [isPlaying, playSentence]);
 
   // Cycle through speed options
-  const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
   const cycleSpeed = useCallback(() => {
     const currentIndex = SPEED_OPTIONS.indexOf(playbackSpeed);
     const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
@@ -891,7 +891,6 @@ const styles = StyleSheet.create({
   diktatTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.retroDark,
     backgroundColor: colors.retroPurple,
     paddingHorizontal: 10,
     paddingVertical: 4,

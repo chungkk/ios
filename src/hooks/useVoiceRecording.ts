@@ -93,6 +93,10 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       const recorder = new Recorder(filename, {
         quality: 'max',
         format: 'm4a',
+        bitrate: 128000,
+        channels: 2,
+        sampleRate: 44100,
+        encoder: 'aac',
       });
 
       recorderRef.current = recorder;
@@ -292,7 +296,8 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
         });
       });
 
-      player.on('ended', () => {
+      // @ts-ignore - Player extends EventEmitter but types are incomplete
+      (player as any).on('ended', () => {
         console.log('[useVoiceRecording] Playback ended');
         setRecordingState(prev => ({ ...prev, isPlaying: false }));
         if (playerRef.current) {
