@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Modal,
   Linking,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
@@ -232,13 +233,27 @@ const SettingsScreen: React.FC = () => {
     );
   }, [t]);
 
-  // Handle rate app
+  // Handle rate app - opens App Store page
   const handleRateApp = useCallback(() => {
-    Alert.alert(
-      t('settings.rateApp'),
-      t('settings.rateDescription'),
-      [{ text: t('common.ok') }]
-    );
+    // Replace YOUR_APP_ID with actual App Store ID after publishing
+    const APP_STORE_ID = 'YOUR_APP_ID';
+    const appStoreUrl = Platform.select({
+      ios: `itms-apps://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
+      default: `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
+    });
+    
+    if (APP_STORE_ID === 'YOUR_APP_ID') {
+      // App not yet on store - show thank you message
+      Alert.alert(
+        t('settings.rateApp'),
+        t('settings.rateThankYou'),
+        [{ text: t('common.ok') }]
+      );
+    } else {
+      Linking.openURL(appStoreUrl).catch(() => {
+        Alert.alert(t('common.error'), 'Could not open App Store');
+      });
+    }
   }, [t]);
 
   if (loading) return <Loading />;

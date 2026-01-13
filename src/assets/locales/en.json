@@ -30,6 +30,7 @@
     "aboutDescription": "PapaGeil - Learn German with fun!\n\nVersion 1.0.0\n\nA neo-retro German learning app.",
     "rateApp": "Rate App",
     "rateDescription": "Thank you for using PapaGeil! Rating feature coming soon.",
+    "rateThankYou": "Thank you for using PapaGeil! We appreciate your support. Rating will be available once the app is published on App Store.",
     "hapticFeedback": "Haptic Feedback",
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to logout?",
@@ -59,7 +60,7 @@
     },
     "privacy": {
       "controller": "1. Data Controller",
-      "controllerText": "The operator of the ppgeil app is responsible for data processing.",
+      "controllerText": "PapaGeil\nEmail: contact@papageil.net\n\nThe operator of the PapaGeil app is responsible for data processing in accordance with applicable data protection laws.",
       "dataCollected": "2. Data Collected",
       "dataCollectedText": "We collect the following data:\n• Registration data (name, email)\n• Learning progress and statistics\n• Device information for app functionality",
       "purpose": "3. Purpose of Data Processing",
@@ -71,7 +72,7 @@
       "security": "6. Data Security",
       "securityText": "We implement technical and organizational measures to protect your data from unauthorized access.",
       "contact": "7. Contact",
-      "contactText": "For privacy questions, contact us at: datenschutz@ppgeil.de"
+      "contactText": "For privacy questions, contact us at:\nEmail: datenschutz@papageil.net\n\nYou also have the right to lodge a complaint with a supervisory authority."
     }
   },
   "home": {

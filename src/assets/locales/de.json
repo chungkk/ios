@@ -30,6 +30,7 @@
     "aboutDescription": "PapaGeil - Deutsch lernen mit Spaß!\n\nVersion 1.0.0\n\nEine Neo-Retro Deutsch-Lern-App.",
     "rateApp": "App bewerten",
     "rateDescription": "Danke, dass du PapaGeil nutzt! Bewertungsfunktion kommt bald.",
+    "rateThankYou": "Danke, dass du PapaGeil nutzt! Wir schätzen deine Unterstützung. Die Bewertung wird verfügbar sein, sobald die App im App Store veröffentlicht ist.",
     "hapticFeedback": "Haptisches Feedback",
     "logout": "Abmelden",
     "logoutConfirm": "Bist du sicher, dass du dich abmelden möchtest?",
@@ -59,7 +60,7 @@
     },
     "privacy": {
       "controller": "1. Verantwortlicher",
-      "controllerText": "Verantwortlich für die Datenverarbeitung ist der Betreiber der ppgeil App.",
+      "controllerText": "PapaGeil\nE-Mail: contact@papageil.net\n\nVerantwortlich für die Datenverarbeitung ist der Betreiber der PapaGeil App gemäß den geltenden Datenschutzgesetzen.",
       "dataCollected": "2. Erhobene Daten",
       "dataCollectedText": "Wir erheben folgende Daten:\n• Registrierungsdaten (Name, E-Mail)\n• Lernfortschritt und Statistiken\n• Geräteinformationen für die App-Funktion",
       "purpose": "3. Zweck der Datenverarbeitung",
@@ -71,7 +72,7 @@
       "security": "6. Datensicherheit",
       "securityText": "Wir setzen technische und organisatorische Maßnahmen ein, um Ihre Daten vor unbefugtem Zugriff zu schützen.",
       "contact": "7. Kontakt",
-      "contactText": "Bei Fragen zum Datenschutz kontaktieren Sie uns unter: datenschutz@ppgeil.de"
+      "contactText": "Bei Fragen zum Datenschutz kontaktieren Sie uns unter:\nE-Mail: datenschutz@papageil.net\n\nSie haben außerdem das Recht, sich bei einer Aufsichtsbehörde zu beschweren."
     }
   },
   "home": {

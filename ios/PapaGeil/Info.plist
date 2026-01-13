@@ -35,8 +35,7 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to your camera to take photos for your profile avatar.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs access to your microphone to record audio for language learning practice.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
