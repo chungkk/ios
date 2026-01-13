@@ -344,6 +344,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
+{/* Notifications - hidden until implemented
           <TouchableOpacity style={styles.settingItem} onPress={handleNotifications} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="notifications" size={22} color={colors.retroYellow} />
@@ -353,6 +354,7 @@ const SettingsScreen: React.FC = () => {
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
           </TouchableOpacity>
+*/}
 
           <TouchableOpacity style={styles.settingItem} onPress={toggleHaptic} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
@@ -381,6 +383,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
+{/* Rate App - hidden until app is published on App Store
           <TouchableOpacity style={styles.settingItem} onPress={handleRateApp} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="star" size={22} color={colors.retroYellow} />
@@ -390,6 +393,7 @@ const SettingsScreen: React.FC = () => {
               <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
           </TouchableOpacity>
+*/}
 
           <TouchableOpacity style={styles.settingItem} onPress={() => setShowAGBModal(true)} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
