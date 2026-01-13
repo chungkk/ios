@@ -20,6 +20,7 @@ import SettingsMenu from '../components/lesson/SettingsMenu';
 import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
@@ -29,6 +30,7 @@ type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
   const { lessonId } = route.params;
   const { settings } = useSettings();
+  const { updateUserPoints } = useAuth();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
 
@@ -57,6 +59,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const [completedReported, setCompletedReported] = useState(false);
   const [viewedSentences, setViewedSentences] = useState<Set<number>>(new Set());
+  const [rewardedSentences, setRewardedSentences] = useState<Set<number>>(new Set()); // Track sentences that got 80%+ reward
   const [progressLoaded, setProgressLoaded] = useState(false);
 
   // Settings state
@@ -176,8 +179,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     const loadProgress = async () => {
       try {
         const { progress: savedProgress } = await progressService.getProgress(lessonId, 'shadowing');
-        if (savedProgress && savedProgress.viewedSentences) {
-          setViewedSentences(new Set(savedProgress.viewedSentences));
+        if (savedProgress) {
+          if (savedProgress.viewedSentences) {
+            setViewedSentences(new Set(savedProgress.viewedSentences));
+          }
+          if (savedProgress.rewardedSentences) {
+            setRewardedSentences(new Set(savedProgress.rewardedSentences));
+          }
           console.log('[LessonScreen] Loaded saved progress:', savedProgress);
         }
       } catch (error) {
@@ -200,10 +208,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
   }, [activeSentenceIndex, progressLoaded]);
 
-  // Save progress when viewedSentences changes
+  // Save progress when viewedSentences or rewardedSentences changes
   const saveProgressRef = useRef<NodeJS.Timeout>();
   useEffect(() => {
-    if (!progressLoaded || viewedSentences.size === 0) return;
+    if (!progressLoaded || (viewedSentences.size === 0 && rewardedSentences.size === 0)) return;
     
     if (saveProgressRef.current) {
       clearTimeout(saveProgressRef.current);
@@ -215,6 +223,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           lessonId,
           {
             viewedSentences: Array.from(viewedSentences),
+            rewardedSentences: Array.from(rewardedSentences),
           } as any,
           studyTime
         );
@@ -223,7 +232,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         console.error('[LessonScreen] Error saving progress:', error);
       }
     }, 1000);
-  }, [viewedSentences, lessonId, studyTime, progressLoaded]);
+  }, [viewedSentences, rewardedSentences, lessonId, studyTime, progressLoaded]);
 
   const handleReady = useCallback(async () => {
     if (videoPlayerRef.current) {
@@ -334,12 +343,22 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
   }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying, vibrateRecord, vibrateError]);
 
-  // Haptic feedback when voice comparison result changes
+  // Haptic feedback and reward when voice comparison result changes
   useEffect(() => {
     if (recordingState.comparisonResult) {
       const similarity = recordingState.comparisonResult.overallSimilarity || 0;
       if (similarity >= 80) {
         vibrateSuccess();
+        
+        // Award +1 point if this sentence hasn't been rewarded yet
+        if (!rewardedSentences.has(activeSentenceIndex)) {
+          setRewardedSentences(prev => new Set([...prev, activeSentenceIndex]));
+          progressService.addUserPoints(1, 'shadowing_80_percent').then(result => {
+            if (result.success && result.points !== undefined) {
+              updateUserPoints(result.points);
+            }
+          });
+        }
       } else if (similarity >= 50) {
         // Medium vibration for partial match
         if (settings.hapticEnabled) {
@@ -349,7 +368,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         vibrateError();
       }
     }
-  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled]);
+  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled, activeSentenceIndex, rewardedSentences, updateUserPoints]);
 
   // Cycle to next speed
   const cycleSpeed = useCallback(() => {
