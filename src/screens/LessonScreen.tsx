@@ -69,6 +69,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     isCorrect: boolean;
     wordComparison: Record<number, 'correct' | 'incorrect' | 'missing'>;
   }>>({});
+  // Track which sentence is currently being recorded (to save result to correct index)
+  const [recordingSentenceIndex, setRecordingSentenceIndex] = useState<number | null>(null);
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -193,6 +195,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           if (savedProgress.rewardedSentences) {
             setRewardedSentences(new Set(savedProgress.rewardedSentences));
           }
+          // Load saved recording results
+          if (savedProgress.recordingResults) {
+            setRecordingResults(savedProgress.recordingResults);
+          }
           console.log('[LessonScreen] Loaded saved progress:', savedProgress);
         }
       } catch (error) {
@@ -215,10 +221,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
   }, [activeSentenceIndex, progressLoaded]);
 
-  // Save progress when viewedSentences or rewardedSentences changes
+  // Save progress when viewedSentences, rewardedSentences, or recordingResults changes
   const saveProgressRef = useRef<NodeJS.Timeout>();
   useEffect(() => {
-    if (!progressLoaded || (viewedSentences.size === 0 && rewardedSentences.size === 0)) return;
+    if (!progressLoaded || (viewedSentences.size === 0 && rewardedSentences.size === 0 && Object.keys(recordingResults).length === 0)) return;
 
     if (saveProgressRef.current) {
       clearTimeout(saveProgressRef.current);
@@ -231,15 +237,17 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           {
             viewedSentences: Array.from(viewedSentences),
             rewardedSentences: Array.from(rewardedSentences),
-          } as any,
-          studyTime
+            recordingResults: recordingResults,
+          },
+          studyTime,
+          'shadowing' // Use correct mode so it can be retrieved later
         );
-        console.log('[LessonScreen] Progress saved');
+        console.log('[LessonScreen] Progress saved with recordingResults');
       } catch (error) {
         console.error('[LessonScreen] Error saving progress:', error);
       }
     }, 1000);
-  }, [viewedSentences, rewardedSentences, lessonId, studyTime, progressLoaded]);
+  }, [viewedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded]);
 
   const handleReady = useCallback(async () => {
     if (videoPlayerRef.current) {
@@ -346,31 +354,35 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         videoPlayerRef.current.pause();
       }
       setIsPlaying(false);
+      // Save which sentence we're recording for (so result goes to correct index)
+      setRecordingSentenceIndex(activeSentenceIndex);
       startRecording();
     }
   }, [lesson, activeSentenceIndex, recordingState.isRecording, stopRecording, startRecording, setIsPlaying, vibrateRecord, vibrateError]);
 
   // Haptic feedback and reward when voice comparison result changes
   useEffect(() => {
-    if (recordingState.comparisonResult) {
+    if (recordingState.comparisonResult && recordingSentenceIndex !== null) {
       // FIX: Use 'similarity' instead of 'overallSimilarity' to match ComparisonResult type
       const similarity = recordingState.comparisonResult.similarity || 0;
-      console.log('[LessonScreen] Voice comparison result:', { similarity, activeSentenceIndex, comparisonResult: recordingState.comparisonResult });
+      // Use the saved recordingSentenceIndex (not activeSentenceIndex which may have changed)
+      const targetIndex = recordingSentenceIndex;
+      console.log('[LessonScreen] Voice comparison result:', { similarity, targetIndex, activeSentenceIndex, comparisonResult: recordingState.comparisonResult });
 
-      // Save recording result for this sentence so it persists
+      // Save recording result to the CORRECT sentence index
       setRecordingResults(prev => ({
         ...prev,
-        [activeSentenceIndex]: recordingState.comparisonResult!
+        [targetIndex]: recordingState.comparisonResult!
       }));
 
       if (similarity >= 80) {
         vibrateSuccess();
-        console.log('[LessonScreen] ✅ Similarity >= 80%!', { similarity, alreadyRewarded: rewardedSentences.has(activeSentenceIndex) });
+        console.log('[LessonScreen] ✅ Similarity >= 80%!', { similarity, alreadyRewarded: rewardedSentences.has(targetIndex) });
 
         // Award +1 point if this sentence hasn't been rewarded yet
-        if (!rewardedSentences.has(activeSentenceIndex)) {
-          console.log('[LessonScreen] 💎 Awarding +1 point for sentence', activeSentenceIndex);
-          setRewardedSentences(prev => new Set([...prev, activeSentenceIndex]));
+        if (!rewardedSentences.has(targetIndex)) {
+          console.log('[LessonScreen] 💎 Awarding +1 point for sentence', targetIndex);
+          setRewardedSentences(prev => new Set([...prev, targetIndex]));
           progressService.addUserPoints(1, 'shadowing_80_percent').then(result => {
             console.log('[LessonScreen] 💎 addUserPoints result:', result);
             if (result.success && result.points !== undefined) {
@@ -393,8 +405,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       } else {
         vibrateError();
       }
+
+      // Clear the recording sentence index after processing
+      setRecordingSentenceIndex(null);
     }
-  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled, activeSentenceIndex, rewardedSentences, updateUserPoints]);
+  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled, recordingSentenceIndex, activeSentenceIndex, rewardedSentences, updateUserPoints]);
 
   // Cycle to next speed
   const cycleSpeed = useCallback(() => {

@@ -11,16 +11,16 @@ import { saveData, getData, STORAGE_KEYS } from './storage.service';
 export const saveProgress = async (progressData: SaveProgressRequest): Promise<SaveProgressResponse> => {
   try {
     console.log('[ProgressService] Saving progress:', progressData);
-    
+
     const response = await api.post<SaveProgressResponse>('/api/progress', progressData);
-    
+
     return response.data;
   } catch (error) {
     console.error('[ProgressService] Error saving progress, queuing for later:', error);
-    
+
     // Queue for offline sync
     await queueProgressForSync(progressData);
-    
+
     // Return optimistic response
     return {
       progress: {
@@ -63,7 +63,7 @@ const queueProgressForSync = async (progressData: SaveProgressRequest): Promise<
 export const syncQueuedProgress = async (): Promise<void> => {
   try {
     const queue = await getData<SaveProgressRequest[]>(STORAGE_KEYS.PROGRESS_QUEUE);
-    
+
     if (!queue || queue.length === 0) {
       return;
     }
@@ -72,7 +72,7 @@ export const syncQueuedProgress = async (): Promise<void> => {
 
     // Try to sync each item
     const failedItems: SaveProgressRequest[] = [];
-    
+
     for (const item of queue) {
       try {
         await api.post('/api/progress', item);
@@ -84,7 +84,7 @@ export const syncQueuedProgress = async (): Promise<void> => {
 
     // Update queue with failed items only
     await saveData(STORAGE_KEYS.PROGRESS_QUEUE, failedItems);
-    
+
     if (failedItems.length === 0) {
       console.log('[ProgressService] All progress synced successfully');
     } else {
@@ -102,11 +102,11 @@ export const syncQueuedProgress = async (): Promise<void> => {
 export const getProgress = async (lessonId: string, mode: string): Promise<{ progress: any; studyTime: number }> => {
   try {
     console.log('[ProgressService] Getting progress:', { lessonId, mode });
-    
+
     const response = await api.get('/api/progress', {
       params: { lessonId, mode }
     });
-    
+
     return response.data;
   } catch (error) {
     console.error('[ProgressService] Error getting progress:', error);
@@ -115,31 +115,35 @@ export const getProgress = async (lessonId: string, mode: string): Promise<{ pro
 };
 
 /**
- * Save dictation progress (partial save - not completed)
+ * Save dictation/shadowing progress (partial save - not completed)
  * POST /api/progress
  */
 export const saveDictationProgress = async (
   lessonId: string,
   progress: {
-    revealedWords: { [key: string]: boolean };
-    completedSentences: number[];
-    revealCount: { [key: number]: number };
-    pointsDeducted: number;
-    currentIndex: number;
+    revealedWords?: { [key: string]: boolean };
+    completedSentences?: number[];
+    revealCount?: { [key: number]: number };
+    pointsDeducted?: number;
+    currentIndex?: number;
+    viewedSentences?: number[];
+    rewardedSentences?: number[];
+    recordingResults?: Record<number, any>;
   },
-  studyTime: number
+  studyTime: number,
+  mode: 'dictation' | 'shadowing' = 'dictation'
 ): Promise<void> => {
   try {
-    console.log('[ProgressService] Saving dictation progress:', { lessonId, progress });
-    
+    console.log('[ProgressService] Saving progress:', { lessonId, mode, progress });
+
     await api.post('/api/progress', {
       lessonId,
-      mode: 'dictation',
+      mode,
       progress,
       studyTime
     });
   } catch (error) {
-    console.error('[ProgressService] Error saving dictation progress:', error);
+    console.error('[ProgressService] Error saving progress:', error);
   }
 };
 
@@ -153,12 +157,12 @@ export const addUserPoints = async (
 ): Promise<{ success: boolean; points?: number }> => {
   try {
     console.log('[ProgressService] Adding points:', { pointsChange, reason });
-    
+
     const response = await api.post('/api/user/points', {
       pointsChange,
       reason,
     });
-    
+
     return { success: true, points: response.data.points };
   } catch (error) {
     console.error('[ProgressService] Error adding points:', error);
