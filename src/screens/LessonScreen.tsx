@@ -38,9 +38,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
     parentNavigation?.setOptions({ tabBarStyle: { display: 'none' } });
-    
+
     return () => {
-      parentNavigation?.setOptions({ 
+      parentNavigation?.setOptions({
         tabBarStyle: {
           backgroundColor: '#FFF8E7',
           borderTopColor: '#1a1a2e',
@@ -49,7 +49,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           paddingBottom: 14,
           paddingTop: 10,
           display: 'flex',
-        } 
+        }
       });
     };
   }, [navigation, parentNavigation]);
@@ -64,13 +64,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  
+
   // Get autoStop and showTranslation from global settings
   const { toggleAutoStop, toggleShowTranslation } = useSettings();
-  
+
   // Cycle through speed options
   const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
-  
+
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
   const [selectedContext, setSelectedContext] = useState('');
@@ -96,7 +96,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Voice recording
   const { recordingState, startRecording, stopRecording, playRecording, clearRecording } = useVoiceRecording({
-    onRecordingComplete: () => {},
+    onRecordingComplete: () => { },
     onError: (err) => Alert.alert('Recording Error', err),
   });
 
@@ -132,13 +132,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (!viewedSentences.has(sentenceIndex)) {
       setViewedSentences(prev => new Set([...prev, sentenceIndex]));
     }
-    
+
     if (!settings.autoStop) return;
-    
+
     console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[sentenceIndex];
-    
+
     if (videoPlayerRef.current) {
       videoPlayerRef.current.pause();
       // Seek back to start of sentence so it stays on current sentence
@@ -212,11 +212,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const saveProgressRef = useRef<NodeJS.Timeout>();
   useEffect(() => {
     if (!progressLoaded || (viewedSentences.size === 0 && rewardedSentences.size === 0)) return;
-    
+
     if (saveProgressRef.current) {
       clearTimeout(saveProgressRef.current);
     }
-    
+
     saveProgressRef.current = setTimeout(async () => {
       try {
         await progressService.saveDictationProgress(
@@ -245,7 +245,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (completedReported) return;
 
     const pointsEarned = 10;
-    
+
     // Celebration vibration
     vibrateComplete();
 
@@ -346,18 +346,31 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   // Haptic feedback and reward when voice comparison result changes
   useEffect(() => {
     if (recordingState.comparisonResult) {
-      const similarity = recordingState.comparisonResult.overallSimilarity || 0;
+      // FIX: Use 'similarity' instead of 'overallSimilarity' to match ComparisonResult type
+      const similarity = recordingState.comparisonResult.similarity || 0;
+      console.log('[LessonScreen] Voice comparison result:', { similarity, activeSentenceIndex, comparisonResult: recordingState.comparisonResult });
+
       if (similarity >= 80) {
         vibrateSuccess();
-        
+        console.log('[LessonScreen] ✅ Similarity >= 80%!', { similarity, alreadyRewarded: rewardedSentences.has(activeSentenceIndex) });
+
         // Award +1 point if this sentence hasn't been rewarded yet
         if (!rewardedSentences.has(activeSentenceIndex)) {
+          console.log('[LessonScreen] 💎 Awarding +1 point for sentence', activeSentenceIndex);
           setRewardedSentences(prev => new Set([...prev, activeSentenceIndex]));
           progressService.addUserPoints(1, 'shadowing_80_percent').then(result => {
+            console.log('[LessonScreen] 💎 addUserPoints result:', result);
             if (result.success && result.points !== undefined) {
+              console.log('[LessonScreen] 💎 Updating user points to:', result.points);
               updateUserPoints(result.points);
+            } else {
+              console.log('[LessonScreen] ❌ addUserPoints failed or no points returned');
             }
+          }).catch(err => {
+            console.error('[LessonScreen] ❌ addUserPoints error:', err);
           });
+        } else {
+          console.log('[LessonScreen] ⏭️ Sentence already rewarded, skipping');
         }
       } else if (similarity >= 50) {
         // Medium vibration for partial match
@@ -383,7 +396,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       // When auto-stop is ON and pressing play:
       const transcript = lesson?.transcript || [];
       const currentSentence = transcript[activeSentenceIndex];
-      
+
       if (currentSentence && videoPlayerRef.current) {
         // 1. Reset the flag so onSentenceEnd can be called again
         resetSentenceEndFlag();
@@ -396,7 +409,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         return;
       }
     }
-    
+
     togglePlayPause();
   }, [lesson, activeSentenceIndex, isPlaying, settings.autoStop, togglePlayPause, resetSentenceEndFlag, setIsPlaying]);
 
@@ -446,13 +459,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           <Icon name="chevron-back" size={18} color="#fff" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
-        
+
         {/* Study Timer */}
         <View style={styles.timerContainer}>
           <Icon name="time-outline" size={14} color={colors.retroDark} />
           <Text style={styles.timerText}>{formattedTime}</Text>
         </View>
-        
+
         <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettingsMenu(true)}>
           <Icon name="settings-outline" size={22} color={colors.retroDark} />
         </TouchableOpacity>
