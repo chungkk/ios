@@ -25,7 +25,7 @@ import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
-import { recordDictationComplete, recordDictationStudyTime } from '../services/statistics.service';
+import { recordDictationComplete, recordDictationStudyTime, recordPointsDeducted } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { useSettings } from '../contexts/SettingsContext';
@@ -521,6 +521,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                           progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
                             if (result.success && result.points !== undefined) {
                               updateUserPoints(result.points);
+                              // Track points deducted in statistics
+                              recordPointsDeducted(1);
                             }
                           });
                         }
@@ -620,6 +622,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                           progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
                             if (result.success && result.points !== undefined) {
                               updateUserPoints(result.points);
+                              // Track points deducted in statistics
+                              recordPointsDeducted(1);
                             }
                           });
                         }

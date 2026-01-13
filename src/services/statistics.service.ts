@@ -29,6 +29,7 @@ export interface DailyStats {
   date: string; // YYYY-MM-DD
   shadowing: ShadowingStats;
   dictation: DictationStats;
+  pointsDeducted: number; // Số kim cương bị trừ trong ngày
 }
 
 export interface StatsSummary {
@@ -63,6 +64,7 @@ const getEmptyDayStats = (date: string): DailyStats => ({
     pointsEarned: 0,
     studyTimeSeconds: 0,
   },
+  pointsDeducted: 0,
 });
 
 const getTodayDateString = (): string => {
@@ -228,6 +230,26 @@ export const recordDictationStudyTime = async (seconds: number): Promise<void> =
   }
 };
 
+/**
+ * Record points deducted (e.g., hints used that cost points)
+ */
+export const recordPointsDeducted = async (points: number): Promise<void> => {
+  try {
+    const allStats = await getAllDailyStats();
+    const today = getTodayDateString();
+
+    if (!allStats[today]) {
+      allStats[today] = getEmptyDayStats(today);
+    }
+
+    allStats[today].pointsDeducted += points;
+    await saveDailyStats(allStats);
+    console.log('[StatisticsService] Recorded points deducted:', points);
+  } catch (error) {
+    console.error('[StatisticsService] Error recording points deducted:', error);
+  }
+};
+
 // Legacy function for backward compatibility
 export const recordSingleDictationSentence = async (data: {
   correct: boolean;
@@ -286,6 +308,9 @@ const aggregateStats = (allStats: Record<string, DailyStats>, startDate: Date, e
       result.dictation.hintsUsed += dayStats.dictation.hintsUsed;
       result.dictation.pointsEarned += dayStats.dictation.pointsEarned;
       result.dictation.studyTimeSeconds += dayStats.dictation.studyTimeSeconds;
+
+      // Points deducted
+      result.pointsDeducted += dayStats.pointsDeducted || 0;
     }
   });
 

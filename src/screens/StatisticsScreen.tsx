@@ -163,11 +163,10 @@ const StatisticsScreen: React.FC = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color={colors.retroDark} />
-          </TouchableOpacity>
           <Text style={styles.headerTitle}>📊 {t('statistics.title')}</Text>
-          <View style={{ width: 24 }} />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+            <Icon name="close" size={18} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         {/* Period Selector */}
@@ -202,13 +201,13 @@ const StatisticsScreen: React.FC = () => {
         <View style={styles.heroRow}>
           <View style={[styles.heroCard, { backgroundColor: colors.retroYellow }]}>
             <Icon name="diamond" size={24} color={colors.retroDark} />
-            <Text style={styles.heroValue}>{totalPoints}</Text>
-            <Text style={styles.heroLabel}>{t('statistics.diamondsEarned')}</Text>
+            <Text style={styles.heroValue}>+{totalPoints}</Text>
+            <Text style={styles.heroLabel}>Kiếm được</Text>
           </View>
-          <View style={[styles.heroCard, { backgroundColor: colors.retroCyan }]}>
-            <Icon name="time" size={24} color={colors.retroDark} />
-            <Text style={styles.heroValue}>{formatTime(totalStudyTime)}</Text>
-            <Text style={styles.heroLabel}>{t('statistics.studyTime')}</Text>
+          <View style={[styles.heroCard, { backgroundColor: colors.retroCoral }]}>
+            <Icon name="diamond-outline" size={24} color={colors.retroDark} />
+            <Text style={styles.heroValue}>-{currentStats?.pointsDeducted || 0}</Text>
+            <Text style={styles.heroLabel}>Bị trừ</Text>
           </View>
         </View>
 
@@ -223,34 +222,35 @@ const StatisticsScreen: React.FC = () => {
           <View style={[styles.sectionTopBar, { backgroundColor: colors.retroPurple }]} />
           <View style={styles.sectionContent}>
             <View style={styles.statRow}>
-              {/* Left: Stats */}
               <View style={styles.statColumn}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t('statistics.recorded')}</Text>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.recorded')}:</Text>
                   <Text style={styles.statValue}>{currentStats?.shadowing.recorded || 0}</Text>
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t('statistics.correct')}</Text>
-                  <Text style={[styles.statValue, { color: colors.retroPurple }]}>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.correct')}:</Text>
+                  <Text style={[styles.statValue, { color: colors.success }]}>
                     {currentStats?.shadowing.correct || 0}
                   </Text>
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t('statistics.incorrect')}</Text>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.incorrect')}:</Text>
                   <Text style={[styles.statValue, { color: colors.retroCoral }]}>
                     {currentStats?.shadowing.incorrect || 0}
                   </Text>
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t('statistics.avgSimilarity')}</Text>
-                  <Text style={styles.statValue}>{avgSimilarity}%</Text>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.diamonds')}:</Text>
+                  <View style={styles.diamondInline}>
+                    <Icon name="diamond" size={16} color={colors.retroYellow} />
+                    <Text style={styles.statValue}>{currentStats?.shadowing.pointsEarned || 0}</Text>
+                  </View>
                 </View>
               </View>
-              {/* Right: Progress Ring */}
               <View style={styles.progressContainer}>
-                <View style={styles.progressCircle}>
-                  <Text style={styles.progressPercent}>{shadowingAccuracy}%</Text>
-                  <Text style={styles.progressLabel}>{t('statistics.accuracy')}</Text>
+                <View style={[styles.progressCircle, { borderColor: colors.retroPurple }]}>
+                  <Text style={[styles.progressPercent, { color: colors.retroPurple }]}>{avgSimilarity}%</Text>
+                  <Text style={styles.progressLabel}>{t('statistics.avgSimilarity')}</Text>
                 </View>
               </View>
             </View>
@@ -268,30 +268,28 @@ const StatisticsScreen: React.FC = () => {
           <View style={[styles.sectionTopBar, { backgroundColor: colors.retroCoral }]} />
           <View style={styles.sectionContent}>
             <View style={styles.statRow}>
-              {/* Left: Stats */}
               <View style={styles.statColumn}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t('statistics.completed')}</Text>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.completed')}:</Text>
                   <Text style={styles.statValue}>{currentStats?.dictation.completed || 0}</Text>
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t('statistics.hintsUsed')}</Text>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.hintsUsed')}:</Text>
                   <Text style={[styles.statValue, { color: colors.retroCoral }]}>
                     {currentStats?.dictation.hintsUsed || 0}
                   </Text>
                 </View>
-                <View style={styles.statItem}>
-                  <View style={styles.diamondBadge}>
-                    <Icon name="diamond" size={14} color={colors.retroYellow} />
-                    <Text style={styles.diamondValue}>{currentStats?.dictation.pointsEarned || 0}</Text>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.diamonds')}:</Text>
+                  <View style={styles.diamondInline}>
+                    <Icon name="diamond" size={16} color={colors.retroYellow} />
+                    <Text style={styles.statValue}>{currentStats?.dictation.pointsEarned || 0}</Text>
                   </View>
-                  <Text style={styles.statLabel}>{t('statistics.diamonds')}</Text>
                 </View>
               </View>
-              {/* Right: Icon */}
               <View style={styles.progressContainer}>
-                <View style={[styles.progressCircle, { backgroundColor: colors.retroCoral + '20' }]}>
-                  <Icon name="checkmark-circle" size={32} color={colors.retroCoral} />
+                <View style={[styles.progressCircle, { borderColor: colors.retroCoral }]}>
+                  <Icon name="checkmark-circle" size={28} color={colors.retroCoral} />
                   <Text style={styles.progressLabel}>{currentStats?.dictation.completed || 0} câu</Text>
                 </View>
               </View>
@@ -389,8 +387,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.retroBorder,
   },
-  backButton: {
-    padding: 4,
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.retroCoral,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
   },
   headerTitle: {
     fontSize: 20,
@@ -492,16 +497,19 @@ const styles = StyleSheet.create({
   statColumn: {
     flex: 1,
   },
-  statItem: {
-    marginBottom: spacing.sm,
+  statLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 2,
+    fontWeight: '500',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.retroDark,
   },
@@ -514,21 +522,25 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: colors.retroPurple + '20',
+    backgroundColor: colors.retroCream,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: colors.retroBorder,
   },
   progressPercent: {
     fontSize: 22,
     fontWeight: '800',
-    color: colors.retroDark,
   },
   progressLabel: {
     fontSize: 11,
     color: colors.textSecondary,
     marginTop: 2,
+    textAlign: 'center',
+  },
+  diamondInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   progressRingBg: {
     borderColor: colors.bgSecondary,
@@ -540,21 +552,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
-  diamondBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.retroDark,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 4,
-    alignSelf: 'flex-start',
-  },
-  diamondValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#fff',
-  },
+
   chartContainer: {
     padding: spacing.md,
   },
