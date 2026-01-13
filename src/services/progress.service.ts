@@ -95,9 +95,59 @@ export const syncQueuedProgress = async (): Promise<void> => {
   }
 };
 
+/**
+ * Get user progress for a lesson
+ * GET /api/progress?lessonId=xxx&mode=xxx
+ */
+export const getProgress = async (lessonId: string, mode: string): Promise<{ progress: any; studyTime: number }> => {
+  try {
+    console.log('[ProgressService] Getting progress:', { lessonId, mode });
+    
+    const response = await api.get('/api/progress', {
+      params: { lessonId, mode }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('[ProgressService] Error getting progress:', error);
+    return { progress: {}, studyTime: 0 };
+  }
+};
+
+/**
+ * Save dictation progress (partial save - not completed)
+ * POST /api/progress
+ */
+export const saveDictationProgress = async (
+  lessonId: string,
+  progress: {
+    revealedWords: { [key: string]: boolean };
+    completedSentences: number[];
+    revealCount: { [key: number]: number };
+    pointsDeducted: number;
+    currentIndex: number;
+  },
+  studyTime: number
+): Promise<void> => {
+  try {
+    console.log('[ProgressService] Saving dictation progress:', { lessonId, progress });
+    
+    await api.post('/api/progress', {
+      lessonId,
+      mode: 'dictation',
+      progress,
+      studyTime
+    });
+  } catch (error) {
+    console.error('[ProgressService] Error saving dictation progress:', error);
+  }
+};
+
 export const progressService = {
   saveProgress,
   syncQueuedProgress,
+  getProgress,
+  saveDictationProgress,
 };
 
 export default progressService;

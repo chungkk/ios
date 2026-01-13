@@ -28,6 +28,7 @@ import { progressService } from '../services/progress.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
@@ -39,6 +40,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const { lessonId } = route.params;
   const { lesson, loading, error } = useLessonData(lessonId);
   const { settings } = useSettings();
+  const { userPoints, updateUserPoints } = useAuth();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
   
@@ -54,6 +56,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [revealedWords, setRevealedWords] = useState<{[key: string]: boolean}>({});
   const [revealCount, setRevealCount] = useState<{[key: number]: number}>({}); // Track reveals per sentence
   const [pointsDeducted, setPointsDeducted] = useState(0); // Total points deducted
+  const [progressLoaded, setProgressLoaded] = useState(false); // Track if progress is loaded
   
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
@@ -127,10 +130,81 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     };
   }, []);
 
+  // Load saved progress on mount
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const { progress: savedProgress } = await progressService.getProgress(lessonId, 'dictation');
+        if (savedProgress && typeof savedProgress === 'object') {
+          if (savedProgress.revealedWords) {
+            setRevealedWords(savedProgress.revealedWords);
+          }
+          if (savedProgress.completedSentences) {
+            setCompletedSentences(new Set(savedProgress.completedSentences));
+          }
+          if (savedProgress.revealCount) {
+            setRevealCount(savedProgress.revealCount);
+          }
+          if (typeof savedProgress.pointsDeducted === 'number') {
+            setPointsDeducted(savedProgress.pointsDeducted);
+          }
+          if (typeof savedProgress.currentIndex === 'number') {
+            setCurrentIndex(savedProgress.currentIndex);
+          }
+          console.log('[DictationScreen] Loaded saved progress:', savedProgress);
+        }
+      } catch (error) {
+        console.error('[DictationScreen] Error loading progress:', error);
+      } finally {
+        setProgressLoaded(true);
+      }
+    };
+    
+    loadProgress();
+  }, [lessonId]);
+
   const transcript = lesson?.transcript || [];
   const currentSentence: Sentence | undefined = transcript[currentIndex];
   const totalSentences = transcript.length;
   const progress = totalSentences > 0 ? (completedSentences.size / totalSentences) * 100 : 0;
+
+  // Save progress to server (debounced)
+  const saveProgressRef = useRef<NodeJS.Timeout>();
+  const saveProgress = useCallback(() => {
+    if (!progressLoaded) return; // Don't save until loaded
+    
+    // Clear previous timeout
+    if (saveProgressRef.current) {
+      clearTimeout(saveProgressRef.current);
+    }
+    
+    // Debounce save - wait 1 second after last change
+    saveProgressRef.current = setTimeout(async () => {
+      try {
+        await progressService.saveDictationProgress(
+          lessonId,
+          {
+            revealedWords,
+            completedSentences: Array.from(completedSentences),
+            revealCount,
+            pointsDeducted,
+            currentIndex,
+          },
+          studyTime
+        );
+        console.log('[DictationScreen] Progress saved');
+      } catch (error) {
+        console.error('[DictationScreen] Error saving progress:', error);
+      }
+    }, 1000);
+  }, [lessonId, revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, studyTime, progressLoaded]);
+
+  // Auto-save when state changes
+  useEffect(() => {
+    if (progressLoaded) {
+      saveProgress();
+    }
+  }, [revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, progressLoaded]);
 
   // Play current sentence segment
   const playSentence = useCallback(() => {
@@ -357,16 +431,22 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                     const currentCount = revealCount[currentIndex] || 0;
                     const newCount = currentCount + 1;
                     
+                    // From 3rd reveal onwards, check if user has points
+                    if (newCount > 2) {
+                      const availablePoints = userPoints - pointsDeducted;
+                      if (availablePoints <= 0) {
+                        vibrateError();
+                        Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
+                        return;
+                      }
+                      setPointsDeducted(prev => prev + 1);
+                    }
+                    
                     // Haptic feedback for hint
                     vibrateHint();
                     
                     // Update reveal count for this sentence
                     setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-                    
-                    // Deduct 1 point from 3rd reveal onwards
-                    if (newCount > 2) {
-                      setPointsDeducted(prev => prev + 1);
-                    }
                     
                     setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
                   }
@@ -448,9 +528,17 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                   if (!isFullyCorrect && !isRevealedByClick) {
                     const currentCount = revealCount[currentIndex] || 0;
                     const newCount = currentCount + 1;
+                    if (newCount > 2) {
+                      const availablePoints = userPoints - pointsDeducted;
+                      if (availablePoints <= 0) {
+                        vibrateError();
+                        Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
+                        return;
+                      }
+                      setPointsDeducted(prev => prev + 1);
+                    }
                     vibrateHint();
                     setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-                    if (newCount > 2) setPointsDeducted(prev => prev + 1);
                     setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
                   }
                 };
