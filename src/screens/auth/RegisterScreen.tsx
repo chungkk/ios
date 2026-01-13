@@ -36,7 +36,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [level, setLevel] = useState<'beginner' | 'experienced'>('beginner');
 
   const [nameError, setNameError] = useState<string>();
   const [emailError, setEmailError] = useState<string>();
@@ -75,7 +74,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
     setLoading(true);
 
     try {
-      const result = await register(name.trim(), email.trim(), password, level);
+      const result = await register(name.trim(), email.trim(), password);
 
       if (result.success) {
         console.log('[RegisterScreen] Registration successful');
@@ -213,44 +212,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
               editable={!loading}
             />
 
-            {/* Level Selection */}
-            <View style={styles.levelContainer}>
-              <Text style={styles.levelLabel}>Learning Level</Text>
-              <View style={styles.levelButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.levelButton,
-                    level === 'beginner' && styles.levelButton_active,
-                  ]}
-                  onPress={() => setLevel('beginner')}
-                  disabled={loading}>
-                  <Text
-                    style={[
-                      styles.levelButtonText,
-                      level === 'beginner' && styles.levelButtonText_active,
-                    ]}>
-                    Beginner
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.levelButton,
-                    level === 'experienced' && styles.levelButton_active,
-                  ]}
-                  onPress={() => setLevel('experienced')}
-                  disabled={loading}>
-                  <Text
-                    style={[
-                      styles.levelButtonText,
-                      level === 'experienced' && styles.levelButtonText_active,
-                    ]}>
-                    Experienced
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
             <Button
               title="Create Account"
               onPress={handleRegister}
@@ -306,12 +267,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...textStyles.h1,
-    color: colors.textPrimary,
+    color: colors.textLight,
     marginBottom: spacing.sm,
   },
   subtitle: {
     ...textStyles.body,
-    color: colors.textSecondary,
+    color: colors.textLight,
   },
   form: {
     marginBottom: spacing.lg,
@@ -335,39 +296,6 @@ const styles = StyleSheet.create({
     ...textStyles.caption,
     fontSize: 12,
   },
-  levelContainer: {
-    marginBottom: spacing.md,
-  },
-  levelLabel: {
-    ...textStyles.label,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  levelButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  levelButton: {
-    flex: 1,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.bgSecondary,
-    borderWidth: 2,
-    borderColor: colors.borderColor,
-    borderRadius: 8,
-  },
-  levelButton_active: {
-    borderColor: colors.accentBlue,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  levelButtonText: {
-    ...textStyles.button,
-    color: colors.textSecondary,
-  },
-  levelButtonText_active: {
-    color: colors.accentBlue,
-  },
   registerButton: {
     marginTop: spacing.md,
   },
@@ -383,7 +311,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     ...textStyles.caption,
-    color: colors.textMuted,
+    color: colors.textLight,
     marginHorizontal: spacing.md,
   },
   footer: {
@@ -394,7 +322,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     ...textStyles.body,
-    color: colors.textSecondary,
+    color: colors.textLight,
   },
   loginLink: {
     ...textStyles.body,

@@ -239,12 +239,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...textStyles.h1,
-    color: colors.textPrimary,
+    color: colors.textLight,
     marginBottom: spacing.sm,
   },
   subtitle: {
     ...textStyles.body,
-    color: colors.textSecondary,
+    color: colors.textLight,
   },
   form: {
     marginBottom: spacing.lg,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     ...textStyles.caption,
-    color: colors.textMuted,
+    color: colors.textLight,
     marginHorizontal: spacing.md,
   },
   footer: {
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     ...textStyles.body,
-    color: colors.textSecondary,
+    color: colors.textLight,
   },
   registerLink: {
     ...textStyles.body,

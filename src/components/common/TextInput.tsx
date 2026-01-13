@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...textStyles.label,
-    color: colors.textSecondary,
+    color: colors.textLight,
     marginBottom: spacing.xs,
   },
   inputWrapper: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderColor,
     borderRadius: borderRadius.medium,
     paddingHorizontal: spacing.md,
-    minHeight: 48,
+    height: 52,
   },
   inputWrapper_focused: {
     borderColor: colors.accentBlue,
@@ -134,8 +134,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...textStyles.body,
-    color: colors.textPrimary,
-    paddingVertical: spacing.sm,
+    color: colors.textOnDark,
+    height: '100%',
+    textAlignVertical: 'center',
   },
   leftIcon: {
     marginRight: spacing.sm,

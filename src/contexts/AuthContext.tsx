@@ -121,7 +121,7 @@ export function AuthProvider({children}: AuthProviderProps) {
       console.error('[AuthContext] Login error:', error);
       return {
         success: false,
-        error: error?.response?.data?.message || 'Login failed',
+        error: error?.response?.data?.error || error?.response?.data?.message || 'Login failed',
       };
     }
   };
@@ -142,7 +142,7 @@ export function AuthProvider({children}: AuthProviderProps) {
       console.error('[AuthContext] Register error:', error);
       return {
         success: false,
-        error: error?.response?.data?.message || 'Registration failed',
+        error: error?.response?.data?.error || error?.response?.data?.message || 'Registration failed',
       };
     }
   };
