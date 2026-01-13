@@ -62,9 +62,19 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
   const startRecording = useCallback(async () => {
     try {
       console.log('[useVoiceRecording] Starting recording...');
+
+      // Set isRecording immediately for responsive UI
+      setRecordingState(prev => ({
+        ...prev,
+        isRecording: true,
+        recordedUri: null,
+        comparisonResult: null,
+      }));
+
       const hasPermission = await requestPermission();
       if (!hasPermission) {
         console.error('[useVoiceRecording] Permission denied');
+        setRecordingState(prev => ({ ...prev, isRecording: false }));
         options?.onError?.('Microphone permission denied');
         return;
       }
@@ -79,7 +89,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       const filename = `voice_recording_${Date.now()}.m4a`;
       console.log('[useVoiceRecording] Creating recorder with filename:', filename);
-      
+
       const recorder = new Recorder(filename, {
         quality: 'max',
         format: 'm4a',
@@ -90,6 +100,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       recorder.prepare((err) => {
         if (err) {
           console.error('[useVoiceRecording] Prepare error:', err);
+          setRecordingState(prev => ({ ...prev, isRecording: false }));
           options?.onError?.('Failed to prepare recorder: ' + JSON.stringify(err));
           return;
         }
@@ -99,21 +110,17 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
         recorder.record((recordErr) => {
           if (recordErr) {
             console.error('[useVoiceRecording] Record error:', recordErr);
+            setRecordingState(prev => ({ ...prev, isRecording: false }));
             options?.onError?.('Failed to start recording: ' + JSON.stringify(recordErr));
             return;
           }
 
           console.log('[useVoiceRecording] Recording started successfully');
-          setRecordingState(prev => ({
-            ...prev,
-            isRecording: true,
-            recordedUri: null,
-            comparisonResult: null,
-          }));
         });
       });
     } catch (error) {
       console.error('[useVoiceRecording] Start recording error:', error);
+      setRecordingState(prev => ({ ...prev, isRecording: false }));
       options?.onError?.('Failed to start recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }, [requestPermission, options]);
@@ -138,13 +145,13 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
         // Get file path - use fsPath which returns the full file system path
         let recordedUri = recorderRef.current?.fsPath || null;
-        
+
         // For iOS, fsPath returns format like: /path/to/file.m4a
         // We need to convert it to file:// URL format for Player
         if (recordedUri && !recordedUri.startsWith('file://')) {
           recordedUri = 'file://' + recordedUri;
         }
-        
+
         console.log('[useVoiceRecording] Recording stopped successfully');
         console.log('[useVoiceRecording] File path (original):', recorderRef.current?.fsPath);
         console.log('[useVoiceRecording] File URI (converted):', recordedUri);
@@ -246,20 +253,20 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       // Extract filename from URI for Player
       // Player expects just the filename, not full path or file:// URL
       let filename = recordingState.recordedUri;
-      
+
       // Remove file:// prefix if present
       if (filename.startsWith('file://')) {
         filename = filename.replace('file://', '');
       }
-      
+
       // Extract just the filename from full path
       const filenameParts = filename.split('/');
       const actualFilename = filenameParts[filenameParts.length - 1];
-      
+
       console.log('[useVoiceRecording] Original URI:', recordingState.recordedUri);
       console.log('[useVoiceRecording] Extracted filename:', actualFilename);
       console.log('[useVoiceRecording] Creating new player with filename:', actualFilename);
-      
+
       const player = new Player(actualFilename, {
         autoDestroy: false,
       });

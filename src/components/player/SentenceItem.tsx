@@ -48,7 +48,7 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
       <Text style={[styles.text, isActive && styles.textActive]}>
         {words.map((word, idx) => {
           let wordStyle: any = onWordPress ? styles.clickableWord : undefined;
-          
+
           // Apply voice recording color if available
           if (wordComparison) {
             const status = wordComparison[idx];
@@ -87,7 +87,7 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
       </View>
       <View style={styles.textContainer}>
         {renderText()}
-        
+
         {/* Voice Recording Badge */}
         {voiceRecordingResult && (
           <View style={[
@@ -104,7 +104,7 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
             </Text>
           </View>
         )}
-        
+
         {showTranslation && sentence.translation && (
           <Text style={[styles.translation, isActive && styles.translationActive]}>
             {sentence.translation}
@@ -142,17 +142,28 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   playIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 188, 212, 0.15)',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.retroCream,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     marginTop: 2,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
   },
   playIconContainerActive: {
     backgroundColor: colors.retroCyan,
+    borderColor: colors.retroBorder,
+    shadowColor: colors.retroCyan,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
   },
   playIcon: {
     marginLeft: 2,
