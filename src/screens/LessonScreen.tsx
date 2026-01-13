@@ -56,6 +56,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const [completedReported, setCompletedReported] = useState(false);
+  const [viewedSentences, setViewedSentences] = useState<Set<number>>(new Set());
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -123,6 +125,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Handle sentence end for auto-stop
   const handleSentenceEnd = useCallback((sentenceIndex: number) => {
+    // Mark sentence as viewed
+    if (!viewedSentences.has(sentenceIndex)) {
+      setViewedSentences(prev => new Set([...prev, sentenceIndex]));
+    }
+    
     if (!settings.autoStop) return;
     
     console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
@@ -139,7 +146,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       }
     }
     setIsPlaying(false);
-  }, [settings.autoStop, setIsPlaying, lesson]);
+  }, [settings.autoStop, setIsPlaying, lesson, viewedSentences]);
 
   // Transcript sync
   const { activeSentenceIndex, resetSentenceEndFlag } = useTranscriptSync({
@@ -163,6 +170,60 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSentenceIndex]);
+
+  // Load saved progress on mount
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const { progress: savedProgress } = await progressService.getProgress(lessonId, 'shadowing');
+        if (savedProgress && savedProgress.viewedSentences) {
+          setViewedSentences(new Set(savedProgress.viewedSentences));
+          console.log('[LessonScreen] Loaded saved progress:', savedProgress);
+        }
+      } catch (error) {
+        console.error('[LessonScreen] Error loading progress:', error);
+      } finally {
+        setProgressLoaded(true);
+      }
+    };
+    loadProgress();
+  }, [lessonId]);
+
+  // Mark sentence as viewed when it ends (auto-stop) or when moving to next
+  useEffect(() => {
+    if (!progressLoaded) return;
+    if (activeSentenceIndex >= 0 && !viewedSentences.has(activeSentenceIndex)) {
+      // Mark previous sentence as viewed when moving to a new one
+      if (activeSentenceIndex > 0 && !viewedSentences.has(activeSentenceIndex - 1)) {
+        setViewedSentences(prev => new Set([...prev, activeSentenceIndex - 1]));
+      }
+    }
+  }, [activeSentenceIndex, progressLoaded]);
+
+  // Save progress when viewedSentences changes
+  const saveProgressRef = useRef<NodeJS.Timeout>();
+  useEffect(() => {
+    if (!progressLoaded || viewedSentences.size === 0) return;
+    
+    if (saveProgressRef.current) {
+      clearTimeout(saveProgressRef.current);
+    }
+    
+    saveProgressRef.current = setTimeout(async () => {
+      try {
+        await progressService.saveDictationProgress(
+          lessonId,
+          {
+            viewedSentences: Array.from(viewedSentences),
+          } as any,
+          studyTime
+        );
+        console.log('[LessonScreen] Progress saved');
+      } catch (error) {
+        console.error('[LessonScreen] Error saving progress:', error);
+      }
+    }, 1000);
+  }, [viewedSentences, lessonId, studyTime, progressLoaded]);
 
   const handleReady = useCallback(async () => {
     if (videoPlayerRef.current) {
@@ -356,6 +417,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }
 
   const transcript = lesson.transcript || [];
+  const shadowingProgress = transcript.length > 0 ? (viewedSentences.size / transcript.length) * 100 : 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -409,6 +471,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         <View style={styles.transcriptTopBar} />
         <View style={styles.transcriptHeader}>
           <Text style={styles.transcriptTitle}>📝 Transcript</Text>
+          <View style={styles.progressWrapper}>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarFill, { width: `${shadowingProgress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{Math.round(shadowingProgress)}%</Text>
+          </View>
           <View style={styles.counterBox}>
             <Text style={styles.counterCurrent}>{activeSentenceIndex + 1}</Text>
             <Text style={styles.counterSeparator}>/</Text>
@@ -530,6 +598,42 @@ const styles = StyleSheet.create({
   videoContainer: {
     height: 200,
     backgroundColor: '#000',
+  },
+  // Progress bar
+  progressWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 12,
+    gap: 8,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: colors.retroCoral,
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#000',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+    minWidth: 40,
+    textAlign: 'center',
   },
   // Sentence Counter (in transcript header)
   counterBox: {
