@@ -693,38 +693,41 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           { paddingBottom: isKeyboardVisible ? 4 : (insets.bottom || 14) },
           isKeyboardVisible && styles.bottomControlsKeyboard
         ]}>
-          {/* Previous */}
+          {/* Previous - Left edge */}
           <TouchableOpacity 
-            style={[styles.controlBtn, styles.controlBtnNav, currentIndex === 0 && styles.controlBtnDisabled]}
+            style={[styles.controlBtn, styles.controlBtnNavEdge, currentIndex === 0 && styles.controlBtnDisabled]}
             onPress={goToPrevious}
             disabled={currentIndex === 0}
           >
-            <Icon name="chevron-back" size={24} color={currentIndex === 0 ? colors.textMuted : '#fff'} />
+            <Icon name="chevron-back" size={24} color={currentIndex === 0 ? colors.textMuted : colors.retroDark} />
           </TouchableOpacity>
 
-          {/* Replay Current Sentence */}
-          <TouchableOpacity 
-            style={[styles.controlBtn, styles.controlBtnReplay]}
-            onPress={playSentence}
-          >
-            <Icon name="refresh" size={22} color="#fff" />
-          </TouchableOpacity>
+          {/* Center Controls */}
+          <View style={styles.centerControls}>
+            {/* Replay Current Sentence */}
+            <TouchableOpacity 
+              style={[styles.controlBtn, styles.controlBtnReplay]}
+              onPress={playSentence}
+            >
+              <Icon name="refresh" size={22} color="#fff" />
+            </TouchableOpacity>
 
-          {/* Play/Pause - Center Large */}
-          <TouchableOpacity 
-            style={[styles.controlBtn, styles.controlBtnPlay]}
-            onPress={togglePlayPause}
-          >
-            <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" style={!isPlaying && { marginLeft: 3 }} />
-          </TouchableOpacity>
+            {/* Play/Pause - Center Large */}
+            <TouchableOpacity 
+              style={[styles.controlBtn, styles.controlBtnPlay]}
+              onPress={togglePlayPause}
+            >
+              <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" style={!isPlaying && { marginLeft: 3 }} />
+            </TouchableOpacity>
+          </View>
 
-          {/* Next */}
+          {/* Next - Right edge */}
           <TouchableOpacity 
-            style={[styles.controlBtn, styles.controlBtnNav, currentIndex >= totalSentences - 1 && styles.controlBtnDisabled]}
+            style={[styles.controlBtn, styles.controlBtnNavEdge, currentIndex >= totalSentences - 1 && styles.controlBtnDisabled]}
             onPress={goToNext}
             disabled={currentIndex >= totalSentences - 1}
           >
-            <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : '#fff'} />
+            <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : colors.retroDark} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -1166,12 +1169,16 @@ const styles = StyleSheet.create({
   bottomControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 2,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
     backgroundColor: colors.retroCream,
     borderTopWidth: 1,
     borderTopColor: colors.retroBorder,
+  },
+  centerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 14,
   },
   bottomControlsKeyboard: {
@@ -1195,6 +1202,12 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: colors.retroPurple,
+  },
+  controlBtnNavEdge: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
   },
   controlBtnReplay: {
     width: 44,
