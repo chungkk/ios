@@ -65,18 +65,22 @@ const SettingsScreen: React.FC = () => {
         name: fileName,
       } as any);
 
-      const token = await require('../services/storage.service').getAuthToken();
+      const { getToken } = require('../services/storage.service');
+      const token = await getToken();
       const response = await fetch(`${BASE_URL}/api/upload-avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         },
         body: formData,
       });
 
       const data = await response.json();
+      console.log('[SettingsScreen] Upload avatar response:', JSON.stringify(data));
       if (data.success) {
         await refreshUser();
+        console.log('[SettingsScreen] User after refresh:', JSON.stringify(user));
         Alert.alert('Success', 'Avatar updated successfully!');
       } else {
         Alert.alert('Error', data.message || 'Failed to upload avatar');
