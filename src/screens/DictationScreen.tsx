@@ -56,7 +56,6 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [revealedWords, setRevealedWords] = useState<{[key: string]: boolean}>({});
   const [revealCount, setRevealCount] = useState<{[key: number]: number}>({}); // Track reveals per sentence
-  const [pointsDeducted, setPointsDeducted] = useState(0); // Total points deducted
   const [progressLoaded, setProgressLoaded] = useState(false); // Track if progress is loaded
   
   // Word translation popup state
@@ -146,9 +145,6 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           if (savedProgress.revealCount) {
             setRevealCount(savedProgress.revealCount);
           }
-          if (typeof savedProgress.pointsDeducted === 'number') {
-            setPointsDeducted(savedProgress.pointsDeducted);
-          }
           if (typeof savedProgress.currentIndex === 'number') {
             setCurrentIndex(savedProgress.currentIndex);
           }
@@ -195,7 +191,6 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             revealedWords,
             completedSentences: Array.from(completedSentences),
             revealCount,
-            pointsDeducted,
             currentIndex,
             userInputs,
           },
@@ -206,7 +201,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         console.error('[DictationScreen] Error saving progress:', error);
       }
     }, 1000);
-  }, [lessonId, revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, userInputs, studyTime, progressLoaded]);
+  }, [lessonId, revealedWords, completedSentences, revealCount, currentIndex, userInputs, studyTime, progressLoaded]);
 
   // Auto-save when state changes
   useEffect(() => {
@@ -217,7 +212,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       }
       saveProgress();
     }
-  }, [revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, userInput, progressLoaded]);
+  }, [revealedWords, completedSentences, revealCount, currentIndex, userInput, progressLoaded]);
 
   // Check if current sentence is completed (all words correct)
   useEffect(() => {
@@ -286,6 +281,14 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     return () => clearInterval(checkInterval);
   }, [isPlaying, currentSentence]);
 
+  // Seek video to current sentence when index changes
+  useEffect(() => {
+    if (currentSentence && videoPlayerRef.current && progressLoaded) {
+      const startTime = currentSentence.startTime || currentSentence.start;
+      videoPlayerRef.current.seekTo(startTime);
+    }
+  }, [currentIndex, progressLoaded]);
+
   // Go to next sentence
   const goToNext = useCallback(() => {
     if (currentIndex < totalSentences - 1) {
@@ -307,8 +310,6 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // Save progress on complete
   const handleComplete = useCallback(async () => {
     const accuracy = Math.round(progress);
-    const basePoints = Math.floor(completedSentences.size * 2);
-    const finalPoints = Math.max(0, basePoints - pointsDeducted);
 
     // Celebration vibration
     vibrateComplete();
@@ -318,14 +319,14 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         lessonId,
         mode: 'dictation',
         completed: true,
-        pointsEarned: finalPoints,
+        pointsEarned: 0, // Points already awarded per sentence
         studyTime,
         accuracy,
       });
 
       Alert.alert(
         'Dictation Complete! 🎉',
-        `Accuracy: ${accuracy}%\nPoints Earned: ${finalPoints}${pointsDeducted > 0 ? ` (-${pointsDeducted} hint)` : ''}\nStudy Time: ${formattedTime}`,
+        `Accuracy: ${accuracy}%\nCompleted: ${completedSentences.size}/${totalSentences} sentences\nStudy Time: ${formattedTime}`,
         [{ text: 'Back', onPress: () => navigation.goBack() }]
       );
     } catch {
@@ -333,7 +334,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         [{ text: 'Back', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, progress, completedSentences.size, totalSentences, studyTime, formattedTime, pointsDeducted, navigation]);
+  }, [lessonId, progress, completedSentences.size, totalSentences, studyTime, formattedTime, navigation]);
 
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
@@ -402,7 +403,18 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
 
       {/* Video Player */}
       {videoId && (
-        <View style={styles.videoContainer}>
+        <TouchableOpacity 
+          style={styles.videoContainer} 
+          activeOpacity={0.9}
+          onPress={() => {
+            if (currentSentence && videoPlayerRef.current) {
+              const startTime = currentSentence.startTime || currentSentence.start;
+              videoPlayerRef.current.seekTo(startTime);
+              videoPlayerRef.current.play();
+              setIsPlaying(true);
+            }
+          }}
+        >
           <VideoPlayer
             ref={videoPlayerRef}
             videoId={videoId}
@@ -411,7 +423,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             onStateChange={handleStateChange}
             onError={() => {}}
           />
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* Diktat Header - outside KeyboardAvoidingView */}
@@ -485,15 +497,19 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                     const currentCount = revealCount[currentIndex] || 0;
                     const newCount = currentCount + 1;
                     
-                    // From 3rd reveal onwards, check if user has points
+                    // From 3rd reveal onwards, deduct points from user
                     if (newCount > 2) {
-                      const availablePoints = userPoints - pointsDeducted;
-                      if (availablePoints <= 0) {
+                      if (userPoints <= 0) {
                         vibrateError();
                         Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
                         return;
                       }
-                      setPointsDeducted(prev => prev + 1);
+                      // Deduct 1 point from user's actual balance
+                      progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
+                        if (result.success && result.points !== undefined) {
+                          updateUserPoints(result.points);
+                        }
+                      });
                     }
                     
                     // Haptic feedback for hint
@@ -583,13 +599,16 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                     const currentCount = revealCount[currentIndex] || 0;
                     const newCount = currentCount + 1;
                     if (newCount > 2) {
-                      const availablePoints = userPoints - pointsDeducted;
-                      if (availablePoints <= 0) {
+                      if (userPoints <= 0) {
                         vibrateError();
                         Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
                         return;
                       }
-                      setPointsDeducted(prev => prev + 1);
+                      progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
+                        if (result.success && result.points !== undefined) {
+                          updateUserPoints(result.points);
+                        }
+                      });
                     }
                     vibrateHint();
                     setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
@@ -627,7 +646,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           {/* Input Area */}
           <View style={[
             styles.inputContainer,
-            isKeyboardVisible && styles.inputContainerKeyboard
+            isKeyboardVisible && styles.inputContainerKeyboard,
+            completedSentences.has(currentIndex) && styles.inputContainerCompleted
           ]}>
             <TextInput
               ref={inputRef}
@@ -635,10 +655,33 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
               placeholder="Type what you hear..."
               placeholderTextColor={colors.textMuted}
               value={userInput}
-              onChangeText={setUserInput}
+              onChangeText={(text) => {
+                if (completedSentences.has(currentIndex)) return;
+                
+                // Limit input when last word reaches correct length
+                if (currentSentence) {
+                  const words = currentSentence.text.split(' ');
+                  const userWords = text.trim().split(/\s+/).filter(w => w.length > 0);
+                  
+                  // If user has typed all words
+                  if (userWords.length >= words.length) {
+                    const lastWordIndex = words.length - 1;
+                    const lastCorrectWord = words[lastWordIndex].replace(/[.,!?;:"""''„]/g, '');
+                    const lastUserWord = userWords[lastWordIndex]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                    
+                    // Don't allow more characters if last word is at or exceeds correct length
+                    if (lastUserWord.length > lastCorrectWord.length) {
+                      return;
+                    }
+                  }
+                }
+                
+                setUserInput(text);
+              }}
               multiline
               autoCapitalize="none"
               autoCorrect={false}
+              editable={!completedSentences.has(currentIndex)}
             />
           </View>
         </View>
@@ -1012,6 +1055,10 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.sm,
     marginBottom: 6,
     borderRadius: 12,
+  },
+  inputContainerCompleted: {
+    backgroundColor: '#d4edda',
+    borderColor: colors.success,
   },
   textInput: {
     padding: 18,
