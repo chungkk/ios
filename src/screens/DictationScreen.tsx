@@ -206,6 +206,32 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     }
   }, [revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, progressLoaded]);
 
+  // Check if current sentence is completed (all words correct)
+  useEffect(() => {
+    if (!currentSentence || completedSentences.has(currentIndex)) return;
+    
+    const words = currentSentence.text.split(' ');
+    const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    
+    // Check if all words are correct
+    let allCorrect = words.length > 0 && userWords.length >= words.length;
+    if (allCorrect) {
+      for (let i = 0; i < words.length; i++) {
+        const pureWord = words[i].replace(/[.,!?;:"""''„]/g, '').toLowerCase();
+        const userWord = (userWords[i] || '').replace(/[.,!?;:"""''„]/g, '');
+        if (userWord !== pureWord) {
+          allCorrect = false;
+          break;
+        }
+      }
+    }
+    
+    if (allCorrect) {
+      vibrateSuccess();
+      setCompletedSentences(prev => new Set([...prev, currentIndex]));
+    }
+  }, [userInput, currentSentence, currentIndex, completedSentences]);
+
   // Play current sentence segment
   const playSentence = useCallback(() => {
     if (!currentSentence || !videoPlayerRef.current) return;
@@ -371,6 +397,12 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         <View style={styles.diktatTopBar} />
         <View style={styles.diktatHeader}>
           <Text style={styles.diktatTitle}>✏️ Diktat</Text>
+          <View style={styles.progressWrapper}>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{Math.round(progress)}%</Text>
+          </View>
           <View style={styles.counterBox}>
             <Text style={styles.counterCurrent}>{currentIndex + 1}</Text>
             <Text style={styles.counterSeparator}>/</Text>
@@ -769,6 +801,41 @@ const styles = StyleSheet.create({
     borderColor: colors.retroBorder,
     overflow: 'hidden',
     color: '#fff',
+  },
+  progressWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 12,
+    gap: 8,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: colors.retroPurple,
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#000',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#000',
+    overflow: 'hidden',
+    minWidth: 56,
+    textAlign: 'center',
   },
   counterBox: {
     flexDirection: 'row',
