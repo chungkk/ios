@@ -13,13 +13,13 @@ interface TranscriptViewProps {
   onSentencePress?: (index: number) => void;
   onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
-  voiceRecordingResult?: {
+  recordingResults?: Record<number, {
     transcribed: string;
     original: string;
     similarity: number;
     isCorrect: boolean;
     wordComparison: Record<number, 'correct' | 'incorrect' | 'missing'>;
-  } | null;
+  }>;
 }
 
 export const TranscriptView: React.FC<TranscriptViewProps> = ({
@@ -28,7 +28,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   onSentencePress,
   onWordPress,
   showTranslation = true,
-  voiceRecordingResult = null,
+  recordingResults = {},
 }) => {
   const flatListRef = useRef<FlatList>(null);
 
@@ -65,18 +65,19 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
         data={transcript}
         renderItem={({ item, index }) => {
           const isActive = index === activeSentenceIndex;
-          const hasRecording = isActive && voiceRecordingResult;
-          
+          // Get recording result for this specific sentence
+          const sentenceRecordingResult = recordingResults[index] || null;
+
           return (
-          <SentenceItem
-            sentence={item}
-            isActive={isActive}
-            onPress={() => handleSentencePress(index)}
-            onWordPress={onWordPress}
-            showTranslation={showTranslation}
-            voiceRecordingResult={hasRecording ? voiceRecordingResult : null}
-          />
-        );
+            <SentenceItem
+              sentence={item}
+              isActive={isActive}
+              onPress={() => handleSentencePress(index)}
+              onWordPress={onWordPress}
+              showTranslation={showTranslation}
+              voiceRecordingResult={sentenceRecordingResult}
+            />
+          );
         }}
         keyExtractor={(item, index) => `sentence-${index}`}
         showsVerticalScrollIndicator={true}

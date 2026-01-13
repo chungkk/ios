@@ -61,6 +61,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [viewedSentences, setViewedSentences] = useState<Set<number>>(new Set());
   const [rewardedSentences, setRewardedSentences] = useState<Set<number>>(new Set()); // Track sentences that got 80%+ reward
   const [progressLoaded, setProgressLoaded] = useState(false);
+  // Store recording results for each sentence
+  const [recordingResults, setRecordingResults] = useState<Record<number, {
+    transcribed: string;
+    original: string;
+    similarity: number;
+    isCorrect: boolean;
+    wordComparison: Record<number, 'correct' | 'incorrect' | 'missing'>;
+  }>>({});
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -112,9 +120,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [settings.hapticEnabled]);
 
   const vibrateRecord = useCallback(() => {
-    if (!settings.hapticEnabled) return;
-    Vibration.vibrate(30);
-  }, [settings.hapticEnabled]);
+    // Disabled - no vibration on record button press
+  }, []);
 
   const vibrateComplete = useCallback(() => {
     if (!settings.hapticEnabled) return;
@@ -350,6 +357,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       const similarity = recordingState.comparisonResult.similarity || 0;
       console.log('[LessonScreen] Voice comparison result:', { similarity, activeSentenceIndex, comparisonResult: recordingState.comparisonResult });
 
+      // Save recording result for this sentence so it persists
+      setRecordingResults(prev => ({
+        ...prev,
+        [activeSentenceIndex]: recordingState.comparisonResult!
+      }));
+
       if (similarity >= 80) {
         vibrateSuccess();
         console.log('[LessonScreen] ✅ Similarity >= 80%!', { similarity, alreadyRewarded: rewardedSentences.has(activeSentenceIndex) });
@@ -522,7 +535,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             onSentencePress={handleSentencePress}
             onWordPress={handleWordPress}
             showTranslation={settings.showTranslation}
-            voiceRecordingResult={recordingState.comparisonResult}
+            recordingResults={recordingResults}
           />
         </View>
       </View>

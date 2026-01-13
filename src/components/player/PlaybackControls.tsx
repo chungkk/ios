@@ -45,58 +45,47 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         <Icon name="chevron-back" size={24} color={colors.retroDark} />
       </TouchableOpacity>
 
-      {/* Play/Pause Button - Large Center */}
-      <TouchableOpacity
-        style={styles.playButton}
-        onPress={handlePlayPause}
-        activeOpacity={0.8}
-      >
-        <Icon
-          name={isPlaying ? 'pause' : 'play'}
-          size={32}
-          color="#ffffff"
-          style={isPlaying ? {} : { marginLeft: 3 }}
-        />
-      </TouchableOpacity>
-
-      {/* Microphone Button */}
-      <TouchableOpacity
-        style={[
-          styles.micButton,
-          isRecording && styles.micButtonRecording,
-          isProcessing && styles.micButtonProcessing,
-        ]}
-        onPress={onMicrophone}
-        activeOpacity={0.7}
-        disabled={isProcessing}
-      >
-        {isProcessing ? (
-          <Icon name="hourglass-outline" size={24} color="#ffffff" />
-        ) : isRecording ? (
-          <Icon name="stop" size={24} color="#ffffff" />
-        ) : (
-          <Icon name="mic" size={24} color="#ffffff" />
-        )}
-      </TouchableOpacity>
-
-      {/* Play Recording Button - Only show if has recording */}
-      {hasRecording && (
+      {/* Center Controls */}
+      <View style={styles.centerControls}>
+        {/* Microphone Button */}
         <TouchableOpacity
           style={[
-            styles.replayButton,
-            isPlayingRecording && styles.replayButtonPlaying,
+            styles.micButton,
+            isRecording && styles.micButtonRecording,
+            isProcessing && styles.micButtonProcessing,
           ]}
-          onPress={onPlayRecording}
+          onPress={onMicrophone}
           activeOpacity={0.7}
+          disabled={isProcessing}
         >
-          <Icon
-            name={isPlayingRecording ? 'pause' : 'play'}
-            size={24}
-            color="#ffffff"
-            style={isPlayingRecording ? {} : { marginLeft: 2 }}
-          />
+          {isProcessing ? (
+            <Icon name="hourglass-outline" size={32} color="#ffffff" />
+          ) : isRecording ? (
+            <Icon name="stop" size={32} color="#ffffff" />
+          ) : (
+            <Icon name="mic" size={32} color="#ffffff" />
+          )}
         </TouchableOpacity>
-      )}
+
+        {/* Play Recording Button - Only show if has recording */}
+        {hasRecording && (
+          <TouchableOpacity
+            style={[
+              styles.replayButton,
+              isPlayingRecording && styles.replayButtonPlaying,
+            ]}
+            onPress={onPlayRecording}
+            activeOpacity={0.7}
+          >
+            <Icon
+              name={isPlayingRecording ? 'pause' : 'play'}
+              size={24}
+              color="#ffffff"
+              style={isPlayingRecording ? {} : { marginLeft: 2 }}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Next Sentence */}
       <TouchableOpacity
@@ -115,12 +104,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     backgroundColor: colors.retroCream,
     borderTopWidth: 1,
     borderTopColor: colors.retroBorder,
+  },
+  centerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 14,
   },
   navButton: {
@@ -154,19 +147,19 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   micButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.retroCoral,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#1a1a2e',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.2,
     shadowRadius: 0,
-    elevation: 2,
+    elevation: 4,
   },
   micButtonRecording: {
     backgroundColor: '#ff4444',
