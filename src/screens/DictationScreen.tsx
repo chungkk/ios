@@ -50,6 +50,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // State
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
+  const [userInputs, setUserInputs] = useState<{[key: number]: string}>({}); // Store input per sentence
   const [isPlaying, setIsPlaying] = useState(false);
   const [completedSentences, setCompletedSentences] = useState<Set<number>>(new Set());
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -151,6 +152,13 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           if (typeof savedProgress.currentIndex === 'number') {
             setCurrentIndex(savedProgress.currentIndex);
           }
+          if (savedProgress.userInputs) {
+            setUserInputs(savedProgress.userInputs);
+            // Set current input for the loaded index
+            if (savedProgress.userInputs[savedProgress.currentIndex || 0]) {
+              setUserInput(savedProgress.userInputs[savedProgress.currentIndex || 0]);
+            }
+          }
           console.log('[DictationScreen] Loaded saved progress:', savedProgress);
         }
       } catch (error) {
@@ -189,6 +197,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             revealCount,
             pointsDeducted,
             currentIndex,
+            userInputs,
           },
           studyTime
         );
@@ -197,14 +206,18 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         console.error('[DictationScreen] Error saving progress:', error);
       }
     }, 1000);
-  }, [lessonId, revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, studyTime, progressLoaded]);
+  }, [lessonId, revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, userInputs, studyTime, progressLoaded]);
 
   // Auto-save when state changes
   useEffect(() => {
     if (progressLoaded) {
+      // Update userInputs when userInput changes
+      if (userInput !== (userInputs[currentIndex] || '')) {
+        setUserInputs(prev => ({ ...prev, [currentIndex]: userInput }));
+      }
       saveProgress();
     }
-  }, [revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, progressLoaded]);
+  }, [revealedWords, completedSentences, revealCount, pointsDeducted, currentIndex, userInput, progressLoaded]);
 
   // Check if current sentence is completed (all words correct)
   useEffect(() => {
@@ -229,8 +242,15 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     if (allCorrect) {
       vibrateSuccess();
       setCompletedSentences(prev => new Set([...prev, currentIndex]));
+      
+      // Award +1 point for completing sentence
+      progressService.addUserPoints(1, 'dictation_sentence_complete').then(result => {
+        if (result.success && result.points !== undefined) {
+          updateUserPoints(result.points);
+        }
+      });
     }
-  }, [userInput, currentSentence, currentIndex, completedSentences]);
+  }, [userInput, currentSentence, currentIndex, completedSentences, updateUserPoints]);
 
   // Play current sentence segment
   const playSentence = useCallback(() => {
@@ -269,18 +289,20 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // Go to next sentence
   const goToNext = useCallback(() => {
     if (currentIndex < totalSentences - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setUserInput('');
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      setUserInput(userInputs[nextIndex] || '');
     }
-  }, [currentIndex, totalSentences]);
+  }, [currentIndex, totalSentences, userInputs]);
 
   // Go to previous sentence
   const goToPrevious = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setUserInput('');
+      const prevIndex = currentIndex - 1;
+      setCurrentIndex(prevIndex);
+      setUserInput(userInputs[prevIndex] || '');
     }
-  }, [currentIndex]);
+  }, [currentIndex, userInputs]);
 
   // Save progress on complete
   const handleComplete = useCallback(async () => {

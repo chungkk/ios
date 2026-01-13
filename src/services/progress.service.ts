@@ -143,11 +143,35 @@ export const saveDictationProgress = async (
   }
 };
 
+/**
+ * Add points to user
+ * POST /api/user/points
+ */
+export const addUserPoints = async (
+  pointsChange: number,
+  reason: string
+): Promise<{ success: boolean; points?: number }> => {
+  try {
+    console.log('[ProgressService] Adding points:', { pointsChange, reason });
+    
+    const response = await api.post('/api/user/points', {
+      pointsChange,
+      reason,
+    });
+    
+    return { success: true, points: response.data.points };
+  } catch (error) {
+    console.error('[ProgressService] Error adding points:', error);
+    return { success: false };
+  }
+};
+
 export const progressService = {
   saveProgress,
   syncQueuedProgress,
   getProgress,
   saveDictationProgress,
+  addUserPoints,
 };
 
 export default progressService;
