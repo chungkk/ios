@@ -18,7 +18,7 @@ import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import SettingsMenu from '../components/lesson/SettingsMenu';
 import { progressService } from '../services/progress.service';
-import { recordShadowingSession, recordSingleShadowingSentence } from '../services/statistics.service';
+import { recordShadowingAttempt, recordShadowingStudyTime } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
@@ -141,9 +141,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     // Mark sentence as viewed
     if (!viewedSentences.has(sentenceIndex)) {
       setViewedSentences(prev => new Set([...prev, sentenceIndex]));
-      
-      // Record statistics for this single sentence (real-time tracking)
-      recordSingleShadowingSentence({ correct: true, pointsEarned: 0 });
+      // Note: Statistics are recorded ONLY when user actually records and gets comparison result
+      // See useEffect with recordingState.comparisonResult below
     }
 
     if (!settings.autoStop) return;
@@ -278,14 +277,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         studyTime,
       });
 
-      // Record study time and completion bonus (sentences already tracked real-time)
-      await recordShadowingSession({
-        sentencesCompleted: 0, // Already tracked per sentence
-        correctCount: 0,
-        totalAttempts: 0,
-        pointsEarned: pointsEarned, // Completion bonus points
-        studyTimeSeconds: studyTime,
-      });
+      // Record study time (sentences already tracked real-time)
+      await recordShadowingStudyTime(studyTime);
 
       setCompletedReported(true);
       Alert.alert(
@@ -388,6 +381,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         ...prev,
         [targetIndex]: recordingState.comparisonResult!
       }));
+
+      // Record statistics based on actual result (correct = similarity >= 80%)
+      const isCorrect = similarity >= 80;
+      const pointsForStats = isCorrect ? 1 : 0;
+      recordShadowingAttempt({ similarity, isCorrect, pointsEarned: pointsForStats });
+      console.log('[LessonScreen] 📊 Statistics recorded:', { isCorrect, similarity, targetIndex });
 
       if (similarity >= 80) {
         vibrateSuccess();

@@ -25,7 +25,7 @@ import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
-import { recordDictationSession, recordSingleDictationSentence } from '../services/statistics.service';
+import { recordDictationComplete, recordDictationStudyTime } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { useSettings } from '../contexts/SettingsContext';
@@ -44,26 +44,27 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const { userPoints, updateUserPoints } = useAuth();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
-  
+
   const videoPlayerRef = useRef<VideoPlayerRef>(null);
   const inputRef = useRef<TextInput>(null);
-  
+
   // State
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
-  const [userInputs, setUserInputs] = useState<{[key: number]: string}>({}); // Store input per sentence
+  const [userInputs, setUserInputs] = useState<{ [key: number]: string }>({}); // Store input per sentence
   const [isPlaying, setIsPlaying] = useState(false);
   const [completedSentences, setCompletedSentences] = useState<Set<number>>(new Set());
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [revealedWords, setRevealedWords] = useState<{[key: string]: boolean}>({});
-  const [revealCount, setRevealCount] = useState<{[key: number]: number}>({}); // Track reveals per sentence
+  const [revealedWords, setRevealedWords] = useState<{ [key: string]: boolean }>({});
+  const [revealCount, setRevealCount] = useState<{ [key: number]: number }>({}); // Track reveals per sentence
   const [progressLoaded, setProgressLoaded] = useState(false); // Track if progress is loaded
-  
+  const [allowReEdit, setAllowReEdit] = useState<Set<number>>(new Set()); // Allow re-editing completed sentences on double tap
+
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
   const [selectedContext, setSelectedContext] = useState('');
   const [showTranslatePopup, setShowTranslatePopup] = useState(false);
-  
+
   // Keyboard state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
@@ -104,9 +105,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
     parentNavigation?.setOptions({ tabBarStyle: { display: 'none' } });
-    
+
     return () => {
-      parentNavigation?.setOptions({ 
+      parentNavigation?.setOptions({
         tabBarStyle: {
           backgroundColor: '#FFF8E7',
           borderTopColor: '#1a1a2e',
@@ -115,7 +116,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           paddingBottom: 14,
           paddingTop: 10,
           display: 'flex',
-        } 
+        }
       });
     };
   }, [navigation, parentNavigation]);
@@ -124,7 +125,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true));
     const hideSub = Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false));
-    
+
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -164,7 +165,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         setProgressLoaded(true);
       }
     };
-    
+
     loadProgress();
   }, [lessonId]);
 
@@ -177,12 +178,12 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const saveProgressRef = useRef<NodeJS.Timeout>();
   const saveProgress = useCallback(() => {
     if (!progressLoaded) return; // Don't save until loaded
-    
+
     // Clear previous timeout
     if (saveProgressRef.current) {
       clearTimeout(saveProgressRef.current);
     }
-    
+
     // Debounce save - wait 1 second after last change
     saveProgressRef.current = setTimeout(async () => {
       try {
@@ -218,10 +219,10 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // Check if current sentence is completed (all words correct)
   useEffect(() => {
     if (!currentSentence || completedSentences.has(currentIndex)) return;
-    
+
     const words = currentSentence.text.split(' ');
     const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    
+
     // Check if all words are correct
     let allCorrect = words.length > 0 && userWords.length >= words.length;
     if (allCorrect) {
@@ -234,11 +235,11 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         }
       }
     }
-    
+
     if (allCorrect) {
       vibrateSuccess();
       setCompletedSentences(prev => new Set([...prev, currentIndex]));
-      
+
       // Award +1 point for completing sentence
       progressService.addUserPoints(1, 'dictation_sentence_complete').then(result => {
         if (result.success && result.points !== undefined) {
@@ -246,15 +247,19 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         }
       });
 
-      // Record statistics for this single sentence
-      recordSingleDictationSentence({ correct: true, pointsEarned: 1 });
+      // Record statistics for this single sentence (with hints tracking)
+      const hintsForThisSentence = revealCount[currentIndex] || 0;
+      console.log('[DictationScreen] Recording stats for completed sentence:', currentIndex, 'hints:', hintsForThisSentence);
+      recordDictationComplete({ hintsUsed: hintsForThisSentence, pointsEarned: 1 })
+        .then(() => console.log('[DictationScreen] Stats recorded successfully'))
+        .catch(err => console.error('[DictationScreen] Stats error:', err));
     }
   }, [userInput, currentSentence, currentIndex, completedSentences, updateUserPoints]);
 
   // Play current sentence segment
   const playSentence = useCallback(() => {
     if (!currentSentence || !videoPlayerRef.current) return;
-    
+
     videoPlayerRef.current.seekTo(currentSentence.startTime || currentSentence.start);
     setIsPlaying(true);
   }, [currentSentence]);
@@ -330,14 +335,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       });
 
       // Record study time only (sentences already tracked real-time)
-      await recordDictationSession({
-        sentencesCompleted: 0, // Already tracked per sentence
-        correctCount: 0,
-        errorCount: 0,
-        totalAttempts: 0,
-        pointsEarned: 0,
-        studyTimeSeconds: studyTime,
-      });
+      await recordDictationStudyTime(studyTime);
 
       Alert.alert(
         'Dictation Complete! 🎉',
@@ -345,7 +343,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         [{ text: 'Back', onPress: () => navigation.goBack() }]
       );
     } catch {
-      Alert.alert('Complete!', `You finished ${completedSentences.size}/${totalSentences} sentences!`, 
+      Alert.alert('Complete!', `You finished ${completedSentences.size}/${totalSentences} sentences!`,
         [{ text: 'Back', onPress: () => navigation.goBack() }]
       );
     }
@@ -400,16 +398,16 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           <Icon name="chevron-back" size={18} color="#fff" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
-        
+
         {/* Study Timer */}
         <View style={styles.timerContainer}>
           <Icon name="time-outline" size={14} color={colors.retroDark} />
           <Text style={styles.timerText}>{formattedTime}</Text>
         </View>
-        
+
         {/* Speed Button - tap to cycle */}
-        <TouchableOpacity 
-          style={styles.speedButton} 
+        <TouchableOpacity
+          style={styles.speedButton}
           onPress={cycleSpeed}
         >
           <Text style={styles.speedButtonText}>{playbackSpeed}x</Text>
@@ -418,8 +416,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
 
       {/* Video Player */}
       {videoId && (
-        <TouchableOpacity 
-          style={styles.videoContainer} 
+        <TouchableOpacity
+          style={styles.videoContainer}
           activeOpacity={0.9}
           onPress={() => {
             if (currentSentence && videoPlayerRef.current) {
@@ -436,7 +434,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             isPlaying={isPlaying}
             playbackSpeed={playbackSpeed}
             onStateChange={handleStateChange}
-            onError={() => {}}
+            onError={() => { }}
           />
         </TouchableOpacity>
       )}
@@ -460,256 +458,274 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         </View>
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        {/* Centered content wrapper when keyboard hidden */}
-        <View style={[styles.centerWrapper, isKeyboardVisible && styles.centerWrapperKeyboard]}>
-          {/* Hint box - above input */}
-          {currentSentence && !isKeyboardVisible && (
-            <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxAboveInput]}>
-            <View style={styles.hintHeader}>
-              <Text style={styles.maskedLabel}>💡 Hint</Text>
-              <Text style={[
-                styles.freeHintText,
-                (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
-              ]}>
-                {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
-              </Text>
-            </View>
-            <View style={styles.maskedWordsContainer}>
-              {currentSentence.text.split(' ').map((word, index) => {
-                const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
-                const punctuation = word.replace(pureWord, '');
-                const wordKey = `${currentIndex}-${index}`;
-                const isRevealedByClick = revealedWords[wordKey];
-                
-                // Check user input for this word position
-                const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                const correctWord = pureWord.toLowerCase();
-                
-                // Calculate matched characters from start
-                let matchedChars = 0;
-                for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
-                  if (userWord[i] === correctWord[i]) {
-                    matchedChars++;
-                  } else {
-                    break;
-                  }
-                }
-                
-                const isFullyCorrect = userWord === correctWord;
-                const isWrong = userWord.length > 0 && matchedChars === 0;
-                const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
-                
-                // Handle tap to reveal
-                const handleReveal = () => {
-                  if (!isFullyCorrect && !isRevealedByClick) {
-                    const currentCount = revealCount[currentIndex] || 0;
-                    const newCount = currentCount + 1;
-                    
-                    // From 3rd reveal onwards, deduct points from user
-                    if (newCount > 2) {
-                      if (userPoints <= 0) {
-                        vibrateError();
-                        Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
-                        return;
-                      }
-                      // Deduct 1 point from user's actual balance
-                      progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
-                        if (result.success && result.points !== undefined) {
-                          updateUserPoints(result.points);
-                        }
-                      });
-                    }
-                    
-                    // Haptic feedback for hint
-                    vibrateHint();
-                    
-                    // Update reveal count for this sentence
-                    setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-                    
-                    setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
-                  }
-                };
-                
-                return (
-                  <View key={index} style={styles.maskedWordWrapper}>
-                    {isFullyCorrect || isRevealedByClick ? (
-                      // Revealed - show word (clickable for translation)
-                      <TouchableOpacity 
-                        style={[styles.wordBox, styles.wordBoxRevealed]}
-                        onPress={() => handleWordPress(word, pureWord)}
-                      >
-                        <Text style={styles.revealedWord}>{pureWord}</Text>
-                      </TouchableOpacity>
-                    ) : isWrong ? (
-                      // Wrong - red box
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
-                        <Text style={styles.wrongAsterisks}>
-                          {'*'.repeat(pureWord.length)}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : hasPartialMatch ? (
-                      // Partial match
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
-                        <Text style={styles.matchedChars}>
-                          {pureWord.substring(0, matchedChars)}
-                        </Text>
-                        <Text style={styles.remainingAsterisks}>
-                          {'*'.repeat(pureWord.length - matchedChars)}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      // Not started - hidden box
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
-                        <Text style={styles.hiddenAsterisks}>
-                          {'*'.repeat(pureWord.length)}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
-                  </View>
-                );
-              })}
-              </View>
-            </View>
-          )}
+          {/* Centered content wrapper when keyboard hidden */}
+          <View style={[styles.centerWrapper, isKeyboardVisible && styles.centerWrapperKeyboard]}>
+            {/* Hint box - above input */}
+            {currentSentence && !isKeyboardVisible && (
+              <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxAboveInput]}>
+                <View style={styles.hintHeader}>
+                  <Text style={styles.maskedLabel}>💡 Hint</Text>
+                  <Text style={[
+                    styles.freeHintText,
+                    (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
+                  ]}>
+                    {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
+                  </Text>
+                </View>
+                <View style={styles.maskedWordsContainer}>
+                  {currentSentence.text.split(' ').map((word, index) => {
+                    const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
+                    const punctuation = word.replace(pureWord, '');
+                    const wordKey = `${currentIndex}-${index}`;
+                    const isRevealedByClick = revealedWords[wordKey];
 
-          {/* Hint box - floats above input when keyboard visible */}
-          {currentSentence && isKeyboardVisible && (
-            <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxKeyboard]}>
-            <View style={styles.hintHeader}>
-              <Text style={styles.maskedLabel}>💡 Hint</Text>
-              <Text style={[
-                styles.freeHintText,
-                (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
-              ]}>
-                {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
-              </Text>
-            </View>
-            <View style={styles.maskedWordsContainer}>
-              {currentSentence.text.split(' ').map((word, index) => {
-                const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
-                const punctuation = word.replace(pureWord, '');
-                const wordKey = `${currentIndex}-${index}`;
-                const isRevealedByClick = revealedWords[wordKey];
-                const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                const correctWord = pureWord.toLowerCase();
-                let matchedChars = 0;
-                for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
-                  if (userWord[i] === correctWord[i]) matchedChars++;
-                  else break;
-                }
-                const isFullyCorrect = userWord === correctWord;
-                const isWrong = userWord.length > 0 && matchedChars === 0;
-                const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
-                const handleReveal = () => {
-                  if (!isFullyCorrect && !isRevealedByClick) {
-                    const currentCount = revealCount[currentIndex] || 0;
-                    const newCount = currentCount + 1;
-                    if (newCount > 2) {
-                      if (userPoints <= 0) {
-                        vibrateError();
-                        Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
-                        return;
-                      }
-                      progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
-                        if (result.success && result.points !== undefined) {
-                          updateUserPoints(result.points);
-                        }
-                      });
-                    }
-                    vibrateHint();
-                    setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-                    setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
-                  }
-                };
-                return (
-                  <View key={index} style={styles.maskedWordWrapper}>
-                    {isFullyCorrect || isRevealedByClick ? (
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxRevealed]} onPress={() => handleWordPress(word, pureWord)}>
-                        <Text style={styles.revealedWord}>{pureWord}</Text>
-                      </TouchableOpacity>
-                    ) : isWrong ? (
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
-                        <Text style={styles.wrongAsterisks}>{'*'.repeat(pureWord.length)}</Text>
-                      </TouchableOpacity>
-                    ) : hasPartialMatch ? (
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
-                        <Text style={styles.matchedChars}>{pureWord.substring(0, matchedChars)}</Text>
-                        <Text style={styles.remainingAsterisks}>{'*'.repeat(pureWord.length - matchedChars)}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
-                        <Text style={styles.hiddenAsterisks}>{'*'.repeat(pureWord.length)}</Text>
-                      </TouchableOpacity>
-                    )}
-                    {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
-                  </View>
-                );
-              })}
-              </View>
-            </View>
-          )}
+                    // Check user input for this word position
+                    const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                    const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                    const correctWord = pureWord.toLowerCase();
 
-          {/* Input Area */}
-          <View style={[
-            styles.inputContainer,
-            isKeyboardVisible && styles.inputContainerKeyboard,
-            completedSentences.has(currentIndex) && styles.inputContainerCompleted
-          ]}>
-            <TextInput
-              ref={inputRef}
-              style={[styles.textInput, isKeyboardVisible && styles.textInputKeyboard]}
-              placeholder="Type what you hear..."
-              placeholderTextColor={colors.textMuted}
-              value={userInput}
-              onChangeText={(text) => {
-                if (completedSentences.has(currentIndex)) return;
-                
-                // Limit input when last word reaches correct length
-                if (currentSentence) {
-                  const words = currentSentence.text.split(' ');
-                  const userWords = text.trim().split(/\s+/).filter(w => w.length > 0);
-                  
-                  // If user has typed all words
-                  if (userWords.length >= words.length) {
-                    const lastWordIndex = words.length - 1;
-                    const lastCorrectWord = words[lastWordIndex].replace(/[.,!?;:"""''„]/g, '');
-                    const lastUserWord = userWords[lastWordIndex]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                    
-                    // Don't allow more characters if last word is at or exceeds correct length
-                    if (lastUserWord.length > lastCorrectWord.length) {
-                      return;
+                    // Calculate matched characters from start
+                    let matchedChars = 0;
+                    for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
+                      if (userWord[i] === correctWord[i]) {
+                        matchedChars++;
+                      } else {
+                        break;
+                      }
                     }
-                  }
+
+                    const isFullyCorrect = userWord === correctWord;
+                    const isWrong = userWord.length > 0 && matchedChars === 0;
+                    const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
+
+                    // Handle tap to reveal
+                    const handleReveal = () => {
+                      if (!isFullyCorrect && !isRevealedByClick) {
+                        const currentCount = revealCount[currentIndex] || 0;
+                        const newCount = currentCount + 1;
+
+                        // From 3rd reveal onwards, deduct points from user
+                        if (newCount > 2) {
+                          if (userPoints <= 0) {
+                            vibrateError();
+                            Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
+                            return;
+                          }
+                          // Deduct 1 point from user's actual balance
+                          progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
+                            if (result.success && result.points !== undefined) {
+                              updateUserPoints(result.points);
+                            }
+                          });
+                        }
+
+                        // Haptic feedback for hint
+                        vibrateHint();
+
+                        // Update reveal count for this sentence
+                        setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
+
+                        setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                      }
+                    };
+
+                    return (
+                      <View key={index} style={styles.maskedWordWrapper}>
+                        {isFullyCorrect || isRevealedByClick ? (
+                          // Revealed - show word (clickable for translation)
+                          <TouchableOpacity
+                            style={[styles.wordBox, styles.wordBoxRevealed]}
+                            onPress={() => handleWordPress(word, pureWord)}
+                          >
+                            <Text style={styles.revealedWord}>{pureWord}</Text>
+                          </TouchableOpacity>
+                        ) : isWrong ? (
+                          // Wrong - red box
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
+                            <Text style={styles.wrongAsterisks}>
+                              {'*'.repeat(pureWord.length)}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : hasPartialMatch ? (
+                          // Partial match
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
+                            <Text style={styles.matchedChars}>
+                              {pureWord.substring(0, matchedChars)}
+                            </Text>
+                            <Text style={styles.remainingAsterisks}>
+                              {'*'.repeat(pureWord.length - matchedChars)}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          // Not started - hidden box
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
+                            <Text style={styles.hiddenAsterisks}>
+                              {'*'.repeat(pureWord.length)}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Hint box - floats above input when keyboard visible */}
+            {currentSentence && isKeyboardVisible && (
+              <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxKeyboard]}>
+                <View style={styles.hintHeader}>
+                  <Text style={styles.maskedLabel}>💡 Hint</Text>
+                  <Text style={[
+                    styles.freeHintText,
+                    (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
+                  ]}>
+                    {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
+                  </Text>
+                </View>
+                <View style={styles.maskedWordsContainer}>
+                  {currentSentence.text.split(' ').map((word, index) => {
+                    const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
+                    const punctuation = word.replace(pureWord, '');
+                    const wordKey = `${currentIndex}-${index}`;
+                    const isRevealedByClick = revealedWords[wordKey];
+                    const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                    const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                    const correctWord = pureWord.toLowerCase();
+                    let matchedChars = 0;
+                    for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
+                      if (userWord[i] === correctWord[i]) matchedChars++;
+                      else break;
+                    }
+                    const isFullyCorrect = userWord === correctWord;
+                    const isWrong = userWord.length > 0 && matchedChars === 0;
+                    const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
+                    const handleReveal = () => {
+                      if (!isFullyCorrect && !isRevealedByClick) {
+                        const currentCount = revealCount[currentIndex] || 0;
+                        const newCount = currentCount + 1;
+                        if (newCount > 2) {
+                          if (userPoints <= 0) {
+                            vibrateError();
+                            Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
+                            return;
+                          }
+                          progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
+                            if (result.success && result.points !== undefined) {
+                              updateUserPoints(result.points);
+                            }
+                          });
+                        }
+                        vibrateHint();
+                        setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
+                        setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                      }
+                    };
+                    return (
+                      <View key={index} style={styles.maskedWordWrapper}>
+                        {isFullyCorrect || isRevealedByClick ? (
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxRevealed]} onPress={() => handleWordPress(word, pureWord)}>
+                            <Text style={styles.revealedWord}>{pureWord}</Text>
+                          </TouchableOpacity>
+                        ) : isWrong ? (
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
+                            <Text style={styles.wrongAsterisks}>{'*'.repeat(pureWord.length)}</Text>
+                          </TouchableOpacity>
+                        ) : hasPartialMatch ? (
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
+                            <Text style={styles.matchedChars}>{pureWord.substring(0, matchedChars)}</Text>
+                            <Text style={styles.remainingAsterisks}>{'*'.repeat(pureWord.length - matchedChars)}</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
+                            <Text style={styles.hiddenAsterisks}>{'*'.repeat(pureWord.length)}</Text>
+                          </TouchableOpacity>
+                        )}
+                        {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Input Area */}
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {
+                // Single tap: focus input if editable
+                if (!completedSentences.has(currentIndex) || allowReEdit.has(currentIndex)) {
+                  inputRef.current?.focus();
                 }
-                
-                setUserInput(text);
               }}
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!completedSentences.has(currentIndex)}
-            />
+              onLongPress={() => {
+                // Long press: allow re-editing completed sentence
+                if (completedSentences.has(currentIndex) && !allowReEdit.has(currentIndex)) {
+                  setAllowReEdit(prev => new Set([...prev, currentIndex]));
+                  setTimeout(() => inputRef.current?.focus(), 100);
+                }
+              }}
+              delayLongPress={300}
+            >
+              <View style={[
+                styles.inputContainer,
+                isKeyboardVisible && styles.inputContainerKeyboard,
+                completedSentences.has(currentIndex) && !allowReEdit.has(currentIndex) && styles.inputContainerCompleted
+              ]}>
+                <TextInput
+                  ref={inputRef}
+                  style={[styles.textInput, isKeyboardVisible && styles.textInputKeyboard]}
+                  placeholder="Type what you hear..."
+                  placeholderTextColor={colors.textMuted}
+                  value={userInput}
+                  onChangeText={(text) => {
+                    if (completedSentences.has(currentIndex) && !allowReEdit.has(currentIndex)) return;
+
+                    // Limit input when last word reaches correct length
+                    if (currentSentence) {
+                      const words = currentSentence.text.split(' ');
+                      const userWords = text.trim().split(/\s+/).filter(w => w.length > 0);
+
+                      // If user has typed all words
+                      if (userWords.length >= words.length) {
+                        const lastWordIndex = words.length - 1;
+                        const lastCorrectWord = words[lastWordIndex].replace(/[.,!?;:"""''„]/g, '');
+                        const lastUserWord = userWords[lastWordIndex]?.replace(/[.,!?;:"""''„]/g, '') || '';
+
+                        // Don't allow more characters if last word is at or exceeds correct length
+                        if (lastUserWord.length > lastCorrectWord.length) {
+                          return;
+                        }
+                      }
+                    }
+
+                    setUserInput(text);
+                  }}
+                  multiline
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!completedSentences.has(currentIndex) || allowReEdit.has(currentIndex)}
+                />
+              </View>
+            </TouchableOpacity>
           </View>
-        </View>
         </TouchableWithoutFeedback>
 
         {/* Bottom Controls - Inside KeyboardAvoidingView to move with keyboard */}
         <View style={[
-          styles.bottomControls, 
+          styles.bottomControls,
           { paddingBottom: isKeyboardVisible ? 4 : (insets.bottom || 14) },
           isKeyboardVisible && styles.bottomControlsKeyboard
         ]}>
           {/* Previous - Left edge */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.controlBtn, styles.controlBtnNavEdge, currentIndex === 0 && styles.controlBtnDisabled]}
             onPress={goToPrevious}
             disabled={currentIndex === 0}
@@ -720,7 +736,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           {/* Center Controls */}
           <View style={styles.centerControls}>
             {/* Replay Current Sentence */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.controlBtn, styles.controlBtnReplay]}
               onPress={playSentence}
             >
@@ -728,7 +744,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             </TouchableOpacity>
 
             {/* Play/Pause - Center Large */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.controlBtn, styles.controlBtnPlay]}
               onPress={togglePlayPause}
             >
@@ -737,7 +753,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           </View>
 
           {/* Next - Right edge */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.controlBtn, styles.controlBtnNavEdge, currentIndex >= totalSentences - 1 && styles.controlBtnDisabled]}
             onPress={goToNext}
             disabled={currentIndex >= totalSentences - 1}
@@ -757,7 +773,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         onClose={() => setShowTranslatePopup(false)}
       />
 
-      </View>
+    </View>
   );
 };
 

@@ -1,5 +1,5 @@
 // StatisticsScreen - User learning statistics dashboard
-// Neo-Retro Design
+// Neo-Retro Design - Redesigned with better UX
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -10,27 +10,43 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing } from '../styles/theme';
-import { getStatsSummary, StatsSummary, DailyStats } from '../services/statistics.service';
+import {
+  getStatsSummary,
+  getWeeklyActivity,
+  StatsSummary,
+  DailyStats,
+  WeeklyActivity,
+  getAverageSimilarity,
+  getAccuracy,
+} from '../services/statistics.service';
 
 type TimePeriod = 'today' | 'week' | 'month';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const StatisticsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [stats, setStats] = useState<StatsSummary | null>(null);
+  const [weeklyActivity, setWeeklyActivity] = useState<WeeklyActivity | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const [refreshing, setRefreshing] = useState(false);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const loadStats = useCallback(async () => {
     try {
-      const summary = await getStatsSummary();
+      const [summary, activity] = await Promise.all([
+        getStatsSummary(),
+        getWeeklyActivity(),
+      ]);
       setStats(summary);
+      setWeeklyActivity(activity);
     } catch (error) {
       console.error('[StatisticsScreen] Error loading stats:', error);
     } finally {
@@ -73,9 +89,10 @@ const StatisticsScreen: React.FC = () => {
     return `${hours}h ${remainingMinutes}m`;
   };
 
-  const getAccuracy = (correct: number, total: number): number => {
-    if (total === 0) return 0;
-    return Math.round((correct / total) * 100);
+  const formatDayName = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    return days[date.getDay()];
   };
 
   const totalPoints = currentStats
@@ -85,6 +102,56 @@ const StatisticsScreen: React.FC = () => {
   const totalStudyTime = currentStats
     ? currentStats.shadowing.studyTimeSeconds + currentStats.dictation.studyTimeSeconds
     : 0;
+
+  const shadowingAccuracy = currentStats
+    ? getAccuracy(currentStats.shadowing.correct, currentStats.shadowing.recorded)
+    : 0;
+
+  const avgSimilarity = currentStats ? getAverageSimilarity(currentStats) : 0;
+
+  // Get max value for chart scaling
+  const maxChartValue = weeklyActivity
+    ? Math.max(...weeklyActivity.shadowing, ...weeklyActivity.dictation, 1)
+    : 1;
+
+  const renderProgressRing = (progress: number, color: string, size: number = 60) => {
+    const strokeWidth = 6;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const progressValue = Math.min(100, Math.max(0, progress));
+    const strokeDashoffset = circumference - (progressValue / 100) * circumference;
+
+    return (
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={[styles.progressRingBg, { width: size, height: size, borderRadius: size / 2, borderWidth: strokeWidth }]} />
+        <View
+          style={[
+            styles.progressRingFill,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: strokeWidth,
+              borderColor: color,
+              transform: [{ rotate: '-90deg' }],
+              position: 'absolute',
+            },
+          ]}
+        />
+        <Text style={[styles.progressRingText, { color }]}>{progressValue}%</Text>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -100,6 +167,7 @@ const StatisticsScreen: React.FC = () => {
             <Icon name="arrow-back" size={24} color={colors.retroDark} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>📊 {t('statistics.title')}</Text>
+          <View style={{ width: 24 }} />
         </View>
 
         {/* Period Selector */}
@@ -130,87 +198,156 @@ const StatisticsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Summary Cards */}
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { backgroundColor: colors.retroYellow }]}>
-            <Icon name="diamond" size={28} color={colors.retroDark} />
-            <Text style={styles.summaryValue}>{totalPoints}</Text>
-            <Text style={styles.summaryLabel}>{t('statistics.diamondsEarned')}</Text>
+        {/* Summary Hero Cards */}
+        <View style={styles.heroRow}>
+          <View style={[styles.heroCard, { backgroundColor: colors.retroYellow }]}>
+            <Icon name="diamond" size={24} color={colors.retroDark} />
+            <Text style={styles.heroValue}>{totalPoints}</Text>
+            <Text style={styles.heroLabel}>{t('statistics.diamondsEarned')}</Text>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: colors.retroCyan }]}>
-            <Icon name="time" size={28} color={colors.retroDark} />
-            <Text style={styles.summaryValue}>{formatTime(totalStudyTime)}</Text>
-            <Text style={styles.summaryLabel}>{t('statistics.studyTime')}</Text>
-          </View>
-        </View>
-
-        {/* Shadowing Stats */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Icon name="mic" size={22} color={colors.retroPurple} />
-            <Text style={styles.sectionTitle}>{t('statistics.shadowing')}</Text>
-          </View>
-          <View style={styles.cardTopBar} />
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{currentStats?.shadowing.sentencesCompleted || 0}</Text>
-              <Text style={styles.statLabel}>{t('statistics.sentencesCompleted')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {currentStats?.shadowing.correctCount || 0}/{currentStats?.shadowing.totalAttempts || 0}
-              </Text>
-              <Text style={styles.statLabel}>{t('statistics.correctTotal')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {getAccuracy(currentStats?.shadowing.correctCount || 0, currentStats?.shadowing.totalAttempts || 0)}%
-              </Text>
-              <Text style={styles.statLabel}>{t('statistics.accuracy')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <View style={styles.diamondBadge}>
-                <Icon name="diamond" size={14} color={colors.retroYellow} />
-                <Text style={styles.diamondValue}>{currentStats?.shadowing.pointsEarned || 0}</Text>
-              </View>
-              <Text style={styles.statLabel}>{t('statistics.diamonds')}</Text>
-            </View>
+          <View style={[styles.heroCard, { backgroundColor: colors.retroCyan }]}>
+            <Icon name="time" size={24} color={colors.retroDark} />
+            <Text style={styles.heroValue}>{formatTime(totalStudyTime)}</Text>
+            <Text style={styles.heroLabel}>{t('statistics.studyTime')}</Text>
           </View>
         </View>
 
-        {/* Dictation Stats */}
+        {/* Shadowing Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Icon name="create" size={22} color={colors.retroCoral} />
-            <Text style={styles.sectionTitle}>{t('statistics.dictation')}</Text>
+            <View style={styles.sectionTitleRow}>
+              <Icon name="mic" size={20} color={colors.retroPurple} />
+              <Text style={styles.sectionTitle}>{t('statistics.shadowing')}</Text>
+            </View>
           </View>
-          <View style={[styles.cardTopBar, { backgroundColor: colors.retroCoral }]} />
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{currentStats?.dictation.sentencesCompleted || 0}</Text>
-              <Text style={styles.statLabel}>{t('statistics.sentencesCompleted')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {currentStats?.dictation.correctCount || 0}/{currentStats?.dictation.totalAttempts || 0}
-              </Text>
-              <Text style={styles.statLabel}>{t('statistics.correctTotal')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.retroCoral }]}>
-                {currentStats?.dictation.errorCount || 0}
-              </Text>
-              <Text style={styles.statLabel}>{t('statistics.errors')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <View style={styles.diamondBadge}>
-                <Icon name="diamond" size={14} color={colors.retroYellow} />
-                <Text style={styles.diamondValue}>{currentStats?.dictation.pointsEarned || 0}</Text>
+          <View style={[styles.sectionTopBar, { backgroundColor: colors.retroPurple }]} />
+          <View style={styles.sectionContent}>
+            <View style={styles.statRow}>
+              {/* Left: Stats */}
+              <View style={styles.statColumn}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t('statistics.recorded')}</Text>
+                  <Text style={styles.statValue}>{currentStats?.shadowing.recorded || 0}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t('statistics.correct')}</Text>
+                  <Text style={[styles.statValue, { color: colors.retroPurple }]}>
+                    {currentStats?.shadowing.correct || 0}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t('statistics.incorrect')}</Text>
+                  <Text style={[styles.statValue, { color: colors.retroCoral }]}>
+                    {currentStats?.shadowing.incorrect || 0}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t('statistics.avgSimilarity')}</Text>
+                  <Text style={styles.statValue}>{avgSimilarity}%</Text>
+                </View>
               </View>
-              <Text style={styles.statLabel}>{t('statistics.diamonds')}</Text>
+              {/* Right: Progress Ring */}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressCircle}>
+                  <Text style={styles.progressPercent}>{shadowingAccuracy}%</Text>
+                  <Text style={styles.progressLabel}>{t('statistics.accuracy')}</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
+
+        {/* Dictation Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <Icon name="create" size={20} color={colors.retroCoral} />
+              <Text style={styles.sectionTitle}>{t('statistics.dictation')}</Text>
+            </View>
+          </View>
+          <View style={[styles.sectionTopBar, { backgroundColor: colors.retroCoral }]} />
+          <View style={styles.sectionContent}>
+            <View style={styles.statRow}>
+              {/* Left: Stats */}
+              <View style={styles.statColumn}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t('statistics.completed')}</Text>
+                  <Text style={styles.statValue}>{currentStats?.dictation.completed || 0}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t('statistics.hintsUsed')}</Text>
+                  <Text style={[styles.statValue, { color: colors.retroCoral }]}>
+                    {currentStats?.dictation.hintsUsed || 0}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <View style={styles.diamondBadge}>
+                    <Icon name="diamond" size={14} color={colors.retroYellow} />
+                    <Text style={styles.diamondValue}>{currentStats?.dictation.pointsEarned || 0}</Text>
+                  </View>
+                  <Text style={styles.statLabel}>{t('statistics.diamonds')}</Text>
+                </View>
+              </View>
+              {/* Right: Icon */}
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressCircle, { backgroundColor: colors.retroCoral + '20' }]}>
+                  <Icon name="checkmark-circle" size={32} color={colors.retroCoral} />
+                  <Text style={styles.progressLabel}>{currentStats?.dictation.completed || 0} câu</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Weekly Activity Chart */}
+        {weeklyActivity && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Icon name="bar-chart" size={20} color={colors.retroCyan} />
+                <Text style={styles.sectionTitle}>{t('statistics.weeklyActivity')}</Text>
+              </View>
+            </View>
+            <View style={[styles.sectionTopBar, { backgroundColor: colors.retroCyan }]} />
+            <View style={styles.chartContainer}>
+              <View style={styles.chartLegend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.retroPurple }]} />
+                  <Text style={styles.legendText}>Shadowing</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.retroCoral }]} />
+                  <Text style={styles.legendText}>Dictation</Text>
+                </View>
+              </View>
+              <View style={styles.chartBars}>
+                {weeklyActivity.dates.map((date, index) => (
+                  <View key={date} style={styles.chartColumn}>
+                    <View style={styles.barContainer}>
+                      {/* Shadowing bar */}
+                      <View
+                        style={[
+                          styles.bar,
+                          styles.barShadowing,
+                          { height: Math.max(4, (weeklyActivity.shadowing[index] / maxChartValue) * 80) },
+                        ]}
+                      />
+                      {/* Dictation bar */}
+                      <View
+                        style={[
+                          styles.bar,
+                          styles.barDictation,
+                          { height: Math.max(4, (weeklyActivity.dictation[index] / maxChartValue) * 80) },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.chartLabel}>{formatDayName(date)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Tips */}
         <View style={styles.tipsCard}>
@@ -227,12 +364,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgPrimary,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
   scrollContent: {
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
@@ -243,7 +390,7 @@ const styles = StyleSheet.create({
     borderColor: colors.retroBorder,
   },
   backButton: {
-    marginRight: spacing.md,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 20,
@@ -278,13 +425,13 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     fontWeight: '700',
   },
-  summaryRow: {
+  heroRow: {
     flexDirection: 'row',
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
     gap: spacing.md,
   },
-  summaryCard: {
+  heroCard: {
     flex: 1,
     alignItems: 'center',
     padding: spacing.lg,
@@ -292,18 +439,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.retroBorder,
   },
-  summaryValue: {
+  heroValue: {
     fontSize: 28,
     fontWeight: '800',
     color: colors.retroDark,
     marginTop: spacing.sm,
   },
-  summaryLabel: {
+  heroLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.retroDark,
     opacity: 0.7,
     marginTop: 4,
+    textAlign: 'center',
   },
   section: {
     marginHorizontal: spacing.md,
@@ -317,8 +465,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: spacing.md,
     backgroundColor: colors.retroCream,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   sectionTitle: {
@@ -326,30 +479,66 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.retroDark,
   },
-  cardTopBar: {
+  sectionTopBar: {
     height: 4,
-    backgroundColor: colors.retroPurple,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  sectionContent: {
     padding: spacing.md,
   },
-  statItem: {
-    width: '50%',
+  statRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.retroDark,
+  statColumn: {
+    flex: 1,
+  },
+  statItem: {
+    marginBottom: spacing.sm,
   },
   statLabel: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  progressContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.md,
+  },
+  progressCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: colors.retroPurple + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+  },
+  progressPercent: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  progressRingBg: {
+    borderColor: colors.bgSecondary,
+    position: 'absolute',
+  },
+  progressRingFill: {
+  },
+  progressRingText: {
+    fontSize: 14,
+    fontWeight: '800',
   },
   diamondBadge: {
     flexDirection: 'row',
@@ -359,11 +548,70 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     gap: 4,
+    alignSelf: 'flex-start',
   },
   diamondValue: {
     fontSize: 16,
     fontWeight: '800',
     color: '#fff',
+  },
+  chartContainer: {
+    padding: spacing.md,
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.lg,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  chartBars: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 120,
+    paddingTop: 20,
+  },
+  chartColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  barContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 80,
+    gap: 2,
+  },
+  bar: {
+    width: 12,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
+  },
+  barShadowing: {
+    backgroundColor: colors.retroPurple,
+  },
+  barDictation: {
+    backgroundColor: colors.retroCoral,
+  },
+  chartLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 6,
+    fontWeight: '600',
   },
   tipsCard: {
     flexDirection: 'row',

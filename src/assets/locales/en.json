@@ -197,15 +197,19 @@
     "today": "Today",
     "thisWeek": "This Week",
     "thisMonth": "This Month",
-    "diamondsEarned": "Diamonds Earned",
+    "diamondsEarned": "Diamonds",
     "studyTime": "Study Time",
     "shadowing": "Shadowing",
     "dictation": "Dictation",
-    "sentencesCompleted": "Sentences",
-    "correctTotal": "Correct/Total",
+    "recorded": "Recorded",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "avgSimilarity": "Avg. Match",
+    "completed": "Completed",
+    "hintsUsed": "Hints",
     "accuracy": "Accuracy",
-    "errors": "Errors",
     "diamonds": "Diamonds",
+    "weeklyActivity": "Weekly Activity",
     "tip": "Practice daily to build your streak and earn more diamonds!"
   }
 }

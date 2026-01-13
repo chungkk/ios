@@ -197,15 +197,19 @@
     "today": "Heute",
     "thisWeek": "Diese Woche",
     "thisMonth": "Dieser Monat",
-    "diamondsEarned": "Verdiente Diamanten",
+    "diamondsEarned": "Diamanten",
     "studyTime": "Lernzeit",
     "shadowing": "Shadowing",
     "dictation": "Diktat",
-    "sentencesCompleted": "Sätze",
-    "correctTotal": "Richtig/Gesamt",
+    "recorded": "Aufgenommen",
+    "correct": "Richtig",
+    "incorrect": "Falsch",
+    "avgSimilarity": "Ø Ähnlichkeit",
+    "completed": "Fertig",
+    "hintsUsed": "Tipps",
     "accuracy": "Genauigkeit",
-    "errors": "Fehler",
     "diamonds": "Diamanten",
+    "weeklyActivity": "Wochenaktivität",
     "tip": "Übe täglich, um deine Serie aufzubauen und mehr Diamanten zu verdienen!"
   }
 }
