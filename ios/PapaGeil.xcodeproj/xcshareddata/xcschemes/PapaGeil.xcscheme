@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "PPGeil.app"
-               BlueprintName = "PPGeil"
-               ReferencedContainer = "container:PPGeil.xcodeproj">
+               BuildableName = "PapaGeil.app"
+               BlueprintName = "PapaGeil"
+               ReferencedContainer = "container:PapaGeil.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "PPGeilTests.xctest"
-               BlueprintName = "PPGeilTests"
-               ReferencedContainer = "container:PPGeil.xcodeproj">
+               BuildableName = "PapaGeilTests.xctest"
+               BlueprintName = "PapaGeilTests"
+               ReferencedContainer = "container:PapaGeil.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
