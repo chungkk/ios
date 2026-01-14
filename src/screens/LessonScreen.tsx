@@ -81,8 +81,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   // Get autoStop and showTranslation from global settings
   const { toggleAutoStop, toggleShowTranslation } = useSettings();
 
-  // Cycle through speed options
-  const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  // Speed options for playback
+  // Moved inside useCallback to prevent re-creation on every render
 
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
@@ -277,7 +277,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete, lesson]);
+  }, [lessonId, studyTime, formattedTime, completedReported, navigation, vibrateComplete]);
 
   const handleStateChange = useCallback((state: string) => {
     const stateNum = parseInt(state, 10);
@@ -416,10 +416,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Cycle to next speed
   const cycleSpeed = useCallback(() => {
+    const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
     const currentIndexSpeed = SPEED_OPTIONS.indexOf(playbackSpeed);
     const nextIndex = (currentIndexSpeed + 1) % SPEED_OPTIONS.length;
     setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
-  }, [playbackSpeed, setPlaybackSpeed, SPEED_OPTIONS]);
+  }, [playbackSpeed, setPlaybackSpeed]);
 
   // Custom play/pause handler for auto-stop mode
   const handlePlayPause = useCallback(() => {

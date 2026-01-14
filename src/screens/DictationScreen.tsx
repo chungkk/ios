@@ -24,7 +24,7 @@ import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
-import { recordDictationComplete, recordDictationStudyTime, recordPointsDeducted } from '../services/statistics.service';
+import { recordDictationComplete, recordPointsDeducted } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
@@ -75,30 +75,31 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   });
 
   // Haptic feedback functions (only vibrate if enabled in settings)
-  const vibrateSuccess = () => {
+  const vibrateSuccess = useCallback(() => {
     if (!settings.hapticEnabled) return;
     Vibration.vibrate(50);
-  };
+  }, [settings.hapticEnabled]);
 
-  const vibrateError = () => {
+  const vibrateError = useCallback(() => {
     if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 50, 50, 50]);
-  };
+  }, [settings.hapticEnabled]);
 
-  const vibrateHint = () => {
+  const vibrateHint = useCallback(() => {
     if (!settings.hapticEnabled) return;
     Vibration.vibrate(30);
-  };
+  }, [settings.hapticEnabled]);
 
-  const vibrateComplete = () => {
-    if (!settings.hapticEnabled) return;
-    Vibration.vibrate([0, 100, 50, 100, 50, 100]);
-  };
+  // TODO: Uncomment when complete button is added
+  // const vibrateComplete = useCallback(() => {
+  //   if (!settings.hapticEnabled) return;
+  //   Vibration.vibrate([0, 100, 50, 100, 50, 100]);
+  // }, [settings.hapticEnabled]);
 
-  const vibratePartial = () => {
+  const vibratePartial = useCallback(() => {
     if (!settings.hapticEnabled) return;
     Vibration.vibrate(40);
-  };
+  }, [settings.hapticEnabled]);
 
   // Hide navigation header and tab bar
   useLayoutEffect(() => {
@@ -388,12 +389,12 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   }, [isPlaying, playSentence]);
 
   // Cycle through speed options
-  const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
   const cycleSpeed = useCallback(() => {
+    const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
     const currentIndexSpeed = SPEED_OPTIONS.indexOf(playbackSpeed);
     const nextIndex = (currentIndexSpeed + 1) % SPEED_OPTIONS.length;
     setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
-  }, [playbackSpeed, SPEED_OPTIONS]);
+  }, [playbackSpeed, setPlaybackSpeed]);
 
   // Handle word press for translation
   const handleWordPress = useCallback((word: string, pureWord: string) => {
