@@ -130,6 +130,46 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
   }, [requestPermission, options]);
 
   /**
+   * Process recording with Whisper API
+   */
+  const processRecording = useCallback(async (audioUri: string, originalText: string) => {
+    try {
+      // Transcribe audio
+      const result = await whisperService.transcribe(audioUri, 'de');
+
+      if (!result.success || !result.text) {
+        Alert.alert('Error', result.message || 'Failed to transcribe audio');
+        setRecordingState(prev => ({ ...prev, isProcessing: false }));
+        return;
+      }
+
+      // Validate transcription
+      if (!whisperService.isValidTranscription(result.text)) {
+        Alert.alert('Error', 'Could not recognize speech. Please try again with clearer audio.');
+        setRecordingState(prev => ({ ...prev, isProcessing: false }));
+        return;
+      }
+
+      // Compare with original text
+      const comparison = whisperService.compareTexts(result.text, originalText);
+
+      setRecordingState(prev => ({
+        ...prev,
+        isProcessing: false,
+        comparisonResult: comparison,
+      }));
+
+      options?.onRecordingComplete?.(comparison);
+
+      // Don't show alert - result will be displayed in TranscriptView
+    } catch (error) {
+      if (__DEV__) console.error('[useVoiceRecording] Process error:', error);
+      Alert.alert('Error', 'Failed to process recording');
+      setRecordingState(prev => ({ ...prev, isProcessing: false }));
+    }
+  }, [options]);
+
+  /**
    * Stop recording and process audio
    */
   const stopRecording = useCallback(async (originalText: string) => {
@@ -185,46 +225,6 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       setRecordingState(prev => ({ ...prev, isRecording: false }));
     }
   }, [options, processRecording]);
-
-  /**
-   * Process recording with Whisper API
-   */
-  const processRecording = useCallback(async (audioUri: string, originalText: string) => {
-    try {
-      // Transcribe audio
-      const result = await whisperService.transcribe(audioUri, 'de');
-
-      if (!result.success || !result.text) {
-        Alert.alert('Error', result.message || 'Failed to transcribe audio');
-        setRecordingState(prev => ({ ...prev, isProcessing: false }));
-        return;
-      }
-
-      // Validate transcription
-      if (!whisperService.isValidTranscription(result.text)) {
-        Alert.alert('Error', 'Could not recognize speech. Please try again with clearer audio.');
-        setRecordingState(prev => ({ ...prev, isProcessing: false }));
-        return;
-      }
-
-      // Compare with original text
-      const comparison = whisperService.compareTexts(result.text, originalText);
-
-      setRecordingState(prev => ({
-        ...prev,
-        isProcessing: false,
-        comparisonResult: comparison,
-      }));
-
-      options?.onRecordingComplete?.(comparison);
-
-      // Don't show alert - result will be displayed in TranscriptView
-    } catch (error) {
-      if (__DEV__) console.error('[useVoiceRecording] Process error:', error);
-      Alert.alert('Error', 'Failed to process recording');
-      setRecordingState(prev => ({ ...prev, isProcessing: false }));
-    }
-  }, [options]);
 
   /**
    * Play recorded audio

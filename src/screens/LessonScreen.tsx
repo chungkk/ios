@@ -562,8 +562,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       {/* Bottom Controls - Neo-Retro Style */}
       <View style={[styles.controlsWrapper, { paddingBottom: insets.bottom || 14 }]}>
         <PlaybackControls
-          isPlaying={isPlaying}
-          onPlayPause={handlePlayPause}
+          _isPlaying={isPlaying}
+          _onPlayPause={handlePlayPause}
           onPrevious={handlePrevious}
           onNext={handleNext}
           onMicrophone={handleMicrophone}

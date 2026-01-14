@@ -37,7 +37,12 @@ export const PINNING_ENABLED = process.env.NODE_ENV === 'production';
  * - Update app before certificate expires
  * - Test with invalid hashes to ensure pinning works
  */
-export const SSL_PINNING_CONFIG = {
+export const SSL_PINNING_CONFIG: {
+  [domain: string]: {
+    includeSubdomains: boolean;
+    publicKeyHashes: string[];
+  };
+} = {
   // API domain
   'ckk.pro': {
     includeSubdomains: true,
@@ -59,7 +64,8 @@ export const SSL_PINNING_CONFIG = {
  */
 export const isSSLPinningConfigured = (): boolean => {
   const hashes = SSL_PINNING_CONFIG['ckk.pro']?.publicKeyHashes || [];
-  return hashes.length > 0 && !hashes[0]?.includes('TODO');
+  const firstHash = hashes[0];
+  return hashes.length > 0 && firstHash !== undefined && !firstHash.includes('TODO');
 };
 
 /**

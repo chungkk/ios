@@ -23,6 +23,22 @@ export const useSpeechRecognition = ({
   const [error, setError] = useState<string | null>(null);
   const [isAvailable, setIsAvailable] = useState(false);
 
+  /**
+   * Stop listening for speech
+   */
+  const stopListening = useCallback(async () => {
+    try {
+      // TODO: Uncomment when @react-native-voice/voice is installed
+      // await Voice.stop();
+      
+      console.log('Mock: Stopping voice recognition');
+      setIsListening(false);
+    } catch (err) {
+      console.error('Failed to stop listening:', err);
+      setIsListening(false);
+    }
+  }, []);
+
   // Initialize Voice
   useEffect(() => {
     checkAvailability();
@@ -87,22 +103,6 @@ export const useSpeechRecognition = ({
       if (onError) onError(errorMsg);
     }
   }, [isAvailable, language, onResult, onError]);
-
-  /**
-   * Stop listening for speech
-   */
-  const stopListening = useCallback(async () => {
-    try {
-      // TODO: Uncomment when @react-native-voice/voice is installed
-      // await Voice.stop();
-      
-      console.log('Mock: Stopping voice recognition');
-      setIsListening(false);
-    } catch (err) {
-      console.error('Failed to stop listening:', err);
-      setIsListening(false);
-    }
-  }, []);
 
   /**
    * Cancel listening and clear results

@@ -142,7 +142,7 @@ const DailyPhraseScreen: React.FC = () => {
         </View>
 
         {/* Phrase Card */}
-        <PhraseCard phrase={currentPhrase} nativeLanguage={nativeLanguage} />
+        <PhraseCard phrase={currentPhrase} _nativeLanguage={nativeLanguage} />
 
         {/* Detailed Explanation */}
         <ExplanationView
