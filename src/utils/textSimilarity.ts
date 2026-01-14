@@ -67,16 +67,16 @@ export const calculateSimilarity = (text1: string, text2: string): number => {
 export const calculateWordSimilarity = (userText: string, expectedText: string): number => {
   const userWords = normalizeText(userText).split(' ').filter(w => w.length > 0);
   const expectedWords = normalizeText(expectedText).split(' ').filter(w => w.length > 0);
-  
+
   if (expectedWords.length === 0) return 0;
-  
+
   let correctWords = 0;
   for (let i = 0; i < Math.min(userWords.length, expectedWords.length); i++) {
     if (userWords[i] === expectedWords[i]) {
       correctWords++;
     }
   }
-  
+
   return Math.round((correctWords / expectedWords.length) * 100);
 };
 
@@ -111,30 +111,30 @@ export const compareTexts = (originalText: string, spokenText: string): CompareR
   const wordMatches: WordMatch[] = [];
 
   originalWords.forEach((originalWord) => {
-    let bestMatch: { word: string; similarity: number } | null = null;
+    let bestMatchWord = '';
     let bestSimilarity = 0;
 
     spokenWords.forEach((spokenWord) => {
       const wordSimilarity = calculateSimilarity(originalWord, spokenWord);
       if (wordSimilarity > bestSimilarity) {
         bestSimilarity = wordSimilarity;
-        bestMatch = { word: spokenWord, similarity: wordSimilarity };
+        bestMatchWord = spokenWord;
       }
     });
 
     // Count as matched if similarity > 70%
-    if (bestMatch && bestSimilarity > 70) {
+    if (bestMatchWord && bestSimilarity > 70) {
       matchedWords++;
       wordMatches.push({
         original: originalWord,
-        spoken: bestMatch.word,
+        spoken: bestMatchWord,
         similarity: bestSimilarity,
         matched: true
       });
     } else {
       wordMatches.push({
         original: originalWord,
-        spoken: bestMatch?.word || '',
+        spoken: bestMatchWord,
         similarity: bestSimilarity,
         matched: false
       });

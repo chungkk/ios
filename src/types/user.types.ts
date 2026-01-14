@@ -42,4 +42,5 @@ export interface UpdateProfileRequest {
   name?: string;
   nativeLanguage?: NativeLanguage;
   preferredDifficultyLevel?: DifficultyLevel;
+  level?: string;
 }

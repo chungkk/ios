@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,19 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import {useTranslation} from 'react-i18next';
-import {useAuth} from '../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
 import Button from '../components/common/Button';
-import {Loading} from '../components/common/Loading';
-import {colors, spacing, borderRadius, shadows} from '../styles/theme';
-import {textStyles} from '../styles/typography';
-import type {MainTabScreenProps} from '../navigation/types';
+import { Loading } from '../components/common/Loading';
+import { colors, spacing, borderRadius, shadows } from '../styles/theme';
+import { textStyles } from '../styles/typography';
+import type { MainTabScreenProps } from '../navigation/types';
 
-type ProfileScreenProps = MainTabScreenProps<'Profile'>;
+type ProfileScreenProps = MainTabScreenProps<'Settings'>;
 
-export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
-  const {t} = useTranslation();
-  const {user, loading, userPoints, logout, refreshUser} = useAuth();
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
+  const { user, loading, userPoints, logout, refreshUser } = useAuth();
 
   // Refresh user data on mount
   useEffect(() => {
@@ -44,7 +44,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           },
         },
       ],
-      {cancelable: true},
+      { cancelable: true },
     );
   };
 
@@ -66,9 +66,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
             variant="primary"
             onPress={() => {
               // @ts-ignore - Navigation type issue
-              navigation.navigate('Auth', {screen: 'Login'});
+              navigation.navigate('Auth', { screen: 'Login' });
             }}
-            style={{marginTop: spacing.lg}}
+            style={{ marginTop: spacing.lg }}
           />
         </View>
       </SafeAreaView>
@@ -78,12 +78,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
   // Ensure user name and email are strings
   const userName = String(user.name || 'User');
   const userEmail = String(user.email || 'No email');
-  
+
   // Handle streak - could be number or object with currentStreak
   const streakValue = typeof user.streak === 'object' && user.streak !== null
     ? (user.streak as any).currentStreak || 0
     : user.streak || 0;
-  
+
   // Handle answerStreak - could be number or object with current
   const answerStreakValue = typeof user.answerStreak === 'object' && user.answerStreak !== null
     ? (user.answerStreak as any).current || 0
@@ -156,12 +156,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('profile.memberSince')}</Text>
             <Text style={styles.infoValue}>
-              {user.createdAt 
+              {user.createdAt
                 ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })
                 : 'N/A'
               }
             </Text>

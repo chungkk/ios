@@ -171,12 +171,12 @@ const SettingsScreen: React.FC = () => {
             try {
               // Save to local settings (works without login)
               await setNativeLanguage(lang.value);
-              
+
               // Also update on server if logged in
               if (user && updateUser) {
-                await updateUser({ nativeLanguage: lang.value });
+                await updateUser({ nativeLanguage: lang.value as 'vi' | 'en' | 'de' });
               }
-              
+
               setTimeout(() => {
                 // Use new language for success message
                 Alert.alert(
@@ -246,7 +246,7 @@ const SettingsScreen: React.FC = () => {
       ios: `itms-apps://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
       default: `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
     });
-    
+
     if (APP_STORE_ID === 'YOUR_APP_ID') {
       // App not yet on store - show thank you message
       Alert.alert(
@@ -287,9 +287,9 @@ const SettingsScreen: React.FC = () => {
                     <ActivityIndicator color="#fff" />
                   </View>
                 ) : user.picture ? (
-                  <Image 
-                    source={{ uri: user.picture.startsWith('/') ? `${BASE_URL}${user.picture}` : user.picture }} 
-                    style={styles.avatarImage} 
+                  <Image
+                    source={{ uri: user.picture.startsWith('/') ? `${BASE_URL}${user.picture}` : user.picture }}
+                    style={styles.avatarImage}
                   />
                 ) : (
                   <View style={styles.avatar}>
@@ -304,7 +304,7 @@ const SettingsScreen: React.FC = () => {
               </TouchableOpacity>
               <Text style={styles.userName}>{user.name || 'User'}</Text>
               <Text style={styles.userEmail}>{user.email}</Text>
-              
+
               {/* Stats */}
               <View style={styles.statsRow}>
                 <View style={styles.statBadge}>
@@ -353,7 +353,7 @@ const SettingsScreen: React.FC = () => {
         {/* Settings Options */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
-          
+
           <TouchableOpacity style={styles.settingItem} onPress={handleChangeLanguage} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="language" size={22} color={colors.retroCyan} />
@@ -367,7 +367,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-{/* Notifications - hidden until implemented
+          {/* Notifications - hidden until implemented
           <TouchableOpacity style={styles.settingItem} onPress={handleNotifications} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="notifications" size={22} color={colors.retroYellow} />
@@ -395,7 +395,7 @@ const SettingsScreen: React.FC = () => {
         {/* About Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.about')}</Text>
-          
+
           <TouchableOpacity style={styles.settingItem} onPress={handleAbout} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="information-circle" size={22} color={colors.retroCoral} />
@@ -406,7 +406,7 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
-{/* Rate App - hidden until app is published on App Store
+          {/* Rate App - hidden until app is published on App Store
           <TouchableOpacity style={styles.settingItem} onPress={handleRateApp} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="star" size={22} color={colors.retroYellow} />
@@ -466,25 +466,25 @@ const SettingsScreen: React.FC = () => {
           <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
             <Text style={styles.modalHeading}>{t('legal.terms.scope')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.scopeText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.terms.subject')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.subjectText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.terms.rights')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.rightsText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.terms.obligations')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.obligationsText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.terms.liability')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.liabilityText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.terms.changes')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.changesText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.terms.final')}</Text>
             <Text style={styles.modalText}>{t('legal.terms.finalText')}</Text>
-            
+
             <Text style={styles.modalDate}>{t('legal.lastUpdated')}</Text>
           </ScrollView>
         </SafeAreaView>
@@ -502,25 +502,25 @@ const SettingsScreen: React.FC = () => {
           <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
             <Text style={styles.modalHeading}>{t('legal.privacy.controller')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.controllerText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.privacy.dataCollected')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.dataCollectedText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.privacy.purpose')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.purposeText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.privacy.sharing')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.sharingText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.privacy.rights')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.rightsText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.privacy.security')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.securityText')}</Text>
-            
+
             <Text style={styles.modalHeading}>{t('legal.privacy.contact')}</Text>
             <Text style={styles.modalText}>{t('legal.privacy.contactText')}</Text>
-            
+
             <Text style={styles.modalDate}>{t('legal.lastUpdated')}</Text>
           </ScrollView>
         </SafeAreaView>
