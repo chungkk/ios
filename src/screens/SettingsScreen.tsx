@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
+import i18n from '../utils/i18n';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { useAuth } from '../hooks/useAuth';
@@ -177,7 +178,11 @@ const SettingsScreen: React.FC = () => {
               }
               
               setTimeout(() => {
-                Alert.alert(t('common.success'), t('settings.languageChanged'));
+                // Use new language for success message
+                Alert.alert(
+                  i18n.t('common.success', { lng: lang.value }),
+                  i18n.t('settings.languageChanged', { lng: lang.value })
+                );
               }, 100);
             } catch {
               Alert.alert(t('common.error'), t('settings.updateFailed'));

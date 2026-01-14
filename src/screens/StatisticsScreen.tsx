@@ -197,17 +197,12 @@ const StatisticsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Summary Hero Cards */}
+        {/* Summary Hero Card */}
         <View style={styles.heroRow}>
           <View style={[styles.heroCard, { backgroundColor: colors.retroYellow }]}>
             <Icon name="diamond" size={24} color={colors.retroDark} />
             <Text style={styles.heroValue}>+{totalPoints}</Text>
-            <Text style={styles.heroLabel}>Kiếm được</Text>
-          </View>
-          <View style={[styles.heroCard, { backgroundColor: colors.retroCoral }]}>
-            <Icon name="diamond-outline" size={24} color={colors.retroDark} />
-            <Text style={styles.heroValue}>-{currentStats?.pointsDeducted || 0}</Text>
-            <Text style={styles.heroLabel}>Bị trừ</Text>
+            <Text style={styles.heroLabel}>{t('statistics.diamondsEarned')}</Text>
           </View>
         </View>
 
