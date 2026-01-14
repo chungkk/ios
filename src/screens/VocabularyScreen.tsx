@@ -22,6 +22,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
+import { SRSCard } from '../utils/srs';
 import { colors, spacing } from '../styles/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -33,7 +34,7 @@ type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
 const VocabularyScreen: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  
+
   // State
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +107,7 @@ const VocabularyScreen: React.FC = () => {
       filtered = filtered.filter(v => {
         const created = new Date(v.createdAt || Date.now());
         const age = now.getTime() - created.getTime();
-        
+
         switch (activeFilter) {
           case 'new':
             return age < oneDay;
@@ -167,6 +168,43 @@ const VocabularyScreen: React.FC = () => {
     );
   }, [t]);
 
+  // Handle SRS card update from flashcard mode
+  const handleUpdateCard = useCallback(async (card: SRSCard) => {
+    try {
+      // Update vocabulary with SRS state via API
+      await vocabularyService.updateVocabulary({
+        id: card.id,
+        srsState: card.state,
+        srsEase: card.ease,
+        srsInterval: card.interval,
+        srsStepIndex: card.stepIndex,
+        srsDue: card.due.toISOString(),
+        srsReviews: card.reviews,
+        srsLapses: card.lapses,
+        srsLastReview: card.lastReview?.toISOString() ?? null,
+      });
+
+      // Update local state
+      setVocabulary(prev => prev.map(v =>
+        v.id === card.id
+          ? {
+            ...v,
+            srsState: card.state,
+            srsEase: card.ease,
+            srsInterval: card.interval,
+            srsStepIndex: card.stepIndex,
+            srsDue: card.due.toISOString(),
+            srsReviews: card.reviews,
+            srsLapses: card.lapses,
+            srsLastReview: card.lastReview?.toISOString() ?? null,
+          }
+          : v
+      ));
+    } catch (error) {
+      console.error('Failed to update SRS card:', error);
+    }
+  }, []);
+
   // Get word status
   const getWordStatus = (item: VocabularyItem): WordStatus => {
     const now = new Date();
@@ -183,12 +221,13 @@ const VocabularyScreen: React.FC = () => {
   // Render word card
   const renderItem = ({ item }: { item: VocabularyItem }) => {
     const status = getWordStatus(item);
-    const statusConfig = {
+    const statusConfig: Record<WordStatus, { icon: string; color: string; label: string }> = {
+      all: { icon: '📚', color: colors.retroPurple, label: 'Tất cả' },
       new: { icon: '🆕', color: colors.retroCoral, label: 'Mới' },
       learning: { icon: '📖', color: colors.retroYellow, label: 'Đang học' },
       mastered: { icon: '✅', color: colors.retroCyan, label: 'Đã thuộc' },
     };
-    const config = statusConfig[status];
+    const config = statusConfig[status] || statusConfig.new;
 
     return (
       <View style={styles.wordCard}>
@@ -209,15 +248,15 @@ const VocabularyScreen: React.FC = () => {
               <Icon name="trash-outline" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.translation}>{item.translation}</Text>
-          
+
           {item.context && (
             <Text style={styles.context} numberOfLines={2}>
               „{item.context}"
             </Text>
           )}
-          
+
           {item.lessonTitle && (
             <View style={styles.sourceTag}>
               <Icon name="videocam-outline" size={11} color={colors.retroPurple} />
@@ -255,7 +294,7 @@ const VocabularyScreen: React.FC = () => {
               <Text style={styles.notLoggedInHint}>{t('vocabulary.noWordsMessage')}</Text>
             </View>
           </View>
-          
+
           <View style={styles.notLoggedInFeatures}>
             <View style={styles.featureItem}>
               <Text style={styles.featureIcon}>✨</Text>
@@ -338,7 +377,7 @@ const VocabularyScreen: React.FC = () => {
             {searchQuery ? t('vocabulary.notFound') : t('vocabulary.noWords')}
           </Text>
           <Text style={styles.emptyText}>
-            {searchQuery 
+            {searchQuery
               ? t('vocabulary.tryOtherKeyword')
               : t('vocabulary.noWordsMessage')}
           </Text>
@@ -370,11 +409,11 @@ const VocabularyScreen: React.FC = () => {
               >
                 <Icon name="chevron-back" size={18} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
               </TouchableOpacity>
-              
+
               <View style={styles.pageInfo}>
                 <Text style={styles.pageText}>{currentPage} / {totalPages}</Text>
               </View>
-              
+
               <TouchableOpacity
                 style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
                 onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -396,6 +435,7 @@ const VocabularyScreen: React.FC = () => {
         <FlashcardMode
           vocabulary={vocabulary}
           onClose={() => setShowFlashcard(false)}
+          onUpdateCard={handleUpdateCard}
         />
       </Modal>
     </SafeAreaView>

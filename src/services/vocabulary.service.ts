@@ -11,10 +11,20 @@ export interface VocabularyItem {
   example?: string;
   notes?: string;
   lessonId?: string;
+  lessonTitle?: string;
   status: 'new' | 'learning' | 'mastered';
   reviewCount: number;
   lastReviewAt?: string;
   createdAt: string;
+  // SRS fields for Anki-like spaced repetition
+  srsState?: 'new' | 'learning' | 'review' | 'relearning';
+  srsEase?: number;
+  srsInterval?: number;
+  srsStepIndex?: number;
+  srsDue?: string;
+  srsReviews?: number;
+  srsLapses?: number;
+  srsLastReview?: string | null;
 }
 
 export interface SaveVocabularyRequest {
@@ -22,6 +32,7 @@ export interface SaveVocabularyRequest {
   translation: string;
   context?: string;
   lessonId?: string;
+  lessonTitle?: string;
   example?: string;
   notes?: string;
   status?: 'new' | 'learning' | 'mastered';
@@ -32,6 +43,15 @@ export interface UpdateVocabularyRequest {
   status?: 'new' | 'learning' | 'mastered';
   notes?: string;
   reviewCount?: number;
+  // SRS fields
+  srsState?: 'new' | 'learning' | 'review' | 'relearning';
+  srsEase?: number;
+  srsInterval?: number;
+  srsStepIndex?: number;
+  srsDue?: string;
+  srsReviews?: number;
+  srsLapses?: number;
+  srsLastReview?: string | null;
 }
 
 /**

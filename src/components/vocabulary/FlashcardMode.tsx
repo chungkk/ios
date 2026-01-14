@@ -18,6 +18,7 @@ import {
   SRSCard,
   CardState,
   Rating,
+  SRS_CONFIG,
   createNewCard,
   calculateNextReview,
   getAllNextReviewTexts,
@@ -45,14 +46,34 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
   const [completedCount, setCompletedCount] = useState(0);
   const [sessionStats, setSessionStats] = useState({ again: 0, hard: 0, good: 0, easy: 0 });
 
-  // Initialize cards from vocabulary
+  // Initialize cards from vocabulary - restore SRS state if exists
   useEffect(() => {
-    const srsCards = vocabulary.map(v => createNewCard({
-      id: v.id,
-      word: v.word,
-      translation: v.translation,
-      context: v.context,
-    }));
+    const srsCards = vocabulary.map(v => {
+      // If vocabulary has persisted SRS data, restore it
+      if (v.srsState && v.srsDue) {
+        return {
+          id: v.id,
+          word: v.word,
+          translation: v.translation,
+          context: v.context,
+          state: v.srsState as CardState,
+          ease: v.srsEase ?? SRS_CONFIG.STARTING_EASE,
+          interval: v.srsInterval ?? 0,
+          stepIndex: v.srsStepIndex ?? 0,
+          due: new Date(v.srsDue),
+          reviews: v.srsReviews ?? 0,
+          lapses: v.srsLapses ?? 0,
+          lastReview: v.srsLastReview ? new Date(v.srsLastReview) : null,
+        } as SRSCard;
+      }
+      // Otherwise create new card
+      return createNewCard({
+        id: v.id,
+        word: v.word,
+        translation: v.translation,
+        context: v.context,
+      });
+    });
     setCards(srsCards);
     setStudyQueue(buildStudyQueue(srsCards));
   }, [vocabulary]);
@@ -242,8 +263,8 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             <View style={styles.cardStateTag}>
               <Text style={styles.cardStateText}>
                 {currentCard?.state === CardState.NEW ? `🆕 ${t('vocabulary.filterNew')}` :
-                 currentCard?.state === CardState.LEARNING ? `📖 ${t('vocabulary.filterLearning')}` :
-                 currentCard?.state === CardState.REVIEW ? `🔄 ${t('vocabulary.filterMastered')}` : `📝 ${t('vocabulary.filterLearning')}`}
+                  currentCard?.state === CardState.LEARNING ? `📖 ${t('vocabulary.filterLearning')}` :
+                    currentCard?.state === CardState.REVIEW ? `🔄 ${t('vocabulary.filterMastered')}` : `📝 ${t('vocabulary.filterLearning')}`}
               </Text>
             </View>
           </Animated.View>

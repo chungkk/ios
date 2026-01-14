@@ -69,7 +69,10 @@ const getEmptyDayStats = (date: string): DailyStats => ({
 
 const getTodayDateString = (): string => {
   const now = new Date();
-  return now.toISOString().split('T')[0];
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const getWeekStartDate = (): Date => {
@@ -350,11 +353,14 @@ export const getWeeklyActivity = async (): Promise<WeeklyActivity> => {
   const shadowing: number[] = [];
   const dictation: number[] = [];
 
-  // Get last 7 days
+  // Get last 7 days (using local time)
   for (let i = 6; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     dates.push(dateStr);
 
     const dayStats = allStats[dateStr] || getEmptyDayStats(dateStr);
