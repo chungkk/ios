@@ -72,6 +72,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }>>({});
   // Track which sentence is currently being recorded (to save result to correct index)
   const [recordingSentenceIndex, setRecordingSentenceIndex] = useState<number | null>(null);
+  // Ref to track if recording is in progress (prevent race condition)
+  const isRecordingInProgressRef = useRef(false);
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -140,7 +142,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const handleSentenceEnd = useCallback((sentenceIndex: number) => {
     if (!settings.autoStop) return;
 
-    console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
+    if (__DEV__) console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[sentenceIndex];
 
@@ -171,13 +173,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     onSentenceEnd: handleSentenceEnd,
   });
 
-  // Clear recording when sentence changes
+  // Clear recording when sentence changes (only if not actively recording)
   React.useEffect(() => {
-    if (recordingState.recordedUri) {
+    if (recordingState.recordedUri && !isRecordingInProgressRef.current) {
       clearRecording();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSentenceIndex]);
+  }, [activeSentenceIndex, recordingState.recordedUri, clearRecording]);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -195,7 +196,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           if (savedProgress.recordingResults) {
             setRecordingResults(savedProgress.recordingResults);
           }
-          console.log('[LessonScreen] Loaded saved progress:', savedProgress);
+          if (__DEV__) console.log('[LessonScreen] Loaded saved progress:', savedProgress);
         }
       } catch (error) {
         console.error('[LessonScreen] Error loading progress:', error);
@@ -227,7 +228,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           studyTime,
           'shadowing' // Use correct mode so it can be retrieved later
         );
-        console.log('[LessonScreen] Progress saved with recordingResults');
+        if (__DEV__) console.log('[LessonScreen] Progress saved with recordingResults');
       } catch (error) {
         console.error('[LessonScreen] Error saving progress:', error);
       }
@@ -337,6 +338,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     vibrateRecord();
 
     if (recordingState.isRecording) {
+      isRecordingInProgressRef.current = false; // Recording ended
       stopRecording(currentSentence.text);
     } else {
       if (videoPlayerRef.current) {
@@ -345,6 +347,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       setIsPlaying(false);
       // Save which sentence we're recording for (so result goes to correct index)
       setRecordingSentenceIndex(activeSentenceIndex);
+      isRecordingInProgressRef.current = true; // Recording started
       // Mark this sentence as recorded for progress tracking
       if (!recordedSentences.has(activeSentenceIndex)) {
         setRecordedSentences(prev => new Set([...prev, activeSentenceIndex]));
@@ -360,7 +363,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       const similarity = recordingState.comparisonResult.similarity || 0;
       // Use the saved recordingSentenceIndex (not activeSentenceIndex which may have changed)
       const targetIndex = recordingSentenceIndex;
-      console.log('[LessonScreen] Voice comparison result:', { similarity, targetIndex, activeSentenceIndex, comparisonResult: recordingState.comparisonResult });
+      if (__DEV__) console.log('[LessonScreen] Voice comparison result:', { similarity, targetIndex, activeSentenceIndex, comparisonResult: recordingState.comparisonResult });
 
       // Save recording result to the CORRECT sentence index
       setRecordingResults(prev => ({
@@ -372,29 +375,29 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       const isCorrect = similarity >= 80;
       const pointsForStats = isCorrect ? 1 : 0;
       recordShadowingAttempt({ similarity, isCorrect, pointsEarned: pointsForStats });
-      console.log('[LessonScreen] 📊 Statistics recorded:', { isCorrect, similarity, targetIndex });
+      if (__DEV__) console.log('[LessonScreen] 📊 Statistics recorded:', { isCorrect, similarity, targetIndex });
 
       if (similarity >= 80) {
         vibrateSuccess();
-        console.log('[LessonScreen] ✅ Similarity >= 80%!', { similarity, alreadyRewarded: rewardedSentences.has(targetIndex) });
+        if (__DEV__) console.log('[LessonScreen] ✅ Similarity >= 80%!', { similarity, alreadyRewarded: rewardedSentences.has(targetIndex) });
 
         // Award +1 point if this sentence hasn't been rewarded yet
         if (!rewardedSentences.has(targetIndex)) {
-          console.log('[LessonScreen] 💎 Awarding +1 point for sentence', targetIndex);
+          if (__DEV__) console.log('[LessonScreen] 💎 Awarding +1 point for sentence', targetIndex);
           setRewardedSentences(prev => new Set([...prev, targetIndex]));
           progressService.addUserPoints(1, 'shadowing_80_percent').then(result => {
-            console.log('[LessonScreen] 💎 addUserPoints result:', result);
+            if (__DEV__) console.log('[LessonScreen] 💎 addUserPoints result:', result);
             if (result.success && result.points !== undefined) {
-              console.log('[LessonScreen] 💎 Updating user points to:', result.points);
+              if (__DEV__) console.log('[LessonScreen] 💎 Updating user points to:', result.points);
               updateUserPoints(result.points);
             } else {
-              console.log('[LessonScreen] ❌ addUserPoints failed or no points returned');
+              if (__DEV__) console.log('[LessonScreen] ❌ addUserPoints failed or no points returned');
             }
           }).catch(err => {
-            console.error('[LessonScreen] ❌ addUserPoints error:', err);
+            if (__DEV__) console.error('[LessonScreen] ❌ addUserPoints error:', err);
           });
         } else {
-          console.log('[LessonScreen] ⏭️ Sentence already rewarded, skipping');
+          if (__DEV__) console.log('[LessonScreen] ⏭️ Sentence already rewarded, skipping');
         }
       } else if (similarity >= 50) {
         // Medium vibration for partial match

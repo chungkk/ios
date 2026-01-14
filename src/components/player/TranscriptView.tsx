@@ -31,10 +31,13 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   recordingResults = {},
 }) => {
   const flatListRef = useRef<FlatList>(null);
+  const scrollRetryCountRef = useRef(0);
+  const MAX_SCROLL_RETRIES = 3;
 
-  // Auto-scroll to active sentence
+  // Auto-scroll to active sentence with retry mechanism
   useEffect(() => {
     if (activeSentenceIndex >= 0 && flatListRef.current) {
+      scrollRetryCountRef.current = 0; // Reset retry count
       flatListRef.current.scrollToIndex({
         index: activeSentenceIndex,
         animated: true,
@@ -46,6 +49,21 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   const handleSentencePress = (index: number) => {
     if (onSentencePress) {
       onSentencePress(index);
+    }
+  };
+
+  const handleScrollToIndexFailed = (info: { index: number }) => {
+    if (scrollRetryCountRef.current < MAX_SCROLL_RETRIES) {
+      scrollRetryCountRef.current += 1;
+      // Exponential backoff: 100ms, 200ms, 400ms
+      const delay = 100 * Math.pow(2, scrollRetryCountRef.current - 1);
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: info.index,
+          animated: true,
+          viewPosition: 0.3,
+        });
+      }, delay);
     }
   };
 
@@ -81,16 +99,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
         }}
         keyExtractor={(item, index) => `sentence-${index}`}
         showsVerticalScrollIndicator={true}
-        onScrollToIndexFailed={(info) => {
-          // Handle scroll failure (e.g., item not in view yet)
-          setTimeout(() => {
-            flatListRef.current?.scrollToIndex({
-              index: info.index,
-              animated: true,
-              viewPosition: 0.3,
-            });
-          }, 100);
-        }}
+        onScrollToIndexFailed={handleScrollToIndexFailed}
       />
     </View>
   );

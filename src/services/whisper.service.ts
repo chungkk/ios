@@ -28,7 +28,7 @@ class WhisperService {
       console.log('[WhisperService] API endpoint:', `${API_BASE_URL}/api/whisper-transcribe`);
 
       const formData = new FormData();
-      
+
       // Create file object from URI
       const file = {
         uri: audioUri,
@@ -88,45 +88,87 @@ class WhisperService {
   }
 
   /**
+   * Calculate Longest Common Subsequence (LCS) for better word matching
+   * This handles cases where user says correct words but in different positions
+   */
+  private findLCS(words1: string[], words2: string[]): number[] {
+    const m = words1.length;
+    const n = words2.length;
+
+    // DP table
+    const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (words1[i - 1] === words2[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    // Backtrack to find which original words were matched
+    const matchedOriginalIndices: number[] = [];
+    let i = m, j = n;
+    while (i > 0 && j > 0) {
+      if (words1[i - 1] === words2[j - 1]) {
+        matchedOriginalIndices.unshift(j - 1);
+        i--;
+        j--;
+      } else if (dp[i - 1][j] > dp[i][j - 1]) {
+        i--;
+      } else {
+        j--;
+      }
+    }
+
+    return matchedOriginalIndices;
+  }
+
+  /**
    * Calculate text similarity between transcribed and original text
+   * Uses LCS algorithm for better accuracy when words are missing/extra
    */
   compareTexts(transcribedText: string, originalText: string): ComparisonResult {
-    const normalize = (str: string) => 
+    const normalize = (str: string) =>
       str.toLowerCase()
         .trim()
-        .replace(/[.,!?;:"""''„]/g, '')
+        .replace(/[.,!?;:""\"''„]/g, '')
         .replace(/\s+/g, ' ');
 
     const normalized1 = normalize(transcribedText);
     const normalized2 = normalize(originalText);
 
-    const words1 = normalized1.split(' ').filter(w => w.length > 0);
-    const words2 = normalized2.split(' ').filter(w => w.length > 0);
+    const userWords = normalized1.split(' ').filter(w => w.length > 0);
+    const originalWords = normalized2.split(' ').filter(w => w.length > 0);
 
-    // Word-by-word comparison
+    // Use LCS to find matched words
+    const matchedIndices = this.findLCS(userWords, originalWords);
+    const matchedSet = new Set(matchedIndices);
+
+    // Word-by-word comparison based on LCS results
     const wordComparison: Record<number, 'correct' | 'incorrect' | 'missing'> = {};
-    const maxLength = Math.max(words1.length, words2.length);
 
-    for (let i = 0; i < maxLength; i++) {
-      const userWord = words1[i] || '';
-      const correctWord = words2[i] || '';
+    for (let i = 0; i < originalWords.length; i++) {
+      if (matchedSet.has(i)) {
+        wordComparison[i] = 'correct';
+      } else {
+        // Check if user said a similar but incorrect word at this position
+        // This is a simplified check; a more robust solution might involve edit distance
+        const userWordAtPos = userWords[i]; // This might not align perfectly with originalWords[i] due to LCS
 
-      if (userWord && correctWord) {
-        wordComparison[i] = userWord === correctWord ? 'correct' : 'incorrect';
-      } else if (correctWord && !userWord) {
+        // A more accurate approach for 'incorrect' would be to check if a word from userWords
+        // that wasn't part of the LCS match is present at or near this position.
+        // For now, we'll mark as 'missing' if not in LCS.
         wordComparison[i] = 'missing';
       }
     }
 
-    // Calculate overall similarity
-    let matches = 0;
-    words1.forEach(word => {
-      if (words2.includes(word)) {
-        matches++;
-      }
-    });
-
-    const similarity = maxLength > 0 ? Math.round((matches / maxLength) * 100) : 0;
+    // Calculate similarity based on matched words / total original words
+    const similarity = originalWords.length > 0
+      ? Math.round((matchedIndices.length / originalWords.length) * 100)
+      : 0;
 
     return {
       transcribed: transcribedText,

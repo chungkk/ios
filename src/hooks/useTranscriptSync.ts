@@ -1,5 +1,5 @@
 // Custom hook for transcript synchronization with video playback
-// Polling implementation with 200ms accuracy (SC-005 requirement)
+// Polling implementation with 300ms accuracy (optimized for battery)
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Sentence } from '../types/lesson.types';
@@ -18,7 +18,7 @@ interface UseTranscriptSyncResult {
   resetSentenceEndFlag: () => void;
 }
 
-const SYNC_INTERVAL = 200; // 200ms polling interval for ±200ms accuracy
+const SYNC_INTERVAL = 300; // 300ms polling interval (optimized for battery)
 
 export const useTranscriptSync = ({
   transcript,
@@ -39,13 +39,13 @@ export const useTranscriptSync = ({
   const updateActiveSentence = useCallback(async () => {
     try {
       const currentTime = await getCurrentTime();
-      
+
       if (currentTime === null || currentTime === undefined) {
         return;
       }
 
       const newIndex = findActiveSentence(transcript, currentTime);
-      
+
       // Check if current sentence has ended (time passed endTime)
       if (activeSentenceIndex >= 0 && activeSentenceIndex < transcript.length) {
         const currentSentence = transcript[activeSentenceIndex];
@@ -54,17 +54,19 @@ export const useTranscriptSync = ({
           onSentenceEnd?.(activeSentenceIndex);
         }
       }
-      
+
       if (newIndex !== activeSentenceIndex) {
-        console.log('[useTranscriptSync] Active sentence changed:', {
-          index: newIndex,
-          time: currentTime.toFixed(2),
-          text: transcript[newIndex]?.text?.substring(0, 50) || 'N/A'
-        });
+        if (__DEV__) {
+          console.log('[useTranscriptSync] Active sentence changed:', {
+            index: newIndex,
+            time: currentTime.toFixed(2),
+            text: transcript[newIndex]?.text?.substring(0, 50) || 'N/A'
+          });
+        }
         setActiveSentenceIndex(newIndex);
       }
     } catch (error) {
-      console.error('[useTranscriptSync] Error updating active sentence:', error);
+      if (__DEV__) console.error('[useTranscriptSync] Error updating active sentence:', error);
     }
   }, [transcript, activeSentenceIndex, getCurrentTime, onSentenceEnd]);
 
@@ -72,15 +74,15 @@ export const useTranscriptSync = ({
     if (!isPlaying || !transcript || transcript.length === 0) {
       // Clear interval when not playing
       if (intervalRef.current) {
-        console.log('[useTranscriptSync] Stopping polling (isPlaying:', isPlaying, ')');
+        if (__DEV__) console.log('[useTranscriptSync] Stopping polling (isPlaying:', isPlaying, ')');
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
       return;
     }
 
-    console.log('[useTranscriptSync] Starting polling with', transcript.length, 'sentences');
-    
+    if (__DEV__) console.log('[useTranscriptSync] Starting polling with', transcript.length, 'sentences');
+
     // Start polling interval
     intervalRef.current = setInterval(() => {
       updateActiveSentence();

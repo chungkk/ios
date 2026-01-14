@@ -61,7 +61,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
    */
   const startRecording = useCallback(async () => {
     try {
-      console.log('[useVoiceRecording] Starting recording...');
+      if (__DEV__) console.log('[useVoiceRecording] Starting recording...');
 
       // Set isRecording immediately for responsive UI
       setRecordingState(prev => ({
@@ -73,22 +73,22 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       const hasPermission = await requestPermission();
       if (!hasPermission) {
-        console.error('[useVoiceRecording] Permission denied');
+        if (__DEV__) console.error('[useVoiceRecording] Permission denied');
         setRecordingState(prev => ({ ...prev, isRecording: false }));
         options?.onError?.('Microphone permission denied');
         return;
       }
 
-      console.log('[useVoiceRecording] Permission granted');
+      if (__DEV__) console.log('[useVoiceRecording] Permission granted');
 
       // Clean up previous recorder
       if (recorderRef.current) {
-        console.log('[useVoiceRecording] Cleaning up previous recorder');
+        if (__DEV__) console.log('[useVoiceRecording] Cleaning up previous recorder');
         recorderRef.current.destroy();
       }
 
       const filename = `voice_recording_${Date.now()}.m4a`;
-      console.log('[useVoiceRecording] Creating recorder with filename:', filename);
+      if (__DEV__) console.log('[useVoiceRecording] Creating recorder with filename:', filename);
 
       const recorder = new Recorder(filename, {
         quality: 'max',
@@ -103,27 +103,27 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       recorder.prepare((err) => {
         if (err) {
-          console.error('[useVoiceRecording] Prepare error:', err);
+          if (__DEV__) console.error('[useVoiceRecording] Prepare error:', err);
           setRecordingState(prev => ({ ...prev, isRecording: false }));
           options?.onError?.('Failed to prepare recorder: ' + JSON.stringify(err));
           return;
         }
 
-        console.log('[useVoiceRecording] Recorder prepared successfully');
+        if (__DEV__) console.log('[useVoiceRecording] Recorder prepared successfully');
 
         recorder.record((recordErr) => {
           if (recordErr) {
-            console.error('[useVoiceRecording] Record error:', recordErr);
+            if (__DEV__) console.error('[useVoiceRecording] Record error:', recordErr);
             setRecordingState(prev => ({ ...prev, isRecording: false }));
             options?.onError?.('Failed to start recording: ' + JSON.stringify(recordErr));
             return;
           }
 
-          console.log('[useVoiceRecording] Recording started successfully');
+          if (__DEV__) console.log('[useVoiceRecording] Recording started successfully');
         });
       });
     } catch (error) {
-      console.error('[useVoiceRecording] Start recording error:', error);
+      if (__DEV__) console.error('[useVoiceRecording] Start recording error:', error);
       setRecordingState(prev => ({ ...prev, isRecording: false }));
       options?.onError?.('Failed to start recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
@@ -134,15 +134,15 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
    */
   const stopRecording = useCallback(async (originalText: string) => {
     try {
-      console.log('[useVoiceRecording] Stopping recording...');
+      if (__DEV__) console.log('[useVoiceRecording] Stopping recording...');
       if (!recorderRef.current) {
-        console.error('[useVoiceRecording] No recorder reference');
+        if (__DEV__) console.error('[useVoiceRecording] No recorder reference');
         return;
       }
 
       recorderRef.current.stop((err) => {
         if (err) {
-          console.error('[useVoiceRecording] Stop error:', err);
+          if (__DEV__) console.error('[useVoiceRecording] Stop error:', err);
           options?.onError?.('Failed to stop recording: ' + JSON.stringify(err));
           return;
         }
@@ -156,9 +156,11 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
           recordedUri = 'file://' + recordedUri;
         }
 
-        console.log('[useVoiceRecording] Recording stopped successfully');
-        console.log('[useVoiceRecording] File path (original):', recorderRef.current?.fsPath);
-        console.log('[useVoiceRecording] File URI (converted):', recordedUri);
+        if (__DEV__) {
+          console.log('[useVoiceRecording] Recording stopped successfully');
+          console.log('[useVoiceRecording] File path (original):', recorderRef.current?.fsPath);
+          console.log('[useVoiceRecording] File URI (converted):', recordedUri);
+        }
 
         setRecordingState(prev => ({
           ...prev,
@@ -169,16 +171,16 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
         // Process transcription
         if (recordedUri) {
-          console.log('[useVoiceRecording] Processing recording...');
+          if (__DEV__) console.log('[useVoiceRecording] Processing recording...');
           // For Whisper API, use the original fsPath without file:// prefix
           const pathForApi = recorderRef.current?.fsPath || recordedUri.replace('file://', '');
           processRecording(pathForApi, originalText);
         } else {
-          console.error('[useVoiceRecording] No recorded URI');
+          if (__DEV__) console.error('[useVoiceRecording] No recorded URI');
         }
       });
     } catch (error) {
-      console.error('[useVoiceRecording] Stop recording error:', error);
+      if (__DEV__) console.error('[useVoiceRecording] Stop recording error:', error);
       options?.onError?.('Failed to stop recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
       setRecordingState(prev => ({ ...prev, isRecording: false }));
     }
@@ -218,7 +220,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       // Don't show alert - result will be displayed in TranscriptView
     } catch (error) {
-      console.error('[useVoiceRecording] Process error:', error);
+      if (__DEV__) console.error('[useVoiceRecording] Process error:', error);
       Alert.alert('Error', 'Failed to process recording');
       setRecordingState(prev => ({ ...prev, isProcessing: false }));
     }
@@ -229,18 +231,20 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
    */
   const playRecording = useCallback(() => {
     try {
-      console.log('[useVoiceRecording] Play recording called');
-      console.log('[useVoiceRecording] recordedUri:', recordingState.recordedUri);
-      console.log('[useVoiceRecording] isPlaying:', recordingState.isPlaying);
+      if (__DEV__) {
+        console.log('[useVoiceRecording] Play recording called');
+        console.log('[useVoiceRecording] recordedUri:', recordingState.recordedUri);
+        console.log('[useVoiceRecording] isPlaying:', recordingState.isPlaying);
+      }
 
       if (!recordingState.recordedUri) {
-        console.error('[useVoiceRecording] No recorded URI to play');
+        if (__DEV__) console.error('[useVoiceRecording] No recorded URI to play');
         return;
       }
 
       // Stop if already playing
       if (playerRef.current && recordingState.isPlaying) {
-        console.log('[useVoiceRecording] Stopping playback');
+        if (__DEV__) console.log('[useVoiceRecording] Stopping playback');
         playerRef.current.stop();
         playerRef.current.destroy();
         playerRef.current = null;
@@ -250,7 +254,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       // Clean up previous player
       if (playerRef.current) {
-        console.log('[useVoiceRecording] Cleaning up previous player');
+        if (__DEV__) console.log('[useVoiceRecording] Cleaning up previous player');
         playerRef.current.destroy();
       }
 
@@ -267,9 +271,11 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       const filenameParts = filename.split('/');
       const actualFilename = filenameParts[filenameParts.length - 1];
 
-      console.log('[useVoiceRecording] Original URI:', recordingState.recordedUri);
-      console.log('[useVoiceRecording] Extracted filename:', actualFilename);
-      console.log('[useVoiceRecording] Creating new player with filename:', actualFilename);
+      if (__DEV__) {
+        console.log('[useVoiceRecording] Original URI:', recordingState.recordedUri);
+        console.log('[useVoiceRecording] Extracted filename:', actualFilename);
+        console.log('[useVoiceRecording] Creating new player with filename:', actualFilename);
+      }
 
       const player = new Player(actualFilename, {
         autoDestroy: false,
@@ -278,27 +284,27 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
 
       player.prepare((err) => {
         if (err) {
-          console.error('[useVoiceRecording] Player prepare error:', err);
+          if (__DEV__) console.error('[useVoiceRecording] Player prepare error:', err);
           options?.onError?.('Failed to prepare audio player: ' + JSON.stringify(err));
           return;
         }
 
-        console.log('[useVoiceRecording] Player prepared, starting playback');
+        if (__DEV__) console.log('[useVoiceRecording] Player prepared, starting playback');
         player.play((playErr) => {
           if (playErr) {
-            console.error('[useVoiceRecording] Playback error:', playErr);
+            if (__DEV__) console.error('[useVoiceRecording] Playback error:', playErr);
             options?.onError?.('Failed to play recording: ' + JSON.stringify(playErr));
             return;
           }
 
-          console.log('[useVoiceRecording] Playback started successfully');
+          if (__DEV__) console.log('[useVoiceRecording] Playback started successfully');
           setRecordingState(prev => ({ ...prev, isPlaying: true }));
         });
       });
 
       // @ts-ignore - Player extends EventEmitter but types are incomplete
       (player as any).on('ended', () => {
-        console.log('[useVoiceRecording] Playback ended');
+        if (__DEV__) console.log('[useVoiceRecording] Playback ended');
         setRecordingState(prev => ({ ...prev, isPlaying: false }));
         if (playerRef.current) {
           playerRef.current.destroy();
@@ -306,7 +312,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
         }
       });
     } catch (error) {
-      console.error('[useVoiceRecording] Play error:', error);
+      if (__DEV__) console.error('[useVoiceRecording] Play error:', error);
       options?.onError?.('Failed to play recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }, [recordingState.recordedUri, recordingState.isPlaying, options]);
