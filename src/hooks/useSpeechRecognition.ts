@@ -31,7 +31,7 @@ export const useSpeechRecognition = ({
     return () => {
       stopListening();
     };
-  }, []);
+  }, [stopListening]);
 
   /**
    * Check if speech recognition is available

@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import i18n from '../utils/i18n';
-import {User, RegisterRequest, LoginRequest, UpdateProfileRequest} from '../types/user.types';
+import {User, UpdateProfileRequest} from '../types/user.types';
 import * as authService from '../services/auth.service';
 import {getToken, getData, STORAGE_KEYS} from '../services/storage.service';
 

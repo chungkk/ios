@@ -10,7 +10,6 @@ import { Lesson } from '../types/lesson.types';
  */
 
 const OFFLINE_STORAGE_KEY = 'offline_downloads';
-const OFFLINE_DIR = 'offline'; // Documents/offline/
 
 export const offlineService = {
   /**

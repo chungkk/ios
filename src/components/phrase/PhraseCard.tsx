@@ -5,14 +5,14 @@ import { colors, spacing, borderRadius, shadows } from '../../styles/theme';
 
 interface PhraseCardProps {
   phrase: DailyPhrase;
-  nativeLanguage?: 'vi' | 'en' | 'de';
+  _nativeLanguage?: 'vi' | 'en' | 'de';
 }
 
 /**
  * PhraseCard Component
  * Displays a daily German phrase with translations and example
  */
-const PhraseCard: React.FC<PhraseCardProps> = ({ phrase, nativeLanguage = 'vi' }) => {
+const PhraseCard: React.FC<PhraseCardProps> = ({ phrase }) => {
   return (
     <View style={styles.card}>
       {/* German Phrase (Header) */}

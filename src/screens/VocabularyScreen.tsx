@@ -19,7 +19,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { vocabularyService, VocabularyItem } from '../services/vocabulary.service';
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
-import EmptyState from '../components/common/EmptyState';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
 import { SRSCard } from '../utils/srs';
 import { colors, spacing } from '../styles/theme';

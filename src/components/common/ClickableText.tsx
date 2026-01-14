@@ -2,7 +2,7 @@
 // Used in Shadowing and Dictation screens
 
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextStyle, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { colors } from '../../styles/theme';
 
 interface ClickableTextProps {

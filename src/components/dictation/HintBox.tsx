@@ -2,7 +2,7 @@
 // Shows masked words with reveal functionality
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { colors, spacing } from '../../styles/theme';
 
 interface HintBoxProps {

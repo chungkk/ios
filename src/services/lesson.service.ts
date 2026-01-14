@@ -5,14 +5,10 @@ import api from './api';
 import type {
   Lesson,
   LessonsResponse,
-  LessonDetailResponse,
   CategoriesResponse,
   LessonFilters,
   Category,
 } from '../types/lesson.types';
-import { saveCache, getCache, STORAGE_KEYS } from './storage.service';
-
-const LESSON_CACHE_TTL = 3600; // 1 hour in seconds
 
 /**
  * Fetch lessons with filters

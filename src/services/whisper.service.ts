@@ -134,7 +134,7 @@ class WhisperService {
     const normalize = (str: string) =>
       str.toLowerCase()
         .trim()
-        .replace(/[.,!?;:""\"''„]/g, '')
+        .replace(/[.,!?;:"""''„]/g, '')
         .replace(/\s+/g, ' ');
 
     const normalized1 = normalize(transcribedText);
@@ -156,8 +156,6 @@ class WhisperService {
       } else {
         // Check if user said a similar but incorrect word at this position
         // This is a simplified check; a more robust solution might involve edit distance
-        const userWordAtPos = userWords[i]; // This might not align perfectly with originalWords[i] due to LCS
-
         // A more accurate approach for 'incorrect' would be to check if a word from userWords
         // that wasn't part of the LCS match is present at or near this position.
         // For now, we'll mark as 'missing' if not in LCS.

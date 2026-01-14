@@ -146,7 +146,7 @@ export const fetchPoints = async (): Promise<number> => {
  * Call this during app initialization (App.tsx or AuthContext)
  * TODO: Uncomment when package is installed
  */
-export const configureGoogleSignIn = (webClientId: string): void => {
+export const configureGoogleSignIn = (_webClientId: string): void => {
   console.log('[AuthService] Google Sign-In config skipped - package not installed');
   // GoogleSignin.configure({
   //   webClientId, // From Google Cloud Console or Firebase

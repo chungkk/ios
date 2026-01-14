@@ -6,7 +6,7 @@ import { getFeedbackMessage, formatSimilarity } from '../../utils/dictationUtils
 
 interface DictationFeedbackProps {
   result: SentenceCheckResult;
-  expectedSentence: string;
+  _expectedSentence: string;
 }
 
 /**
@@ -22,7 +22,7 @@ interface DictationFeedbackProps {
  * 
  * Original DictationFeedback Component - Displays color-coded word highlighting
  */
-const DictationFeedback: React.FC<DictationFeedbackProps> = ({ result, expectedSentence }) => {
+const DictationFeedback: React.FC<DictationFeedbackProps> = ({ result }) => {
   const feedbackMessage = getFeedbackMessage(result.similarity);
   const similarityText = formatSimilarity(result.similarity);
 

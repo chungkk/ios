@@ -9,7 +9,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
-import { colors, spacing, borderRadius } from '../../styles/theme';
+import { colors, spacing } from '../../styles/theme';
 
 interface SpeedSelectorProps {
   visible: boolean;

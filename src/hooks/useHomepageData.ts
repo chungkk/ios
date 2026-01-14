@@ -50,7 +50,7 @@ export const useHomepageData = (
 
   useEffect(() => {
     fetchData(initialLoad);
-  }, [difficultyFilter, lessonsPerCategory]);
+  }, [difficultyFilter, lessonsPerCategory, fetchData, initialLoad]);
 
   const refetch = useCallback(async () => {
     await fetchData();

@@ -8,7 +8,6 @@ import HomeScreen from '../screens/HomeScreen';
 import CategoryScreen from '../screens/CategoryScreen';
 import LessonScreen from '../screens/LessonScreen';
 import DictationScreen from '../screens/DictationScreen';
-import DailyPhraseScreen from '../screens/DailyPhraseScreen';
 import VocabularyScreen from '../screens/VocabularyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';

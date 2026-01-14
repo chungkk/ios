@@ -13,8 +13,6 @@ import {
   Image,
   ActivityIndicator,
   Modal,
-  Linking,
-  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
@@ -34,14 +32,15 @@ const LANGUAGES = [
   { value: 'vi', label: 'Tiếng Việt' },
 ];
 
-const LEVELS = [
-  { value: 'A1', label: 'A1 - Beginner' },
-  { value: 'A2', label: 'A2 - Elementary' },
-  { value: 'B1', label: 'B1 - Intermediate' },
-  { value: 'B2', label: 'B2 - Upper Intermediate' },
-  { value: 'C1', label: 'C1 - Advanced' },
-  { value: 'C2', label: 'C2 - Proficient' },
-];
+// TODO: Uncomment when level selection UI is enabled
+// const LEVELS = [
+//   { value: 'A1', label: 'A1 - Beginner' },
+//   { value: 'A2', label: 'A2 - Elementary' },
+//   { value: 'B1', label: 'B1 - Intermediate' },
+//   { value: 'B2', label: 'B2 - Upper Intermediate' },
+//   { value: 'C1', label: 'C1 - Advanced' },
+//   { value: 'C2', label: 'C2 - Proficient' },
+// ];
 
 const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -93,7 +92,7 @@ const SettingsScreen: React.FC = () => {
     } finally {
       setUploadingAvatar(false);
     }
-  }, [refreshUser]);
+  }, [refreshUser, user]);
 
   // Handle avatar change
   const handleChangeAvatar = useCallback(() => {
@@ -194,40 +193,40 @@ const SettingsScreen: React.FC = () => {
     );
   }, [user, updateUser, setNativeLanguage, t]);
 
-  // Handle learning level change
-  const handleChangeLevel = useCallback(() => {
-    Alert.alert(
-      t('settings.learningLevel'),
-      t('settings.selectLevel'),
-      [
-        ...LEVELS.map(level => ({
-          text: level.label,
-          onPress: async () => {
-            try {
-              if (updateUser) {
-                const result = await updateUser({ level: level.value });
-                if (result.success) {
-                  Alert.alert(t('common.success'), t('settings.levelChanged'));
-                }
-              }
-            } catch {
-              Alert.alert(t('common.error'), t('settings.updateFailed'));
-            }
-          },
-        })),
-        { text: t('common.cancel'), style: 'cancel' },
-      ]
-    );
-  }, [updateUser, t]);
+  // TODO: Uncomment when learning level change UI is enabled
+  // const handleChangeLevel = useCallback(() => {
+  //   Alert.alert(
+  //     t('settings.learningLevel'),
+  //     t('settings.selectLevel'),
+  //     [
+  //       ...LEVELS.map(level => ({
+  //         text: level.label,
+  //         onPress: async () => {
+  //           try {
+  //             if (updateUser) {
+  //               const result = await updateUser({ level: level.value });
+  //               if (result.success) {
+  //                 Alert.alert(t('common.success'), t('settings.levelChanged'));
+  //               }
+  //             }
+  //           } catch {
+  //             Alert.alert(t('common.error'), t('settings.updateFailed'));
+  //           }
+  //         },
+  //       })),
+  //       { text: t('common.cancel'), style: 'cancel' },
+  //     ]
+  //   );
+  // }, [updateUser, t]);
 
-  // Handle notifications
-  const handleNotifications = useCallback(() => {
-    Alert.alert(
-      t('settings.notifications'),
-      t('settings.notificationsComingSoon'),
-      [{ text: t('common.ok') }]
-    );
-  }, [t]);
+  // TODO: Uncomment when notifications UI is enabled
+  // const handleNotifications = useCallback(() => {
+  //   Alert.alert(
+  //     t('settings.notifications'),
+  //     t('settings.notificationsComingSoon'),
+  //     [{ text: t('common.ok') }]
+  //   );
+  // }, [t]);
 
   // Handle about
   const handleAbout = useCallback(() => {
@@ -238,28 +237,28 @@ const SettingsScreen: React.FC = () => {
     );
   }, [t]);
 
-  // Handle rate app - opens App Store page
-  const handleRateApp = useCallback(() => {
-    // Replace YOUR_APP_ID with actual App Store ID after publishing
-    const APP_STORE_ID = 'YOUR_APP_ID';
-    const appStoreUrl = Platform.select({
-      ios: `itms-apps://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
-      default: `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
-    });
+  // TODO: Uncomment when rate app UI is enabled
+  // const handleRateApp = useCallback(() => {
+  //   // Replace YOUR_APP_ID with actual App Store ID after publishing
+  //   const APP_STORE_ID = 'YOUR_APP_ID';
+  //   const appStoreUrl = Platform.select({
+  //     ios: `itms-apps://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
+  //     default: `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`,
+  //   });
 
-    if (APP_STORE_ID === 'YOUR_APP_ID') {
-      // App not yet on store - show thank you message
-      Alert.alert(
-        t('settings.rateApp'),
-        t('settings.rateThankYou'),
-        [{ text: t('common.ok') }]
-      );
-    } else {
-      Linking.openURL(appStoreUrl).catch(() => {
-        Alert.alert(t('common.error'), 'Could not open App Store');
-      });
-    }
-  }, [t]);
+  //   if (APP_STORE_ID === 'YOUR_APP_ID') {
+  //     // App not yet on store - show thank you message
+  //     Alert.alert(
+  //       t('settings.rateApp'),
+  //       t('settings.rateThankYou'),
+  //       [{ text: t('common.ok') }]
+  //     );
+  //   } else {
+  //     Linking.openURL(appStoreUrl).catch(() => {
+  //       Alert.alert(t('common.error'), 'Could not open App Store');
+  //     });
+  //   }
+  // }, [t]);
 
   if (loading) return <Loading />;
 

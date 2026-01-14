@@ -6,8 +6,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 
 interface PlaybackControlsProps {
-  isPlaying: boolean;
-  onPlayPause: () => void;
+  _isPlaying: boolean;
+  _onPlayPause: () => void;
   onPrevious?: () => void;
   onNext?: () => void;
   onMicrophone?: () => void;
@@ -19,8 +19,6 @@ interface PlaybackControlsProps {
 }
 
 export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
-  isPlaying,
-  onPlayPause,
   onPrevious,
   onNext,
   onMicrophone,
@@ -30,9 +28,6 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlayingRecording = false,
   onPlayRecording,
 }) => {
-  const handlePlayPause = () => {
-    onPlayPause();
-  };
 
   return (
     <View style={styles.container}>
@@ -81,7 +76,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               name={isPlayingRecording ? 'pause' : 'play'}
               size={24}
               color="#ffffff"
-              style={isPlayingRecording ? {} : { marginLeft: 2 }}
+              style={isPlayingRecording ? {} : styles.playIconOffset}
             />
           </TouchableOpacity>
         )}
@@ -184,6 +179,9 @@ const styles = StyleSheet.create({
   },
   replayButtonPlaying: {
     backgroundColor: '#7c3aed',
+  },
+  playIconOffset: {
+    marginLeft: 2,
   },
 });
 

@@ -184,7 +184,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       options?.onError?.('Failed to stop recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
       setRecordingState(prev => ({ ...prev, isRecording: false }));
     }
-  }, [options]);
+  }, [options, processRecording]);
 
   /**
    * Process recording with Whisper API

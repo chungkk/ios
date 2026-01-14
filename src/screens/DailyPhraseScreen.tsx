@@ -27,7 +27,7 @@ const DailyPhraseScreen: React.FC = () => {
   const [currentPhrase, setCurrentPhrase] = useState<DailyPhrase>(getTodaysPhrase());
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loadingExplanation, setLoadingExplanation] = useState(false);
-  const [nativeLanguage, setNativeLanguage] = useState<'vi' | 'en' | 'de'>('vi');
+  const [nativeLanguage] = useState<'vi' | 'en' | 'de'>('vi');
 
   // Update phrase when offset changes
   useEffect(() => {

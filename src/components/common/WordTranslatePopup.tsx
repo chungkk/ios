@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -97,7 +96,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
 
   // Speak word using TTS
   const handleSpeak = useCallback(() => {
-    const cleanW = word.replace(/[.,!?;:"""''„\-]/g, '').trim();
+    const cleanW = word.replace(/[.,!?;:"""''„-]/g, '').trim();
     if (cleanW) {
       Tts.setDefaultLanguage('en-US');
       Tts.speak(cleanW);
@@ -105,7 +104,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
   }, [word]);
 
   // Clean word (remove punctuation for display)
-  const cleanWord = word.replace(/[.,!?;:"""''„\-]/g, '').trim();
+  const cleanWord = word.replace(/[.,!?;:"""''„-]/g, '').trim();
 
   return (
     <Modal
