@@ -70,7 +70,7 @@ const DownloadManagerScreen: React.FC = () => {
               setDeletingId(download.lessonId);
               await deleteDownload(download.lessonId);
               await refreshStorageInfo();
-            } catch (err) {
+            } catch {
               Alert.alert('Error', 'Failed to delete download');
             } finally {
               setDeletingId(null);
@@ -99,7 +99,7 @@ const DownloadManagerScreen: React.FC = () => {
             try {
               await clearAllDownloads();
               await refreshStorageInfo();
-            } catch (err) {
+            } catch {
               Alert.alert('Error', 'Failed to clear downloads');
             }
           },

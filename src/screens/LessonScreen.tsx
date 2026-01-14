@@ -133,10 +133,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     Vibration.vibrate([0, 100, 50, 100, 50, 100]);
   }, [settings.hapticEnabled]);
 
-  const vibrateSentenceChange = useCallback(() => {
-    if (!settings.hapticEnabled) return;
-    Vibration.vibrate(20);
-  }, [settings.hapticEnabled]);
+  // TODO: Uncomment when sentence change vibration is added to UI
+  // const vibrateSentenceChange = useCallback(() => {
+  //   if (!settings.hapticEnabled) return;
+  //   Vibration.vibrate(20);
+  // }, [settings.hapticEnabled]);
 
   // Handle sentence end for auto-stop
   const handleSentenceEnd = useCallback((sentenceIndex: number) => {
@@ -198,8 +199,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           }
           if (__DEV__) console.log('[LessonScreen] Loaded saved progress:', savedProgress);
         }
-      } catch (error) {
-        console.error('[LessonScreen] Error loading progress:', error);
+      } catch (err) {
+        console.error('[LessonScreen] Error loading progress:', err);
       } finally {
         setProgressLoaded(true);
       }
@@ -229,8 +230,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           'shadowing' // Use correct mode so it can be retrieved later
         );
         if (__DEV__) console.log('[LessonScreen] Progress saved with recordingResults');
-      } catch (error) {
-        console.error('[LessonScreen] Error saving progress:', error);
+      } catch (err) {
+        console.error('[LessonScreen] Error saving progress:', err);
       }
     }, 1000);
   }, [recordedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded]);
@@ -246,7 +247,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (completedReported) return;
 
     const pointsEarned = 10;
-    const totalSentences = lesson?.transcript?.length || 0;
+    // const _totalSentences = lesson?.transcript?.length || 0; // TODO: Use for completion stats
 
     // Celebration vibration
     vibrateComplete();
@@ -415,10 +416,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Cycle to next speed
   const cycleSpeed = useCallback(() => {
-    const currentIndex = SPEED_OPTIONS.indexOf(playbackSpeed);
-    const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+    const currentIndexSpeed = SPEED_OPTIONS.indexOf(playbackSpeed);
+    const nextIndex = (currentIndexSpeed + 1) % SPEED_OPTIONS.length;
     setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
-  }, [playbackSpeed, setPlaybackSpeed]);
+  }, [playbackSpeed, setPlaybackSpeed, SPEED_OPTIONS]);
 
   // Custom play/pause handler for auto-stop mode
   const handlePlayPause = useCallback(() => {

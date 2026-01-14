@@ -6,7 +6,6 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -27,7 +26,6 @@ import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
 import { recordDictationComplete, recordDictationStudyTime, recordPointsDeducted } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
-import { compareTexts, getSimilarityFeedback } from '../utils/textSimilarity';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
@@ -70,7 +68,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Study timer
-  const { studyTime, formattedTime, isTimerRunning } = useStudyTimer({
+  const { studyTime, formattedTime } = useStudyTimer({
     isPlaying,
     lessonId,
     mode: 'dictation',
@@ -160,8 +158,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           }
           console.log('[DictationScreen] Loaded saved progress:', savedProgress);
         }
-      } catch (error) {
-        console.error('[DictationScreen] Error loading progress:', error);
+      } catch (err) {
+        console.error('[DictationScreen] Error loading progress:', err);
       } finally {
         setProgressLoaded(true);
       }
@@ -200,8 +198,8 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           studyTime
         );
         console.log('[DictationScreen] Progress saved');
-      } catch (error) {
-        console.error('[DictationScreen] Error saving progress:', error);
+      } catch (err) {
+        console.error('[DictationScreen] Error saving progress:', err);
       }
     }, 1000);
   }, [lessonId, revealedWords, completedSentences, revealCount, currentIndex, userInputs, studyTime, progressLoaded]);
@@ -222,7 +220,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         clearTimeout(saveProgressRef.current);
       }
     };
-  }, [revealedWords, completedSentences, revealCount, currentIndex, userInput, progressLoaded]);
+  }, [revealedWords, completedSentences, revealCount, currentIndex, userInput, progressLoaded, saveProgress, userInputs]);
 
   // Check if current sentence is completed (all words correct)
   // Also handles re-edit: removes completed status if user changes answer to incorrect
@@ -284,7 +282,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       });
       console.log('[DictationScreen] Removed completed status for sentence:', currentIndex, '(re-edited to incorrect)');
     }
-  }, [userInput, currentSentence, currentIndex, completedSentences, allowReEdit, updateUserPoints]);
+  }, [userInput, currentSentence, currentIndex, completedSentences, allowReEdit, updateUserPoints, revealCount, vibrateSuccess, vibratePartial]);
 
   // Play current sentence segment
   const playSentence = useCallback(() => {
@@ -326,7 +324,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       const startTime = currentSentence.startTime || currentSentence.start;
       videoPlayerRef.current.seekTo(startTime);
     }
-  }, [currentIndex, progressLoaded]);
+  }, [currentIndex, progressLoaded, currentSentence]);
 
   // Go to next sentence
   const goToNext = useCallback(() => {
@@ -346,38 +344,38 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     }
   }, [currentIndex, userInputs]);
 
-  // Save progress on complete
-  const handleComplete = useCallback(async () => {
-    const accuracy = Math.round(progress);
-    const errorCount = totalSentences - completedSentences.size;
+  // TODO: Uncomment when complete button is added to UI
+  // const handleComplete = useCallback(async () => {
+  //   const accuracy = Math.round(progress);
+  //   const _errorCount = totalSentences - completedSentences.size;
 
-    // Celebration vibration
-    vibrateComplete();
+  //   // Celebration vibration
+  //   vibrateComplete();
 
-    try {
-      await progressService.saveProgress({
-        lessonId,
-        mode: 'dictation',
-        completed: true,
-        pointsEarned: 0, // Points already awarded per sentence
-        studyTime,
-        accuracy,
-      });
+  //   try {
+  //     await progressService.saveProgress({
+  //       lessonId,
+  //       mode: 'dictation',
+  //       completed: true,
+  //       pointsEarned: 0, // Points already awarded per sentence
+  //       studyTime,
+  //       accuracy,
+  //     });
 
-      // Record study time only (sentences already tracked real-time)
-      await recordDictationStudyTime(studyTime);
+  //     // Record study time only (sentences already tracked real-time)
+  //     await recordDictationStudyTime(studyTime);
 
-      Alert.alert(
-        'Dictation Complete! 🎉',
-        `Accuracy: ${accuracy}%\nCompleted: ${completedSentences.size}/${totalSentences} sentences\nStudy Time: ${formattedTime}`,
-        [{ text: 'Back', onPress: () => navigation.goBack() }]
-      );
-    } catch {
-      Alert.alert('Complete!', `You finished ${completedSentences.size}/${totalSentences} sentences!`,
-        [{ text: 'Back', onPress: () => navigation.goBack() }]
-      );
-    }
-  }, [lessonId, progress, completedSentences.size, totalSentences, studyTime, formattedTime, navigation]);
+  //     Alert.alert(
+  //       'Dictation Complete! 🎉',
+  //       `Accuracy: ${accuracy}%\nCompleted: ${completedSentences.size}/${totalSentences} sentences\nStudy Time: ${formattedTime}`,
+  //       [{ text: 'Back', onPress: () => navigation.goBack() }]
+  //     );
+  //   } catch {
+  //     Alert.alert('Complete!', `You finished ${completedSentences.size}/${totalSentences} sentences!`,
+  //       [{ text: 'Back', onPress: () => navigation.goBack() }]
+  //     );
+  //   }
+  // }, [lessonId, progress, completedSentences.size, totalSentences, studyTime, formattedTime, navigation, vibrateComplete]);
 
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
@@ -392,10 +390,10 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // Cycle through speed options
   const SPEED_OPTIONS: (0.5 | 0.75 | 1 | 1.25 | 1.5 | 2)[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
   const cycleSpeed = useCallback(() => {
-    const currentIndex = SPEED_OPTIONS.indexOf(playbackSpeed);
-    const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+    const currentIndexSpeed = SPEED_OPTIONS.indexOf(playbackSpeed);
+    const nextIndex = (currentIndexSpeed + 1) % SPEED_OPTIONS.length;
     setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
-  }, [playbackSpeed]);
+  }, [playbackSpeed, SPEED_OPTIONS]);
 
   // Handle word press for translation
   const handleWordPress = useCallback((word: string, pureWord: string) => {

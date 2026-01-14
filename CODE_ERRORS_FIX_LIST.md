@@ -214,10 +214,80 @@ Các inline styles nên được chuyển ra StyleSheet để tối ưu performa
 3. **Jest AsyncStorage mock** - Đã thêm jest.setup.js với đầy đủ mocks
 4. **Regex escapes** - Đã sửa các escape không cần thiết
 
-### ⚠️ Còn Lại (22 lỗi, 23 warnings):
-1. **DictationScreen.tsx** - 12 lỗi (hooks dependencies, unused variables)
-2. **StatisticsScreen.tsx** - 6 lỗi (unused variables)
-3. **LessonScreen.tsx** - 3 lỗi (hooks dependencies, unused variable)
-4. **DownloadManagerScreen.tsx** - 2 lỗi (unused err parameters)
-5. **Inline styles** - 13 warnings (có thể tối ưu sau)
+### ⚠️ Còn Lại (7 lỗi, 12 warnings):
+**Tất cả đều là React Performance Optimizations - KHÔNG ảnh hưởng chức năng:**
+1. **DictationScreen.tsx** - 4 lỗi (vibrate functions và SPEED_OPTIONS optimizations)
+2. **LessonScreen.tsx** - 2 lỗi (SPEED_OPTIONS optimization, unnecessary lesson dep)
+3. **StatisticsScreen.tsx** - 0 lỗi ✅
+4. **DownloadManagerScreen.tsx** - 0 lỗi ✅
+5. **Inline styles** - 13 warnings (performance, có thể tối ưu sau)
 6. **Nested components** - 4 warnings (MainNavigator, DownloadManagerScreen)
+7. **Variable shadowing** - Đã sửa tất cả ✅
+
+---
+
+## Bảng So Sánh Trước/Sau
+
+| Loại Lỗi | Trước | Sau | Cải Thiện |
+|-----------|-------|-----|-----------|
+| **TypeScript** | 0 | 0 | ✅ Hoàn hảo |
+| **ESLint Errors** | 52 | 7 | 🎉 **86% giảm** |
+| **ESLint Warnings** | 27 | 12 | 55% giảm |
+| **Jest Tests** | ❌ Lỗi config | ✅ Chạy được | 🎉 Đã sửa |
+| **Critical Bugs** | 23 | 0 | ✅ Hoàn thành |
+
+---
+
+## Chi Tiết Files Đã Sửa
+
+### 1. DictationScreen.tsx
+- ✅ Xóa unused imports: ScrollView, compareTexts, getSimilarityFeedback
+- ✅ Sửa React Hooks dependencies (5 useEffect/useCallback)
+- ✅ Comment unused functions: handleComplete, errorCount
+- ✅ Sửa variable shadowing: error → err
+- ⚠️ Còn lại: React performance optimizations (vibrate functions, SPEED_OPTIONS)
+
+### 2. StatisticsScreen.tsx  
+- ✅ Comment unused imports: Dimensions, getAccuracy
+- ✅ Comment unused variables: formatTime, totalStudyTime, shadowingAccuracy, renderProgressRing, strokeDashoffset
+- ✅ Tất cả lỗi đã được sửa! 🎉
+
+### 3. LessonScreen.tsx
+- ✅ Comment unused function: vibrateSentenceChange
+- ✅ Comment unused variable: _totalSentences
+- ✅ Sửa React Hooks dependencies (SPEED_OPTIONS)
+- ✅ Sửa variable shadowing: error → err
+- ⚠️ Còn lại: React performance optimization (SPEED_OPTIONS)
+
+### 4. DownloadManagerScreen.tsx
+- ✅ Sửa unused err parameters: catch (_err) → catch
+- ✅ Tất cả lỗi đã được sửa! 🎉
+
+### 5. Các Files Khác
+- ✅ ClickableText.tsx - xóa unused TouchableOpacity
+- ✅ WordTranslatePopup.tsx - xóa ScrollView, sửa regex escapes
+- ✅ DictationFeedback.tsx - prefix unused expectedSentence
+- ✅ HintBox.tsx - xóa unused Alert
+- ✅ SpeedSelector.tsx - xóa unused borderRadius
+- ✅ DownloadButton.tsx - xóa unused ActivityIndicator
+- ✅ PhraseCard.tsx - prefix unused nativeLanguage
+- ✅ PlaybackControls.tsx - prefix unused isPlaying, onPlayPause
+- ✅ AuthContext.tsx - xóa unused RegisterRequest, LoginRequest
+- ✅ MainNavigator.tsx - xóa unused DailyPhraseScreen
+- ✅ DailyPhraseScreen.tsx - không set nativeLanguage
+- ✅ ProfileScreen.tsx - xóa unused TouchableOpacity
+- ✅ VocabularyScreen.tsx - xóa unused EmptyState
+- ✅ SettingsScreen.tsx - comment unused functions, xóa Linking, Platform, LEVELS
+- ✅ auth.service.ts - prefix unused webClientId
+- ✅ lesson.service.ts - xóa unused imports
+- ✅ offline.service.ts - xóa unused OFFLINE_DIR
+- ✅ whisper.service.ts - xóa unused userWordAtPos, sửa regex escape
+- ✅ useHomepageData.ts - sửa hooks dependencies
+- ✅ useSpeechRecognition.ts - sửa hooks dependencies
+- ✅ useVoiceRecording.ts - sửa hooks dependencies
+
+### 6. Jest Configuration
+- ✅ Tạo jest.setup.js với đầy đủ mocks
+- ✅ Cập nhật jest.config.js
+- ✅ Mock AsyncStorage, Keychain, TTS, NetInfo, YouTube Bridge
+- ✅ Tests đang chạy được!

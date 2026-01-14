@@ -10,7 +10,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
-  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
@@ -23,12 +22,11 @@ import {
   DailyStats,
   WeeklyActivity,
   getAverageSimilarity,
-  getAccuracy,
 } from '../services/statistics.service';
 
 type TimePeriod = 'today' | 'week' | 'month';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// const { width: _SCREEN_WIDTH } = Dimensions.get('window'); // TODO: Use when charts are implemented
 
 const StatisticsScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -80,14 +78,15 @@ const StatisticsScreen: React.FC = () => {
 
   const currentStats = getCurrentStats();
 
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
-  };
+  // TODO: Uncomment when time display is added to UI
+  // const formatTime = (seconds: number): string => {
+  //   if (seconds < 60) return `${seconds}s`;
+  //   const minutes = Math.floor(seconds / 60);
+  //   if (minutes < 60) return `${minutes}m`;
+  //   const hours = Math.floor(minutes / 60);
+  //   const remainingMinutes = minutes % 60;
+  //   return `${hours}h ${remainingMinutes}m`;
+  // };
 
   const formatDayName = (dateStr: string): string => {
     const date = new Date(dateStr);
@@ -99,13 +98,15 @@ const StatisticsScreen: React.FC = () => {
     ? currentStats.shadowing.pointsEarned + currentStats.dictation.pointsEarned
     : 0;
 
-  const totalStudyTime = currentStats
-    ? currentStats.shadowing.studyTimeSeconds + currentStats.dictation.studyTimeSeconds
-    : 0;
+  // TODO: Uncomment when study time is displayed in UI
+  // const totalStudyTime = currentStats
+  //   ? currentStats.shadowing.studyTimeSeconds + currentStats.dictation.studyTimeSeconds
+  //   : 0;
 
-  const shadowingAccuracy = currentStats
-    ? getAccuracy(currentStats.shadowing.correct, currentStats.shadowing.recorded)
-    : 0;
+  // TODO: Uncomment when shadowing accuracy is displayed in UI
+  // const shadowingAccuracy = currentStats
+  //   ? getAccuracy(currentStats.shadowing.correct, currentStats.shadowing.recorded)
+  //   : 0;
 
   const avgSimilarity = currentStats ? getAverageSimilarity(currentStats) : 0;
 
@@ -114,34 +115,35 @@ const StatisticsScreen: React.FC = () => {
     ? Math.max(...weeklyActivity.shadowing, ...weeklyActivity.dictation, 1)
     : 1;
 
-  const renderProgressRing = (progress: number, color: string, size: number = 60) => {
-    const strokeWidth = 6;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const progressValue = Math.min(100, Math.max(0, progress));
-    const strokeDashoffset = circumference - (progressValue / 100) * circumference;
+  // TODO: Uncomment when progress ring is added to UI
+  // const renderProgressRing = (progress: number, color: string, size: number = 60) => {
+  //   const strokeWidth = 6;
+  //   const radius = (size - strokeWidth) / 2;
+  //   const circumference = 2 * Math.PI * radius;
+  //   const progressValue = Math.min(100, Math.max(0, progress));
+  //   const _strokeDashoffset = circumference - (progressValue / 100) * circumference;
 
-    return (
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        <View style={[styles.progressRingBg, { width: size, height: size, borderRadius: size / 2, borderWidth: strokeWidth }]} />
-        <View
-          style={[
-            styles.progressRingFill,
-            {
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              borderWidth: strokeWidth,
-              borderColor: color,
-              transform: [{ rotate: '-90deg' }],
-              position: 'absolute',
-            },
-          ]}
-        />
-        <Text style={[styles.progressRingText, { color }]}>{progressValue}%</Text>
-      </View>
-    );
-  };
+  //   return (
+  //     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+  //       <View style={[styles.progressRingBg, { width: size, height: size, borderRadius: size / 2, borderWidth: strokeWidth }]} />
+  //       <View
+  //         style={[
+  //           styles.progressRingFill,
+  //           {
+  //             width: size,
+  //             height: size,
+  //             borderRadius: size / 2,
+  //             borderWidth: strokeWidth,
+  //             borderColor: color,
+  //             transform: [{ rotate: '-90deg' }],
+  //             position: 'absolute',
+  //           },
+  //         ]}
+  //       />
+  //       <Text style={[styles.progressRingText, { color }]}>{progressValue}%</Text>
+  //     </View>
+  //   );
+  // };
 
   if (loading) {
     return (
