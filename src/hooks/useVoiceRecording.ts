@@ -285,6 +285,11 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       player.prepare((err) => {
         if (err) {
           if (__DEV__) console.error('[useVoiceRecording] Player prepare error:', err);
+          // Clean up failed player
+          if (playerRef.current) {
+            playerRef.current.destroy();
+            playerRef.current = null;
+          }
           options?.onError?.('Failed to prepare audio player: ' + JSON.stringify(err));
           return;
         }
@@ -293,6 +298,11 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
         player.play((playErr) => {
           if (playErr) {
             if (__DEV__) console.error('[useVoiceRecording] Playback error:', playErr);
+            // Clean up failed player
+            if (playerRef.current) {
+              playerRef.current.destroy();
+              playerRef.current = null;
+            }
             options?.onError?.('Failed to play recording: ' + JSON.stringify(playErr));
             return;
           }
@@ -321,6 +331,8 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
    * Clear recording state
    */
   const clearRecording = useCallback(() => {
+    if (__DEV__) console.log('[useVoiceRecording] 🗑️ clearRecording called');
+    
     // Stop and clean up recorder
     if (recorderRef.current) {
       if (recordingState.isRecording) {

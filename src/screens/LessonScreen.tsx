@@ -174,12 +174,23 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     onSentenceEnd: handleSentenceEnd,
   });
 
-  // Clear recording when sentence changes (only if not actively recording)
+  // Clear recording when sentence changes (only if not actively recording/processing)
   React.useEffect(() => {
-    if (recordingState.recordedUri && !isRecordingInProgressRef.current) {
+    if (recordingState.recordedUri && !isRecordingInProgressRef.current && !recordingState.isProcessing) {
+      if (__DEV__) console.log('[LessonScreen] 🧹 Clearing recording due to sentence change');
       clearRecording();
     }
-  }, [activeSentenceIndex, recordingState.recordedUri, clearRecording]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSentenceIndex]);
+  
+  // Handle processing completion (including failures)
+  React.useEffect(() => {
+    // When processing completes (successfully or with error), mark as done
+    if (isRecordingInProgressRef.current && !recordingState.isRecording && !recordingState.isProcessing) {
+      if (__DEV__) console.log('[LessonScreen] Processing complete, marking recording as done');
+      isRecordingInProgressRef.current = false;
+    }
+  }, [recordingState.isRecording, recordingState.isProcessing]);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -339,7 +350,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     vibrateRecord();
 
     if (recordingState.isRecording) {
-      isRecordingInProgressRef.current = false; // Recording ended
+      // Don't set isRecordingInProgressRef to false here - wait until processing completes
       stopRecording(currentSentence.text);
     } else {
       if (videoPlayerRef.current) {
