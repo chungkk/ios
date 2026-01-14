@@ -12,9 +12,14 @@
    - Thêm `videoPlayerRef.current.pause()` và `setIsPlaying(false)`
    - Files: `LessonScreen.tsx`, `DictationScreen.tsx`
 
-2. ✅ **Từ không được đọc tự động**
+2. ✅ **Từ không được đọc tự động** (UPDATED - thêm debug)
    - Thêm TTS auto-speak trong `useEffect` sau translation
+   - Thêm TTS initialization khi component mount
+   - Thêm event listeners (tts-start, tts-finish, tts-error)
+   - Thêm error handling đầy đủ với console logs
+   - Thêm `Tts.stop()` trước mỗi lần speak
    - File: `WordTranslatePopup.tsx`
+   - **Debug guide:** Xem `TTS_DEBUG_GUIDE.md`
 
 ### 🟠 HIGH (Code Quality)
 3. ✅ **Callback naming không consistent**
