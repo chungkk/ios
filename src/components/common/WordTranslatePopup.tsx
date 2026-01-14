@@ -45,6 +45,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Get target language from user or settings
   const targetLang = user?.nativeLanguage || settings.nativeLanguage || 'de';
@@ -62,6 +63,13 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       try {
         const result = await translateWord(word, context, '', targetLang);
         setTranslation(result);
+        
+        // Auto-speak word after popup opens (better UX - user expects to hear pronunciation)
+        const cleanW = word.replace(/[.,!?;:"""''„-]/g, '').trim();
+        if (cleanW) {
+          Tts.setDefaultLanguage('en-US');
+          Tts.speak(cleanW);
+        }
       } catch (err) {
         console.error('[WordTranslatePopup] Error:', err);
         setError('Không thể dịch từ này');
@@ -78,6 +86,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     if (!user || !translation || isSaving) return;
 
     setIsSaving(true);
+    setSaveError(null);
     try {
       await vocabularyService.saveVocabulary({
         word,
@@ -87,7 +96,9 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
         lessonTitle,
       });
       setIsSaved(true);
-    } catch (err) {
+    } catch (err: any) {
+      const errorMessage = err.message || 'Không thể lưu từ vựng';
+      setSaveError(errorMessage);
       console.error('[WordTranslatePopup] Save error:', err);
     } finally {
       setIsSaving(false);
@@ -167,20 +178,28 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
                   <Text style={styles.savedText}>Đã lưu</Text>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={handleSaveWord}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <Icon name="star" size={16} color="#fff" />
-                      <Text style={styles.saveButtonText}>Lưu từ vựng</Text>
-                    </>
+                <>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleSaveWord}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Icon name="star" size={16} color="#fff" />
+                        <Text style={styles.saveButtonText}>Lưu từ vựng</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {saveError && (
+                    <View style={styles.saveErrorContainer}>
+                      <Icon name="alert-circle" size={14} color={colors.retroCoral} />
+                      <Text style={styles.saveErrorText}>{saveError}</Text>
+                    </View>
                   )}
-                </TouchableOpacity>
+                </>
               )}
             </View>
           )}
@@ -323,6 +342,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.retroCyan,
+  },
+  saveErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffe0e0',
+    borderRadius: borderRadius.small,
+    borderWidth: 1,
+    borderColor: colors.retroCoral,
+    gap: 6,
+  },
+  saveErrorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.retroCoral,
+    flex: 1,
   },
 });
 

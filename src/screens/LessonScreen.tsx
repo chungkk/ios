@@ -447,10 +447,16 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Handle word press for translation
   const handleWordPress = useCallback((word: string, context: string) => {
+    // Pause video before showing popup so user can read translation quietly
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.pause();
+    }
+    setIsPlaying(false);
+    
     setSelectedWord(word);
     setSelectedContext(context);
     setShowTranslatePopup(true);
-  }, []);
+  }, [setIsPlaying]);
 
   if (loading) return <Loading />;
 

@@ -397,11 +397,17 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   }, [playbackSpeed, setPlaybackSpeed]);
 
   // Handle word press for translation
-  const handleWordPress = useCallback((word: string, pureWord: string) => {
-    setSelectedWord(pureWord);
+  const handleWordPress = useCallback((word: string, _context: string) => {
+    // Pause video before showing popup so user can read translation quietly
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.pause();
+    }
+    setIsPlaying(false);
+    
+    setSelectedWord(word);
     setSelectedContext(currentSentence?.text || '');
     setShowTranslatePopup(true);
-  }, [currentSentence]);
+  }, [currentSentence, setIsPlaying]);
 
   if (loading) return <Loading />;
 
