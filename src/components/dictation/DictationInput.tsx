@@ -14,8 +14,16 @@ interface DictationInputProps {
 }
 
 /**
- * DictationInput Component
- * Text input with voice button for dictation practice
+ * @deprecated This component is not currently used by DictationScreen.
+ * DictationScreen uses its own TextInput with custom features:
+ * - Word length validation (prevents typing more chars than expected)
+ * - Keyboard-aware styling adjustments
+ * - Completed state visual feedback
+ * - Long-press to re-edit functionality
+ * 
+ * Consider removing or enhancing this component to match those features.
+ * 
+ * Original DictationInput Component - Text input with voice button for dictation
  */
 const DictationInput: React.FC<DictationInputProps> = ({
   value,
@@ -40,7 +48,7 @@ const DictationInput: React.FC<DictationInputProps> = ({
           autoCapitalize="none"
           autoCorrect={false}
         />
-        
+
         {onVoiceInput && (
           <TouchableOpacity
             style={[styles.voiceButton, isListening && styles.voiceButtonActive]}

@@ -32,6 +32,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
+import HintBox from '../components/dictation/HintBox';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { Sentence } from '../types/lesson.types';
 
@@ -214,17 +215,25 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       }
       saveProgress();
     }
+
+    // Cleanup timeout on unmount to prevent memory leak
+    return () => {
+      if (saveProgressRef.current) {
+        clearTimeout(saveProgressRef.current);
+      }
+    };
   }, [revealedWords, completedSentences, revealCount, currentIndex, userInput, progressLoaded]);
 
   // Check if current sentence is completed (all words correct)
+  // Also handles re-edit: removes completed status if user changes answer to incorrect
   useEffect(() => {
-    if (!currentSentence || completedSentences.has(currentIndex)) return;
+    if (!currentSentence) return;
 
     const words = currentSentence.text.split(' ');
     const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
 
-    // Check if all words are correct
-    let allCorrect = words.length > 0 && userWords.length >= words.length;
+    // Check if all words are correct (must have exact number of words)
+    let allCorrect = words.length > 0 && userWords.length === words.length;
     if (allCorrect) {
       for (let i = 0; i < words.length; i++) {
         const pureWord = words[i].replace(/[.,!?;:"""''„]/g, '').toLowerCase();
@@ -236,9 +245,21 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       }
     }
 
-    if (allCorrect) {
+    const isCurrentlyCompleted = completedSentences.has(currentIndex);
+    const isReEditing = allowReEdit.has(currentIndex);
+
+    if (allCorrect && !isCurrentlyCompleted) {
+      // Newly completed - award points and mark as completed
       vibrateSuccess();
       setCompletedSentences(prev => new Set([...prev, currentIndex]));
+      // Remove from re-edit mode if was re-editing
+      if (isReEditing) {
+        setAllowReEdit(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(currentIndex);
+          return newSet;
+        });
+      }
 
       // Award +1 point for completing sentence
       progressService.addUserPoints(1, 'dictation_sentence_complete').then(result => {
@@ -253,8 +274,17 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       recordDictationComplete({ hintsUsed: hintsForThisSentence, pointsEarned: 1 })
         .then(() => console.log('[DictationScreen] Stats recorded successfully'))
         .catch(err => console.error('[DictationScreen] Stats error:', err));
+    } else if (!allCorrect && isCurrentlyCompleted && isReEditing) {
+      // Was completed but user re-edited to incorrect - remove completed status
+      vibratePartial();
+      setCompletedSentences(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(currentIndex);
+        return newSet;
+      });
+      console.log('[DictationScreen] Removed completed status for sentence:', currentIndex, '(re-edited to incorrect)');
     }
-  }, [userInput, currentSentence, currentIndex, completedSentences, updateUserPoints]);
+  }, [userInput, currentSentence, currentIndex, completedSentences, allowReEdit, updateUserPoints]);
 
   // Play current sentence segment
   const playSentence = useCallback(() => {
@@ -466,198 +496,39 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           {/* Centered content wrapper when keyboard hidden */}
           <View style={[styles.centerWrapper, isKeyboardVisible && styles.centerWrapperKeyboard]}>
-            {/* Hint box - above input */}
-            {currentSentence && !isKeyboardVisible && (
-              <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxAboveInput]}>
-                <View style={styles.hintHeader}>
-                  <Text style={styles.maskedLabel}>💡 Hint</Text>
-                  <Text style={[
-                    styles.freeHintText,
-                    (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
-                  ]}>
-                    {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
-                  </Text>
-                </View>
-                <View style={styles.maskedWordsContainer}>
-                  {currentSentence.text.split(' ').map((word, index) => {
-                    const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
-                    const punctuation = word.replace(pureWord, '');
-                    const wordKey = `${currentIndex}-${index}`;
-                    const isRevealedByClick = revealedWords[wordKey];
+            {/* Hint box - renders for both keyboard states */}
+            {currentSentence && (
+              <HintBox
+                sentence={currentSentence.text}
+                userInput={userInput}
+                currentIndex={currentIndex}
+                revealedWords={revealedWords}
+                revealCount={revealCount}
+                userPoints={userPoints}
+                isKeyboardVisible={isKeyboardVisible}
+                onRevealWord={(wordKey, currentCount) => {
+                  const newCount = currentCount + 1;
 
-                    // Check user input for this word position
-                    const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                    const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                    const correctWord = pureWord.toLowerCase();
-
-                    // Calculate matched characters from start
-                    let matchedChars = 0;
-                    for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
-                      if (userWord[i] === correctWord[i]) {
-                        matchedChars++;
-                      } else {
-                        break;
+                  // From 3rd reveal onwards, deduct points from user
+                  if (newCount > 2) {
+                    progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
+                      if (result.success && result.points !== undefined) {
+                        updateUserPoints(result.points);
+                        recordPointsDeducted(1);
                       }
-                    }
+                    });
+                  }
 
-                    const isFullyCorrect = userWord === correctWord;
-                    const isWrong = userWord.length > 0 && matchedChars === 0;
-                    const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
-
-                    // Handle tap to reveal
-                    const handleReveal = () => {
-                      if (!isFullyCorrect && !isRevealedByClick) {
-                        const currentCount = revealCount[currentIndex] || 0;
-                        const newCount = currentCount + 1;
-
-                        // From 3rd reveal onwards, deduct points from user
-                        if (newCount > 2) {
-                          if (userPoints <= 0) {
-                            vibrateError();
-                            Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
-                            return;
-                          }
-                          // Deduct 1 point from user's actual balance
-                          progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
-                            if (result.success && result.points !== undefined) {
-                              updateUserPoints(result.points);
-                              // Track points deducted in statistics
-                              recordPointsDeducted(1);
-                            }
-                          });
-                        }
-
-                        // Haptic feedback for hint
-                        vibrateHint();
-
-                        // Update reveal count for this sentence
-                        setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-
-                        setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
-                      }
-                    };
-
-                    return (
-                      <View key={index} style={styles.maskedWordWrapper}>
-                        {isFullyCorrect || isRevealedByClick ? (
-                          // Revealed - show word (clickable for translation)
-                          <TouchableOpacity
-                            style={[styles.wordBox, styles.wordBoxRevealed]}
-                            onPress={() => handleWordPress(word, pureWord)}
-                          >
-                            <Text style={styles.revealedWord}>{pureWord}</Text>
-                          </TouchableOpacity>
-                        ) : isWrong ? (
-                          // Wrong - red box
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
-                            <Text style={styles.wrongAsterisks}>
-                              {'*'.repeat(pureWord.length)}
-                            </Text>
-                          </TouchableOpacity>
-                        ) : hasPartialMatch ? (
-                          // Partial match
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
-                            <Text style={styles.matchedChars}>
-                              {pureWord.substring(0, matchedChars)}
-                            </Text>
-                            <Text style={styles.remainingAsterisks}>
-                              {'*'.repeat(pureWord.length - matchedChars)}
-                            </Text>
-                          </TouchableOpacity>
-                        ) : (
-                          // Not started - hidden box
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
-                            <Text style={styles.hiddenAsterisks}>
-                              {'*'.repeat(pureWord.length)}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                        {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
-            {/* Hint box - floats above input when keyboard visible */}
-            {currentSentence && isKeyboardVisible && (
-              <View style={[styles.maskedSentenceBox, styles.maskedSentenceBoxKeyboard]}>
-                <View style={styles.hintHeader}>
-                  <Text style={styles.maskedLabel}>💡 Hint</Text>
-                  <Text style={[
-                    styles.freeHintText,
-                    (revealCount[currentIndex] || 0) >= 2 && styles.freeHintWarning
-                  ]}>
-                    {(revealCount[currentIndex] || 0) >= 2 ? '-1đ/lần' : `${2 - (revealCount[currentIndex] || 0)}x free`}
-                  </Text>
-                </View>
-                <View style={styles.maskedWordsContainer}>
-                  {currentSentence.text.split(' ').map((word, index) => {
-                    const pureWord = word.replace(/[.,!?;:"""''„]/g, '');
-                    const punctuation = word.replace(pureWord, '');
-                    const wordKey = `${currentIndex}-${index}`;
-                    const isRevealedByClick = revealedWords[wordKey];
-                    const userWords = userInput.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                    const userWord = userWords[index]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                    const correctWord = pureWord.toLowerCase();
-                    let matchedChars = 0;
-                    for (let i = 0; i < Math.min(userWord.length, correctWord.length); i++) {
-                      if (userWord[i] === correctWord[i]) matchedChars++;
-                      else break;
-                    }
-                    const isFullyCorrect = userWord === correctWord;
-                    const isWrong = userWord.length > 0 && matchedChars === 0;
-                    const hasPartialMatch = matchedChars > 0 && !isFullyCorrect;
-                    const handleReveal = () => {
-                      if (!isFullyCorrect && !isRevealedByClick) {
-                        const currentCount = revealCount[currentIndex] || 0;
-                        const newCount = currentCount + 1;
-                        if (newCount > 2) {
-                          if (userPoints <= 0) {
-                            vibrateError();
-                            Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
-                            return;
-                          }
-                          progressService.addUserPoints(-1, 'dictation_hint_reveal').then(result => {
-                            if (result.success && result.points !== undefined) {
-                              updateUserPoints(result.points);
-                              // Track points deducted in statistics
-                              recordPointsDeducted(1);
-                            }
-                          });
-                        }
-                        vibrateHint();
-                        setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
-                        setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
-                      }
-                    };
-                    return (
-                      <View key={index} style={styles.maskedWordWrapper}>
-                        {isFullyCorrect || isRevealedByClick ? (
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxRevealed]} onPress={() => handleWordPress(word, pureWord)}>
-                            <Text style={styles.revealedWord}>{pureWord}</Text>
-                          </TouchableOpacity>
-                        ) : isWrong ? (
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxWrong]} onPress={handleReveal}>
-                            <Text style={styles.wrongAsterisks}>{'*'.repeat(pureWord.length)}</Text>
-                          </TouchableOpacity>
-                        ) : hasPartialMatch ? (
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxPartial]} onPress={handleReveal}>
-                            <Text style={styles.matchedChars}>{pureWord.substring(0, matchedChars)}</Text>
-                            <Text style={styles.remainingAsterisks}>{'*'.repeat(pureWord.length - matchedChars)}</Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <TouchableOpacity style={[styles.wordBox, styles.wordBoxHidden]} onPress={handleReveal}>
-                            <Text style={styles.hiddenAsterisks}>{'*'.repeat(pureWord.length)}</Text>
-                          </TouchableOpacity>
-                        )}
-                        {punctuation && <Text style={styles.punctuation}>{punctuation}</Text>}
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
+                  vibrateHint();
+                  setRevealCount(prev => ({ ...prev, [currentIndex]: newCount }));
+                  setRevealedWords(prev => ({ ...prev, [wordKey]: true }));
+                }}
+                onWordPress={handleWordPress}
+                onPointsInsufficient={() => {
+                  vibrateError();
+                  Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
+                }}
+              />
             )}
 
             {/* Input Area */}
@@ -692,19 +563,23 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                   onChangeText={(text) => {
                     if (completedSentences.has(currentIndex) && !allowReEdit.has(currentIndex)) return;
 
-                    // Limit input when last word reaches correct length
+                    // Limit input - check all words against expected length
                     if (currentSentence) {
                       const words = currentSentence.text.split(' ');
                       const userWords = text.trim().split(/\s+/).filter(w => w.length > 0);
 
-                      // If user has typed all words
-                      if (userWords.length >= words.length) {
-                        const lastWordIndex = words.length - 1;
-                        const lastCorrectWord = words[lastWordIndex].replace(/[.,!?;:"""''„]/g, '');
-                        const lastUserWord = userWords[lastWordIndex]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                      // Don't allow more words than expected
+                      if (userWords.length > words.length) {
+                        return;
+                      }
 
-                        // Don't allow more characters if last word is at or exceeds correct length
-                        if (lastUserWord.length > lastCorrectWord.length) {
+                      // Check each word - don't allow word to exceed expected length
+                      for (let i = 0; i < userWords.length; i++) {
+                        const correctWord = words[i]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                        const userWord = userWords[i]?.replace(/[.,!?;:"""''„]/g, '') || '';
+
+                        // If any word exceeds expected length, block input
+                        if (userWord.length > correctWord.length) {
                           return;
                         }
                       }
@@ -965,116 +840,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  maskedSentenceBox: {
-    backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: spacing.sm,
-    borderWidth: 1.5,
-    borderColor: colors.retroBorder,
-  },
-  maskedSentenceBoxAboveInput: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  maskedSentenceBoxKeyboard: {
-    marginHorizontal: spacing.sm,
-    marginBottom: 6,
-    borderRadius: 8,
-    padding: 6,
-  },
-  hintHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  maskedLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  freeHintText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#fff',
-    backgroundColor: colors.retroCyan,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.retroBorder,
-    overflow: 'hidden',
-  },
-  freeHintWarning: {
-    backgroundColor: colors.retroCoral,
-  },
-  maskedWordsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  maskedWordWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  wordBox: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  wordBoxHidden: {
-    backgroundColor: colors.retroCream,
-    borderColor: colors.retroBorder,
-  },
-  wordBoxWrong: {
-    backgroundColor: '#ffe0e0',
-    borderColor: colors.retroCoral,
-  },
-  wordBoxPartial: {
-    backgroundColor: '#e0f7fa',
-    borderColor: colors.retroCyan,
-  },
-  wordBoxRevealed: {
-    backgroundColor: '#e8f5e9',
-    borderColor: colors.retroCyan,
-  },
-  hiddenAsterisks: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textMuted,
-    letterSpacing: 1,
-  },
-  wrongAsterisks: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.retroCoral,
-    letterSpacing: 1,
-  },
-  matchedChars: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.retroCyan,
-  },
-  remainingAsterisks: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textMuted,
-    letterSpacing: 1,
-  },
-  revealedWord: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.retroCyan,
-  },
-  punctuation: {
-    fontSize: 14,
-    color: colors.retroDark,
-    marginLeft: 1,
-  },
+  // HintBox styles moved to components/dictation/HintBox.tsx
   inputContainer: {
     backgroundColor: colors.retroCream,
     borderRadius: 16,

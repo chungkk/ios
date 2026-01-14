@@ -3,8 +3,17 @@ import { Sentence } from '../types/lesson.types';
 import dictationService, { SentenceCheckResult } from '../services/dictation.service';
 
 /**
- * Dictation Hook
- * Manages dictation state, sentence navigation, and answer checking
+ * @deprecated This hook is not currently used by DictationScreen.
+ * DictationScreen implements its own logic with additional features:
+ * - Real-time word-by-word matching (not submit-based)
+ * - Hint system with reveal and point deduction
+ * - Partial character matching visualization
+ * - Progress persistence with debounced save
+ * 
+ * Consider removing this file or updating it to match DictationScreen's features
+ * if you want to consolidate the logic.
+ * 
+ * Original Dictation Hook - Manages dictation state, sentence navigation, and answer checking
  */
 
 interface UseDictationProps {
@@ -52,7 +61,7 @@ export const useDictation = ({ sentences, onComplete }: UseDictationProps) => {
       const averageAccuracy = completedSentences.length > 0
         ? Math.round(completedSentences.reduce((sum, score) => sum + score, 0) / completedSentences.length)
         : 0;
-      
+
       const totalPoints = completedSentences.reduce((sum, score) => {
         return sum + dictationService.calculatePoints(score);
       }, 0);

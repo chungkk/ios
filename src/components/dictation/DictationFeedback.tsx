@@ -10,8 +10,17 @@ interface DictationFeedbackProps {
 }
 
 /**
- * DictationFeedback Component
- * Displays color-coded word highlighting and similarity score
+ * @deprecated This component is not currently used by DictationScreen.
+ * DictationScreen uses HintBox component for real-time feedback with:
+ * - Word masking with asterisks
+ * - Partial character match highlighting
+ * - Tap-to-reveal with point deduction
+ * - Keyboard-aware layout adjustments
+ * 
+ * This component was designed for post-submit feedback display.
+ * Consider removing or repurposing for a different use case.
+ * 
+ * Original DictationFeedback Component - Displays color-coded word highlighting
  */
 const DictationFeedback: React.FC<DictationFeedbackProps> = ({ result, expectedSentence }) => {
   const feedbackMessage = getFeedbackMessage(result.similarity);

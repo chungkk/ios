@@ -1,6 +1,14 @@
 /**
- * Dictation Service
- * Handles sentence validation and scoring for dictation practice
+ * @deprecated This service is not currently used by DictationScreen.
+ * DictationScreen implements inline word-by-word checking with:
+ * - Real-time character-by-character matching
+ * - Partial match visualization
+ * - Hint reveal system
+ * 
+ * The checkSentence method here uses a simpler submit-based approach.
+ * Consider removing or updating this service to match DictationScreen's features.
+ * 
+ * Original Dictation Service - Handles sentence validation and scoring
  */
 
 export interface SentenceCheckResult {
@@ -49,7 +57,7 @@ export const dictationService = {
 
     // Calculate similarity percentage
     const totalWords = Math.max(userWords.length, expectedWords.length);
-    const similarity = totalWords > 0 
+    const similarity = totalWords > 0
       ? Math.round((correctWords.length / totalWords) * 100)
       : 0;
 
