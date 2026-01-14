@@ -13,7 +13,6 @@ import {
   Alert,
   Modal,
   TextInput,
-  Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -25,11 +24,38 @@ import FlashcardMode from '../components/vocabulary/FlashcardMode';
 import { SRSCard } from '../utils/srs';
 import { colors, spacing } from '../styles/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 15;
 
 // Word status types
 type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
+
+// Helper function to classify word status based on SRS state
+const getWordStatusFromSRS = (item: VocabularyItem): WordStatus => {
+  // Use actual SRS state if available
+  if (item.srsState) {
+    switch (item.srsState) {
+      case 'new':
+        return 'new';
+      case 'learning':
+      case 'relearning':
+        return 'learning';
+      case 'review':
+        return 'mastered';
+      default:
+        return 'new';
+    }
+  }
+  // Fallback: classify based on creation time if no SRS state
+  const now = new Date();
+  const created = new Date(item.createdAt || Date.now());
+  const age = now.getTime() - created.getTime();
+  const oneDay = 24 * 60 * 60 * 1000;
+  const oneWeek = 7 * oneDay;
+
+  if (age < oneDay) return 'new';
+  if (age < oneWeek) return 'learning';
+  return 'mastered';
+};
 
 const VocabularyScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -71,54 +97,28 @@ const VocabularyScreen: React.FC = () => {
     setRefreshing(false);
   }, [fetchVocabulary]);
 
-  // Calculate stats
+  // Calculate stats using SRS-based classification
   const stats = useMemo(() => {
-    const now = new Date();
-    const oneDay = 24 * 60 * 60 * 1000;
-    const oneWeek = 7 * oneDay;
-
+    const counts = { new: 0, learning: 0, mastered: 0 };
+    vocabulary.forEach(v => {
+      const status = getWordStatusFromSRS(v);
+      if (status !== 'all') {
+        counts[status]++;
+      }
+    });
     return {
       total: vocabulary.length,
-      new: vocabulary.filter(v => {
-        const created = new Date(v.createdAt || Date.now());
-        return now.getTime() - created.getTime() < oneDay;
-      }).length,
-      learning: vocabulary.filter(v => {
-        const created = new Date(v.createdAt || Date.now());
-        const age = now.getTime() - created.getTime();
-        return age >= oneDay && age < oneWeek;
-      }).length,
-      mastered: vocabulary.filter(v => {
-        const created = new Date(v.createdAt || Date.now());
-        return now.getTime() - created.getTime() >= oneWeek;
-      }).length,
+      ...counts,
     };
   }, [vocabulary]);
 
-  // Filter and search
+  // Filter and search using SRS-based classification
   const filteredVocabulary = useMemo(() => {
     let filtered = vocabulary;
-    const now = new Date();
-    const oneDay = 24 * 60 * 60 * 1000;
-    const oneWeek = 7 * oneDay;
 
-    // Filter by status
+    // Filter by status using SRS state
     if (activeFilter !== 'all') {
-      filtered = filtered.filter(v => {
-        const created = new Date(v.createdAt || Date.now());
-        const age = now.getTime() - created.getTime();
-
-        switch (activeFilter) {
-          case 'new':
-            return age < oneDay;
-          case 'learning':
-            return age >= oneDay && age < oneWeek;
-          case 'mastered':
-            return age >= oneWeek;
-          default:
-            return true;
-        }
-      });
+      filtered = filtered.filter(v => getWordStatusFromSRS(v) === activeFilter);
     }
 
     // Search
@@ -205,27 +205,14 @@ const VocabularyScreen: React.FC = () => {
     }
   }, []);
 
-  // Get word status
-  const getWordStatus = (item: VocabularyItem): WordStatus => {
-    const now = new Date();
-    const created = new Date(item.createdAt || Date.now());
-    const age = now.getTime() - created.getTime();
-    const oneDay = 24 * 60 * 60 * 1000;
-    const oneWeek = 7 * oneDay;
-
-    if (age < oneDay) return 'new';
-    if (age < oneWeek) return 'learning';
-    return 'mastered';
-  };
-
   // Render word card
   const renderItem = ({ item }: { item: VocabularyItem }) => {
-    const status = getWordStatus(item);
+    const status = getWordStatusFromSRS(item);
     const statusConfig: Record<WordStatus, { icon: string; color: string; label: string }> = {
-      all: { icon: '📚', color: colors.retroPurple, label: 'Tất cả' },
-      new: { icon: '🆕', color: colors.retroCoral, label: 'Mới' },
-      learning: { icon: '📖', color: colors.retroYellow, label: 'Đang học' },
-      mastered: { icon: '✅', color: colors.retroCyan, label: 'Đã thuộc' },
+      all: { icon: '📚', color: colors.retroPurple, label: t('vocabulary.filterAll') },
+      new: { icon: '🆕', color: colors.retroCoral, label: t('vocabulary.filterNew') },
+      learning: { icon: '📖', color: colors.retroYellow, label: t('vocabulary.filterLearning') },
+      mastered: { icon: '✅', color: colors.retroCyan, label: t('vocabulary.filterMastered') },
     };
     const config = statusConfig[status] || statusConfig.new;
 
@@ -615,7 +602,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.retroPurple,
     fontWeight: '500',
-    maxWidth: SCREEN_WIDTH * 0.5,
+    maxWidth: '50%',
   },
   // Empty State
   emptyContainer: {
