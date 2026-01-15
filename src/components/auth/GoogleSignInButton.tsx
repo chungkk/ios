@@ -36,7 +36,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         <ActivityIndicator color={colors.textPrimary} size="small" />
       ) : (
         <View style={styles.content}>
-          <Icon name="logo-google" size={20} color={colors.textPrimary} style={styles.googleIcon} />
+          <Icon name="logo-google" size={20} color="#1a1a1a" style={styles.googleIcon} />
           <Text style={styles.buttonText}>Continue with Google</Text>
         </View>
       )}
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.bgElevated,
+    backgroundColor: '#ffffff',
     borderWidth: 2,
     borderColor: colors.borderColor,
     borderRadius: borderRadius.medium,
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     ...textStyles.button,
-    color: colors.textPrimary,
+    color: '#1a1a1a',
   },
 });
 
