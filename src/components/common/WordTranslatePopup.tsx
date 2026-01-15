@@ -56,42 +56,16 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       try {
         console.log('[WordTranslatePopup] Initializing TTS...');
         
-        // Add event listeners for debugging
-        Tts.addEventListener('tts-start', (event) => {
-          console.log('[WordTranslatePopup] TTS started:', event);
-        });
-        
-        Tts.addEventListener('tts-finish', (event) => {
-          console.log('[WordTranslatePopup] TTS finished:', event);
-        });
-        
-        Tts.addEventListener('tts-cancel', (event) => {
-          console.log('[WordTranslatePopup] TTS cancelled:', event);
-        });
-        
         // Check if TTS is available
         const voices = await Tts.voices();
         console.log('[WordTranslatePopup] Available TTS voices:', voices.length);
-        
-        // Set default settings
-        await Tts.setDefaultLanguage('en-US');
-        await Tts.setDefaultRate(0.5, true);
-        await Tts.setDefaultPitch(1.0);
-        
         console.log('[WordTranslatePopup] TTS initialized successfully');
-      } catch (initError) {
-        console.error('[WordTranslatePopup] TTS initialization error:', initError);
+      } catch (initError: any) {
+        console.error('[WordTranslatePopup] TTS initialization error:', initError?.message || initError);
       }
     };
 
     initTTS();
-    
-    // Cleanup
-    return () => {
-      Tts.removeAllListeners('tts-start');
-      Tts.removeAllListeners('tts-finish');
-      Tts.removeAllListeners('tts-cancel');
-    };
   }, []);
 
   // Fetch translation when word changes
@@ -108,28 +82,17 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
         const result = await translateWord(word, context, '', targetLang);
         setTranslation(result);
         
-        // Auto-speak word after popup opens (better UX - user expects to hear pronunciation)
+        // Auto-speak word after popup opens (in German)
         try {
           const cleanW = word.replace(/[.,!?;:"""''„-]/g, '').trim();
           if (cleanW) {
-            console.log('[WordTranslatePopup] Auto-speaking word:', cleanW);
-            
-            // Stop any ongoing speech first
+            await Tts.getInitStatus();
             await Tts.stop();
-            
-            // Set language and speak
-            await Tts.setDefaultLanguage('en-US');
-            await Tts.setDefaultRate(0.5, true); // Slower speed for better comprehension
-            await Tts.setDefaultPitch(1.0);
-            
-            console.log('[WordTranslatePopup] Calling Tts.speak() for auto-speak...');
+            await Tts.setDefaultLanguage('de-DE');
             await Tts.speak(cleanW);
-            console.log('[WordTranslatePopup] Auto-speak called successfully');
           }
-        } catch (ttsErr) {
-          console.error('[WordTranslatePopup] TTS auto-speak error:', ttsErr);
-          console.error('[WordTranslatePopup] Auto-speak error details:', JSON.stringify(ttsErr));
-          // Don't show error to user, TTS is nice-to-have feature
+        } catch (ttsErr: any) {
+          // TTS is optional, ignore errors
         }
       } catch (err) {
         console.error('[WordTranslatePopup] Error:', err);
@@ -177,21 +140,18 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       
       console.log('[WordTranslatePopup] Manual speak - word:', cleanW);
       
+      // Ensure TTS is initialized
+      await Tts.getInitStatus();
+      
       // Stop any ongoing speech first
       await Tts.stop();
       
-      // Set language and speak
-      await Tts.setDefaultLanguage('en-US');
-      await Tts.setDefaultRate(0.5, true); // Slower speed for better comprehension
-      await Tts.setDefaultPitch(1.0);
-      
-      // Speak the word
-      console.log('[WordTranslatePopup] Calling Tts.speak()...');
+      // Set German language and speak
+      await Tts.setDefaultLanguage('de-DE');
       await Tts.speak(cleanW);
       console.log('[WordTranslatePopup] Tts.speak() called successfully');
-    } catch (ttsError) {
-      console.error('[WordTranslatePopup] TTS Error:', ttsError);
-      console.error('[WordTranslatePopup] Error details:', JSON.stringify(ttsError));
+    } catch (ttsError: any) {
+      console.error('[WordTranslatePopup] TTS Error:', ttsError?.message || ttsError);
     }
   }, [word]);
 
