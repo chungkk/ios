@@ -75,7 +75,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
         
         // Set default settings
         await Tts.setDefaultLanguage('en-US');
-        await Tts.setDefaultRate(0.5);
+        await Tts.setDefaultRate(0.5, true);
         await Tts.setDefaultPitch(1.0);
         
         console.log('[WordTranslatePopup] TTS initialized successfully');
@@ -119,7 +119,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
             
             // Set language and speak
             await Tts.setDefaultLanguage('en-US');
-            await Tts.setDefaultRate(0.5); // Slower speed for better comprehension
+            await Tts.setDefaultRate(0.5, true); // Slower speed for better comprehension
             await Tts.setDefaultPitch(1.0);
             
             console.log('[WordTranslatePopup] Calling Tts.speak() for auto-speak...');
@@ -182,7 +182,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       
       // Set language and speak
       await Tts.setDefaultLanguage('en-US');
-      await Tts.setDefaultRate(0.5); // Slower speed for better comprehension
+      await Tts.setDefaultRate(0.5, true); // Slower speed for better comprehension
       await Tts.setDefaultPitch(1.0);
       
       // Speak the word
