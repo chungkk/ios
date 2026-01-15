@@ -24,7 +24,7 @@ const defaultSettings: AppSettings = {
   hapticEnabled: true,
   nativeLanguage: 'de',
   autoStop: false,
-  showTranslation: true,
+  showTranslation: false, // Default to hidden - user can toggle to see translations
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
