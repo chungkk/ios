@@ -337,20 +337,6 @@ const VocabularyScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Simple Filter Chips */}
-        <View style={styles.filterRow}>
-          {filterTabs.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
-              onPress={() => setActiveFilter(tab.key)}
-            >
-              <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
-                {tab.label} ({tab.count})
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </View>
 
       {/* Word List */}
