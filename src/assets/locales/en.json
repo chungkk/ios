@@ -211,5 +211,25 @@
     "diamonds": "Diamonds",
     "weeklyActivity": "Weekly Activity",
     "tip": "Practice daily to build your streak and earn more diamonds!"
+  },
+  "unlock": {
+    "title": "Unlock Lesson",
+    "lessonLocked": "Lesson Locked",
+    "unlockDescription": "Unlock this lesson to start learning",
+    "free": "Free!",
+    "freeUnlockAvailable": "Free unlock available!",
+    "freeRemaining": "{{count}} free unlocks remaining",
+    "cost": "Cost",
+    "balance": "Your balance",
+    "yourBalance": "Balance",
+    "confirm": "Unlock",
+    "confirmFree": "Unlock for Free",
+    "unlockFree": "Unlock",
+    "unlockWithPoints": "Unlock ({{cost}})",
+    "cancel": "Cancel",
+    "notEnoughPoints": "Not enough points. Keep learning to earn more!",
+    "learnMore": "Keep learning to earn points!",
+    "processing": "Processing...",
+    "error": "An error occurred"
   }
 }

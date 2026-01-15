@@ -17,9 +17,11 @@ import { useTranslation } from 'react-i18next';
 import { useHomepageData } from '../hooks/useHomepageData';
 import { useAuth } from '../hooks/useAuth';
 import { lessonService } from '../services/lesson.service';
+import { unlockService } from '../services/unlock.service';
 import LessonCard from '../components/lesson/LessonCard';
 import DifficultyFilter from '../components/lesson/DifficultyFilter';
 import ModeSelectionPopup, { LessonMode } from '../components/lesson/ModeSelectionPopup';
+import UnlockModal from '../components/lesson/UnlockModal';
 import { Loading, SkeletonCard } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
@@ -36,17 +38,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
   const [isFilterChanging, setIsFilterChanging] = useState(false);
-  
+
+  // Unlock modal state
+  const [unlockLesson, setUnlockLesson] = useState<Lesson | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
   // Get user data
   const { user, userPoints } = useAuth();
-  
+
   // Get streak value safely
   const streakValue = typeof user?.streak === 'object' && user?.streak !== null
     ? (user.streak as any).currentStreak || 0
     : user?.streak || 0;
-  
+
   // Use optimized single API call instead of separate calls
-  const { categories, categoriesWithLessons, loading, refetch } = useHomepageData(difficultyFilter, 6);
+  const { categories, categoriesWithLessons, userUnlockInfo, loading, refetch } = useHomepageData(difficultyFilter, 6);
 
   // Handle filter change with smooth transition
   const handleFilterChange = useCallback((filter: 'all' | 'beginner' | 'experienced') => {
@@ -57,19 +64,60 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }, []);
 
   const handleLessonPress = useCallback((lesson: Lesson) => {
+    // Check if lesson is locked
+    if (lesson.isLocked) {
+      // Show unlock modal instead of mode selection
+      setUnlockLesson(lesson);
+      setShowUnlockModal(true);
+      return;
+    }
+
     // Increment view count (non-blocking)
-    lessonService.incrementViewCount(lesson.id).catch(() => {});
+    lessonService.incrementViewCount(lesson.id).catch(() => { });
     // Show mode selection popup
     setSelectedLesson(lesson);
     setShowModePopup(true);
   }, []);
 
+  // Handle unlock confirmation
+  const handleUnlockConfirm = useCallback(async (lessonId: string) => {
+    setIsUnlocking(true);
+    try {
+      const result = await unlockService.unlockLesson(lessonId);
+
+      if (result.success) {
+        // Close modal and refresh data
+        setShowUnlockModal(false);
+        setUnlockLesson(null);
+        await refetch();
+
+        // After successful unlock, show mode selection
+        // Find the lesson and open mode popup
+        const unlockedLesson = { ...unlockLesson!, isLocked: false };
+        setSelectedLesson(unlockedLesson);
+        setShowModePopup(true);
+      } else {
+        throw new Error(result.error || 'Failed to unlock');
+      }
+    } catch (error: any) {
+      console.error('[HomeScreen] Unlock error:', error);
+      throw error;
+    } finally {
+      setIsUnlocking(false);
+    }
+  }, [refetch, unlockLesson]);
+
+  const handleCloseUnlockModal = useCallback(() => {
+    setShowUnlockModal(false);
+    setUnlockLesson(null);
+  }, []);
+
   const handleModeSelect = useCallback((mode: LessonMode) => {
     if (!selectedLesson) return;
-    
+
     setShowModePopup(false);
     setSelectedLesson(null);
-    
+
     // Navigate based on mode
     if (mode === 'dictation') {
       navigation.navigate('Dictation', { lessonId: selectedLesson.id });
@@ -95,7 +143,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // Only show full loading on initial load (when no data yet)
   const isInitialLoading = loading && !refreshing && categories.length === 0;
-  
+
   if (isInitialLoading) {
     return <Loading />;
   }
@@ -107,7 +155,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <Text style={styles.topBarTitle}>{t('home.learning')}</Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -122,8 +170,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View style={styles.welcomeRow}>
             {/* Avatar */}
             {user?.picture ? (
-              <Image 
-                source={{ uri: user.picture.startsWith('/') ? `${BASE_URL}${user.picture}` : user.picture }} 
+              <Image
+                source={{ uri: user.picture.startsWith('/') ? `${BASE_URL}${user.picture}` : user.picture }}
                 style={styles.avatar}
               />
             ) : (
@@ -133,13 +181,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 </Text>
               </View>
             )}
-            
+
             {/* Welcome Text */}
             <View style={styles.welcomeText}>
               <Text style={styles.welcomeLabel}>{t('home.welcome')}</Text>
               <Text style={styles.userName}>{user?.name || t('home.student')}</Text>
             </View>
-            
+
             {/* Stats */}
             <View style={styles.statsContainer}>
               <View style={styles.statBadge}>
@@ -233,6 +281,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         lesson={selectedLesson}
         onClose={handleClosePopup}
         onSelectMode={handleModeSelect}
+      />
+
+      {/* Unlock Modal */}
+      <UnlockModal
+        visible={showUnlockModal}
+        lesson={unlockLesson}
+        userUnlockInfo={userUnlockInfo}
+        onConfirm={handleUnlockConfirm}
+        onClose={handleCloseUnlockModal}
+        isLoading={isUnlocking}
       />
     </SafeAreaView>
   );

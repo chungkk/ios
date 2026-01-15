@@ -43,6 +43,8 @@ export interface Lesson {
   viewCount: number;
   featured?: boolean;
   isActive: boolean;
+  isLocked?: boolean; // true if user hasn't unlocked this lesson
+  isFreeLesson?: boolean; // true if this lesson is free for everyone
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }

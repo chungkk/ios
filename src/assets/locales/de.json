@@ -211,5 +211,25 @@
     "diamonds": "Diamanten",
     "weeklyActivity": "Wochenaktivität",
     "tip": "Übe täglich, um deine Serie aufzubauen und mehr Diamanten zu verdienen!"
+  },
+  "unlock": {
+    "title": "Lektion freischalten",
+    "lessonLocked": "Lektion gesperrt",
+    "unlockDescription": "Schalte diese Lektion frei, um mit dem Lernen zu beginnen",
+    "free": "Kostenlos!",
+    "freeUnlockAvailable": "Kostenlos freischalten!",
+    "freeRemaining": "Noch {{count}} kostenlose Freischaltungen",
+    "cost": "Kosten",
+    "balance": "Dein Guthaben",
+    "yourBalance": "Guthaben",
+    "confirm": "Freischalten",
+    "confirmFree": "Kostenlos freischalten",
+    "unlockFree": "Freischalten",
+    "unlockWithPoints": "Freischalten ({{cost}})",
+    "cancel": "Abbrechen",
+    "notEnoughPoints": "Nicht genug Punkte. Lerne weiter, um mehr zu verdienen!",
+    "learnMore": "Lerne weiter, um Punkte zu verdienen!",
+    "processing": "Wird bearbeitet...",
+    "error": "Ein Fehler ist aufgetreten"
   }
 }

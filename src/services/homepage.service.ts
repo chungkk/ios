@@ -3,6 +3,7 @@
 
 import api from './api';
 import type { Category, Lesson } from '../types/lesson.types';
+import type { UserUnlockInfo } from '../types/unlock.types';
 
 export interface CategoryWithLessons {
   category: Category;
@@ -13,6 +14,7 @@ export interface CategoryWithLessons {
 export interface HomepageDataResponse {
   categories: Category[];
   categoriesWithLessons: Record<string, CategoryWithLessons>;
+  userUnlockInfo: UserUnlockInfo | null; // null if not logged in
 }
 
 /**
@@ -25,7 +27,7 @@ export const fetchHomepageData = async (
 ): Promise<HomepageDataResponse> => {
   try {
     console.log('[HomepageService] Fetching homepage data:', { difficulty, lessonsPerCategory });
-    
+
     const response = await api.get<HomepageDataResponse>('/api/homepage-data', {
       params: {
         difficulty,
@@ -34,7 +36,7 @@ export const fetchHomepageData = async (
     });
 
     console.log('[HomepageService] Received categories:', response.data.categories?.length);
-    
+
     return response.data;
   } catch (error) {
     console.error('[HomepageService] Error fetching homepage data:', error);

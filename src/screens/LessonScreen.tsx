@@ -17,7 +17,10 @@ import PlaybackControls from '../components/player/PlaybackControls';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import SettingsMenu from '../components/lesson/SettingsMenu';
+import LockedLessonOverlay from '../components/lesson/LockedLessonOverlay';
 import { progressService } from '../services/progress.service';
+import { unlockService } from '../services/unlock.service';
+import { homepageService } from '../services/homepage.service';
 import { recordShadowingAttempt, recordShadowingStudyTime } from '../services/statistics.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
@@ -25,6 +28,7 @@ import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
 import type { HomeStackScreenProps } from '../navigation/types';
+import type { UserUnlockInfo } from '../types/unlock.types';
 
 type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 
@@ -88,6 +92,23 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [selectedWord, setSelectedWord] = useState('');
   const [selectedContext, setSelectedContext] = useState('');
   const [showTranslatePopup, setShowTranslatePopup] = useState(false);
+
+  // Unlock state for locked lessons
+  const [userUnlockInfo, setUserUnlockInfo] = useState<UserUnlockInfo | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // Fetch user unlock info on mount
+  useEffect(() => {
+    const fetchUnlockInfo = async () => {
+      try {
+        const data = await homepageService.fetchHomepageData('all', 1);
+        setUserUnlockInfo(data.userUnlockInfo || null);
+      } catch (error) {
+        console.log('[LessonScreen] Could not fetch unlock info:', error);
+      }
+    };
+    fetchUnlockInfo();
+  }, []);
 
   const {
     isPlaying,
@@ -182,7 +203,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSentenceIndex]);
-  
+
   // Handle processing completion (including failures)
   React.useEffect(() => {
     // When processing completes (successfully or with error), mark as done
@@ -463,7 +484,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       videoPlayerRef.current.pause();
     }
     setIsPlaying(false);
-    
+
     setSelectedWord(word);
     setSelectedContext(context);
     setShowTranslatePopup(true);
@@ -480,6 +501,49 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         actionLabel="Go Back"
         onAction={() => navigation.goBack()}
       />
+    );
+  }
+
+  // Handle unlock for locked lessons
+  const handleUnlock = async () => {
+    setIsUnlocking(true);
+    try {
+      const result = await unlockService.unlockLesson(lessonId);
+      if (result.success) {
+        // Refresh lesson data to get unlocked content
+        // The lesson will be refetched and isLocked should be false now
+        // For now, just navigate back and let user click again
+        navigation.goBack();
+      } else {
+        Alert.alert('Unlock Failed', result.error || 'Could not unlock lesson');
+      }
+    } catch (error: any) {
+      console.error('[LessonScreen] Unlock error:', error);
+      Alert.alert('Error', 'Failed to unlock lesson');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
+  // Show locked overlay if lesson is locked
+  if (lesson.isLocked) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="chevron-back" size={18} color="#fff" />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+        </View>
+        <LockedLessonOverlay
+          lesson={lesson}
+          userUnlockInfo={userUnlockInfo}
+          onUnlock={handleUnlock}
+          onGoBack={() => navigation.goBack()}
+          isLoading={isUnlocking}
+        />
+      </View>
     );
   }
 

@@ -211,5 +211,25 @@
     "diamonds": "Kim cương",
     "weeklyActivity": "Hoạt động tuần",
     "tip": "Luyện tập hàng ngày để duy trì chuỗi và kiếm nhiều kim cương hơn!"
+  },
+  "unlock": {
+    "title": "Mở khóa bài học",
+    "lessonLocked": "Bài học bị khóa",
+    "unlockDescription": "Mở khóa bài học này để bắt đầu học",
+    "free": "Miễn phí!",
+    "freeUnlockAvailable": "Mở khóa miễn phí!",
+    "freeRemaining": "Còn {{count}} lượt mở khóa miễn phí",
+    "cost": "Chi phí",
+    "balance": "Số dư của bạn",
+    "yourBalance": "Số dư",
+    "confirm": "Mở khóa",
+    "confirmFree": "Mở khóa miễn phí",
+    "unlockFree": "Mở khóa",
+    "unlockWithPoints": "Mở khóa ({{cost}})",
+    "cancel": "Hủy",
+    "notEnoughPoints": "Không đủ points để mở khóa. Học thêm để kiếm points!",
+    "learnMore": "Học thêm để kiếm points!",
+    "processing": "Đang xử lý...",
+    "error": "Có lỗi xảy ra"
   }
 }

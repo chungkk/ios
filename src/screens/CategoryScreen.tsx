@@ -1,7 +1,7 @@
 // CategoryScreen - Shows all lessons in a specific category
 // Neo-Retro Design
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,17 @@ import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useLessons } from '../hooks/useLessons';
 import { lessonService } from '../services/lesson.service';
+import { unlockService } from '../services/unlock.service';
+import { homepageService } from '../services/homepage.service';
 import LessonCard from '../components/lesson/LessonCard';
 import ModeSelectionPopup, { LessonMode } from '../components/lesson/ModeSelectionPopup';
+import UnlockModal from '../components/lesson/UnlockModal';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { Lesson } from '../types/lesson.types';
+import type { UserUnlockInfo } from '../types/unlock.types';
 
 type CategoryScreenProps = HomeStackScreenProps<'Category'>;
 
@@ -31,24 +35,85 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
-  
+
+  // Unlock modal state
+  const [unlockLesson, setUnlockLesson] = useState<Lesson | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [userUnlockInfo, setUserUnlockInfo] = useState<UserUnlockInfo | null>(null);
+
   const { lessons, loading, refetch } = useLessons({
     category: categorySlug || undefined,
     limit: 100,
   });
 
+  // Fetch user unlock info on mount
+  useEffect(() => {
+    const fetchUnlockInfo = async () => {
+      try {
+        const data = await homepageService.fetchHomepageData('all', 1);
+        setUserUnlockInfo(data.userUnlockInfo || null);
+      } catch (error) {
+        console.log('[CategoryScreen] Could not fetch unlock info:', error);
+      }
+    };
+    fetchUnlockInfo();
+  }, []);
+
   const handleLessonPress = useCallback((lesson: Lesson) => {
-    lessonService.incrementViewCount(lesson.id).catch(() => {});
+    // Check if lesson is locked
+    if (lesson.isLocked) {
+      setUnlockLesson(lesson);
+      setShowUnlockModal(true);
+      return;
+    }
+
+    lessonService.incrementViewCount(lesson.id).catch(() => { });
     setSelectedLesson(lesson);
     setShowModePopup(true);
   }, []);
 
+  // Handle unlock confirmation
+  const handleUnlockConfirm = useCallback(async (lessonId: string) => {
+    setIsUnlocking(true);
+    try {
+      const result = await unlockService.unlockLesson(lessonId);
+
+      if (result.success) {
+        setShowUnlockModal(false);
+        setUnlockLesson(null);
+        await refetch();
+
+        // Refresh unlock info
+        const data = await homepageService.fetchHomepageData('all', 1);
+        setUserUnlockInfo(data.userUnlockInfo || null);
+
+        // Show mode selection for the now-unlocked lesson
+        const unlockedLesson = { ...unlockLesson!, isLocked: false };
+        setSelectedLesson(unlockedLesson);
+        setShowModePopup(true);
+      } else {
+        throw new Error(result.error || 'Failed to unlock');
+      }
+    } catch (error: any) {
+      console.error('[CategoryScreen] Unlock error:', error);
+      throw error;
+    } finally {
+      setIsUnlocking(false);
+    }
+  }, [refetch, unlockLesson]);
+
+  const handleCloseUnlockModal = useCallback(() => {
+    setShowUnlockModal(false);
+    setUnlockLesson(null);
+  }, []);
+
   const handleModeSelect = useCallback((mode: LessonMode) => {
     if (!selectedLesson) return;
-    
+
     setShowModePopup(false);
     setSelectedLesson(null);
-    
+
     if (mode === 'dictation') {
       navigation.navigate('Dictation', { lessonId: selectedLesson.id });
     } else {
@@ -68,6 +133,13 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refetch();
+    // Also refresh unlock info
+    try {
+      const data = await homepageService.fetchHomepageData('all', 1);
+      setUserUnlockInfo(data.userUnlockInfo || null);
+    } catch (error) {
+      console.log('[CategoryScreen] Could not refresh unlock info:', error);
+    }
     setRefreshing(false);
   }, [refetch]);
 
@@ -83,14 +155,14 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
           <Icon name="chevron-back" size={18} color="#fff" />
           <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{categoryName}</Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{lessons.length} {t('home.lessons')}</Text>
           </View>
         </View>
-        
+
         <View style={styles.headerRight} />
       </View>
 
@@ -134,6 +206,16 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
         lesson={selectedLesson}
         onClose={handleClosePopup}
         onSelectMode={handleModeSelect}
+      />
+
+      {/* Unlock Modal */}
+      <UnlockModal
+        visible={showUnlockModal}
+        lesson={unlockLesson}
+        userUnlockInfo={userUnlockInfo}
+        onConfirm={handleUnlockConfirm}
+        onClose={handleCloseUnlockModal}
+        isLoading={isUnlocking}
       />
     </SafeAreaView>
   );

@@ -30,26 +30,36 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
     // Fallback to YouTube thumbnail
     return getThumbnailUrl(lesson.youtubeUrl) || '';
   };
-  
+
   const thumbnail = getThumbnail();
   const difficultyLabel = getDifficultyLabel(lesson.level);
   const difficultyColor = getDifficultyColor(lesson.level);
   const needsWhiteText = ['b2', 'c2'].includes(lesson.level?.toLowerCase() || '');
+  const isLocked = lesson.isLocked ?? false;
 
   return (
-    <TouchableOpacity 
-      style={styles.card} 
-      onPress={onPress} 
+    <TouchableOpacity
+      style={[styles.card, isLocked && styles.lockedCard]}
+      onPress={onPress}
       activeOpacity={0.9}
     >
       {/* Thumbnail */}
       <View style={styles.thumbnailContainer}>
         <Image
           source={{ uri: thumbnail }}
-          style={styles.thumbnail}
+          style={[styles.thumbnail, isLocked && styles.lockedThumbnail]}
           resizeMode="cover"
         />
-        
+
+        {/* Lock Icon Overlay */}
+        {isLocked && (
+          <View style={styles.lockOverlay}>
+            <View style={styles.lockIconContainer}>
+              <Text style={styles.lockIcon}>🔒</Text>
+            </View>
+          </View>
+        )}
+
         {/* Difficulty badge - top right */}
         <View style={[styles.difficultyBadge, { backgroundColor: difficultyColor }]}>
           <Text style={[styles.difficultyText, needsWhiteText && styles.whiteText]}>
@@ -67,7 +77,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[styles.title, isLocked && styles.lockedTitle]} numberOfLines={2}>
           {lesson.title}
         </Text>
         <View style={styles.footer}>
@@ -110,6 +120,9 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 3,
   },
+  lockedCard: {
+    opacity: 0.85,
+  },
   thumbnailContainer: {
     height: layout.lessonCardImageHeight,
     position: 'relative',
@@ -120,6 +133,28 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: '100%',
+  },
+  lockedThumbnail: {
+    opacity: 0.6,
+  },
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  lockIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+  },
+  lockIcon: {
+    fontSize: 20,
   },
   difficultyBadge: {
     position: 'absolute',
@@ -166,6 +201,9 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     marginBottom: 6,
     lineHeight: 15,
+  },
+  lockedTitle: {
+    color: colors.textSecondary,
   },
   footer: {
     flexDirection: 'row',
