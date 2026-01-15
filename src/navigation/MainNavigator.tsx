@@ -12,10 +12,20 @@ import VocabularyScreen from '../screens/VocabularyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 
-// Tab Bar Icons - Neo-Retro Style
-const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => (
-  <Icon name={iconName} size={22} color={focused ? colors.retroPurple : colors.textMuted} />
-);
+// Tab Bar Icons - Professional Style (filled when active, outline when inactive)
+const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => {
+  const activeIcon = iconName;
+  const inactiveIcon = `${iconName}-outline`;
+
+  return (
+    <Icon
+      name={focused ? activeIcon : inactiveIcon}
+      size={24}
+      color={focused ? colors.retroPurple : colors.textSecondary}
+    />
+  );
+};
+
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -56,7 +66,7 @@ export const MainNavigator = () => {
           elevation: 8,
         },
         tabBarActiveTintColor: colors.retroPurple,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '700',
