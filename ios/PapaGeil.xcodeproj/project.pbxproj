@@ -11,6 +11,7 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		94FBF299B226C1F3C8495592 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		C65AB3E3619C44A47B3B352F /* GoogleService-Info.plist in Sources */ = {isa = PBXBuildFile; fileRef = DBFF5DDB14913271520DB2AF /* GoogleService-Info.plist */; };
 		F2B24E25D205CC463F9452BE /* libPods-PapaGeil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D596EF1B3F5646DF001848C /* libPods-PapaGeil.a */; };
 /* End PBXBuildFile section */
 
@@ -25,6 +26,7 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = PapaGeil/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = PapaGeil/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D84BF3FAE921B25CD71B5D33 /* Pods-PapaGeil.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PapaGeil.release.xcconfig"; path = "Target Support Files/Pods-PapaGeil/Pods-PapaGeil.release.xcconfig"; sourceTree = "<group>"; };
+		DBFF5DDB14913271520DB2AF /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "PapaGeil/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F8280A0F742AD8486863B45F /* Pods-PapaGeil.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PapaGeil.debug.xcconfig"; path = "Target Support Files/Pods-PapaGeil/Pods-PapaGeil.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -62,6 +64,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		66D0C9F2553F292F08E480BF /* PapaGeil */ = {
+			isa = PBXGroup;
+			children = (
+				DBFF5DDB14913271520DB2AF /* GoogleService-Info.plist */,
+			);
+			name = PapaGeil;
+			sourceTree = "<group>";
+		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
@@ -77,6 +87,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				66D0C9F2553F292F08E480BF /* PapaGeil */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -251,6 +262,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				C65AB3E3619C44A47B3B352F /* GoogleService-Info.plist in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

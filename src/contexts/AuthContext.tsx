@@ -5,26 +5,27 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
+import { GOOGLE_WEB_CLIENT_ID } from '@env';
 import i18n from '../utils/i18n';
-import {User, UpdateProfileRequest} from '../types/user.types';
+import { User, UpdateProfileRequest } from '../types/user.types';
 import * as authService from '../services/auth.service';
-import {getToken, getData, STORAGE_KEYS} from '../services/storage.service';
+import { getToken, getData, STORAGE_KEYS } from '../services/storage.service';
 
 // AuthContext interface
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   userPoints: number;
-  login: (email: string, password: string) => Promise<{success: boolean; error?: string}>;
-  register: (name: string, email: string, password: string, level?: 'beginner' | 'experienced') => Promise<{success: boolean; error?: string}>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, level?: 'beginner' | 'experienced') => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<{success: boolean; error?: string}>;
-  loginWithGoogle: () => Promise<{success: boolean; error?: string}>;
+  refreshToken: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   fetchUserPoints: () => Promise<void>;
   updateUserPoints: (newPoints: number) => void;
-  updateDifficultyLevel: (difficultyLevel: string) => Promise<{success: boolean; error?: string}>;
+  updateDifficultyLevel: (difficultyLevel: string) => Promise<{ success: boolean; error?: string }>;
   refreshUser: () => Promise<void>;
-  updateUser: (data: Partial<UpdateProfileRequest>) => Promise<{success: boolean; error?: string}>;
+  updateUser: (data: Partial<UpdateProfileRequest>) => Promise<{ success: boolean; error?: string }>;
 }
 
 // Create context with undefined default
@@ -36,7 +37,7 @@ interface AuthProviderProps {
 }
 
 // AuthProvider component
-export function AuthProvider({children}: AuthProviderProps) {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userPoints, setUserPoints] = useState(0);
@@ -61,10 +62,17 @@ export function AuthProvider({children}: AuthProviderProps) {
 
   // Check authentication status on mount
   useEffect(() => {
+    // Configure Google Sign-In
+    if (GOOGLE_WEB_CLIENT_ID) {
+      authService.configureGoogleSignIn(GOOGLE_WEB_CLIENT_ID);
+    } else {
+      console.warn('[AuthContext] GOOGLE_WEB_CLIENT_ID not configured');
+    }
+
     const checkAuth = async () => {
       try {
         const token = await getToken();
-        
+
         if (!token) {
           setLoading(false);
           return;
@@ -82,7 +90,7 @@ export function AuthProvider({children}: AuthProviderProps) {
           const freshUser = await authService.fetchMe();
           setUser(freshUser);
           setUserPoints(freshUser.points || 0);
-          
+
           // Sync app language with user's native language
           if (freshUser.nativeLanguage && freshUser.nativeLanguage !== i18n.language) {
             i18n.changeLanguage(freshUser.nativeLanguage);
@@ -111,12 +119,12 @@ export function AuthProvider({children}: AuthProviderProps) {
   const login = async (
     email: string,
     password: string,
-  ): Promise<{success: boolean; error?: string}> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const data = await authService.login({email, password});
+      const data = await authService.login({ email, password });
       setUser(data.user);
       setUserPoints(data.user.points || 0);
-      return {success: true};
+      return { success: true };
     } catch (error: any) {
       console.error('[AuthContext] Login error:', error);
       return {
@@ -132,12 +140,12 @@ export function AuthProvider({children}: AuthProviderProps) {
     email: string,
     password: string,
     level: 'beginner' | 'experienced' = 'beginner',
-  ): Promise<{success: boolean; error?: string}> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const data = await authService.register({name, email, password, level});
+      const data = await authService.register({ name, email, password, level });
       setUser(data.user);
       setUserPoints(data.user.points || 0);
-      return {success: true};
+      return { success: true };
     } catch (error: any) {
       console.error('[AuthContext] Register error:', error);
       return {
@@ -148,12 +156,12 @@ export function AuthProvider({children}: AuthProviderProps) {
   };
 
   // Refresh JWT token
-  const refreshToken = async (): Promise<{success: boolean; error?: string}> => {
+  const refreshToken = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       const data = await authService.refreshToken();
       setUser(data.user);
       setUserPoints(data.user.points || 0);
-      return {success: true};
+      return { success: true };
     } catch (error: any) {
       console.error('[AuthContext] Refresh token error:', error);
       // Token refresh failed, logout user
@@ -168,12 +176,12 @@ export function AuthProvider({children}: AuthProviderProps) {
   };
 
   // Login with Google OAuth
-  const loginWithGoogle = async (): Promise<{success: boolean; error?: string}> => {
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       const data = await authService.loginWithGoogle();
       setUser(data.user);
       setUserPoints(data.user.points || 0);
-      return {success: true};
+      return { success: true };
     } catch (error: any) {
       console.error('[AuthContext] Google login error:', error);
       return {
@@ -187,20 +195,20 @@ export function AuthProvider({children}: AuthProviderProps) {
   const updateUserPoints = (newPoints: number) => {
     setUserPoints(newPoints);
     if (user) {
-      setUser({...user, points: newPoints});
+      setUser({ ...user, points: newPoints });
     }
   };
 
   // Update difficulty level
   const updateDifficultyLevel = async (
     difficultyLevel: string,
-  ): Promise<{success: boolean; error?: string}> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const updatedUser = await authService.updateProfile({
         preferredDifficultyLevel: difficultyLevel as any,
       });
       setUser(updatedUser);
-      return {success: true};
+      return { success: true };
     } catch (error: any) {
       console.error('[AuthContext] Update difficulty level error:', error);
       return {
@@ -227,18 +235,18 @@ export function AuthProvider({children}: AuthProviderProps) {
   // Update user profile
   const updateUser = async (
     data: Partial<UpdateProfileRequest>,
-  ): Promise<{success: boolean; error?: string}> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const updatedUser = await authService.updateProfile(data as UpdateProfileRequest);
       setUser(updatedUser);
-      
+
       // If native language changed, update app language
       if (data.nativeLanguage && data.nativeLanguage !== i18n.language) {
         console.log('[AuthContext] Changing app language to:', data.nativeLanguage);
         i18n.changeLanguage(data.nativeLanguage);
       }
-      
-      return {success: true};
+
+      return { success: true };
     } catch (error: any) {
       console.error('[AuthContext] Update user error:', error);
       return {
