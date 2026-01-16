@@ -3,7 +3,7 @@ import { getToken, saveToken, removeToken } from './storage.service';
 import { API_BASE_URL } from '@env';
 
 // Get API base URL from environment
-export const BASE_URL = API_BASE_URL || 'https://ckk.pro';
+export const BASE_URL = API_BASE_URL || 'https://papageil.me';
 console.log('[API] ENV API_BASE_URL:', API_BASE_URL);
 console.log('[API] Using BASE_URL:', BASE_URL);
 
@@ -67,7 +67,7 @@ api.interceptors.response.use(
           if (refreshResponse.data.token) {
             // Save new token
             await saveToken(refreshResponse.data.token);
-            
+
             // Retry original request with new token
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;

@@ -2,7 +2,7 @@
  * SSL Certificate Pinning Configuration
  * 
  * IMPORTANT: Before enabling in production:
- * 1. Get actual certificate hashes from ckk.pro
+ * 1. Get actual certificate hashes from papageil.me
  * 2. Add backup certificate hashes for rotation
  * 3. Test thoroughly in staging environment
  * 4. Monitor certificate expiry dates
@@ -11,7 +11,7 @@
  * 
  * Step 1: Get certificate
  * ```bash
- * echo | openssl s_client -servername ckk.pro -connect ckk.pro:443 2>/dev/null | openssl x509 -pubkey -noout > public_key.pem
+ * echo | openssl s_client -servername papageil.me -connect papageil.me:443 2>/dev/null | openssl x509 -pubkey -noout > public_key.pem
  * ```
  * 
  * Step 2: Calculate SHA-256 hash
@@ -44,15 +44,15 @@ export const SSL_PINNING_CONFIG: {
   };
 } = {
   // API domain
-  'ckk.pro': {
+  'papageil.me': {
     includeSubdomains: true,
     publicKeyHashes: [
       // TODO: Add actual certificate hash here
       // 'sha256/PRIMARY_CERTIFICATE_HASH_HERE=',
-      
+
       // TODO: Add backup certificate hash (for rotation)
       // 'sha256/BACKUP_CERTIFICATE_1_HASH_HERE=',
-      
+
       // TODO: Add second backup (optional but recommended)
       // 'sha256/BACKUP_CERTIFICATE_2_HASH_HERE=',
     ],
@@ -63,7 +63,7 @@ export const SSL_PINNING_CONFIG: {
  * Check if SSL pinning is properly configured
  */
 export const isSSLPinningConfigured = (): boolean => {
-  const hashes = SSL_PINNING_CONFIG['ckk.pro']?.publicKeyHashes || [];
+  const hashes = SSL_PINNING_CONFIG['papageil.me']?.publicKeyHashes || [];
   const firstHash = hashes[0];
   return hashes.length > 0 && firstHash !== undefined && !firstHash.includes('TODO');
 };
