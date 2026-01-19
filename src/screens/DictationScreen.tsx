@@ -208,7 +208,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         console.error('[DictationScreen] Error saving progress:', err);
       }
     }, 1000);
-  }, [lessonId, revealedWords, completedSentences, revealCount, currentIndex, userInputs, studyTime, progressLoaded]);
+  }, [lessonId, revealedWords, completedSentences, revealCount, currentIndex, userInputs, studyTime, progressLoaded, bonusAwarded]);
 
   // Auto-save when state changes
   useEffect(() => {
