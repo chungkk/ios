@@ -271,7 +271,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         console.error('[LessonScreen] Error saving progress:', err);
       }
     }, 1000);
-  }, [recordedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded]);
+  }, [recordedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded, bonusAwarded]);
 
   const handleReady = useCallback(async () => {
     if (videoPlayerRef.current) {
@@ -672,8 +672,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       {/* Bottom Controls - Neo-Retro Style */}
       <View style={[styles.controlsWrapper, { paddingBottom: insets.bottom || 14 }]}>
         <PlaybackControls
-          _isPlaying={isPlaying}
-          _onPlayPause={handlePlayPause}
           onPrevious={handlePrevious}
           onNext={handleNext}
           onMicrophone={handleMicrophone}

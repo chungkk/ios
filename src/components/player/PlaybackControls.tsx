@@ -6,8 +6,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 
 interface PlaybackControlsProps {
-  _isPlaying: boolean;
-  _onPlayPause: () => void;
   onPrevious?: () => void;
   onNext?: () => void;
   onMicrophone?: () => void;
