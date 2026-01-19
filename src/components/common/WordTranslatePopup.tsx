@@ -55,7 +55,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     const initTTS = async () => {
       try {
         console.log('[WordTranslatePopup] Initializing TTS...');
-        
+
         // Check if TTS is available
         const voices = await Tts.voices();
         console.log('[WordTranslatePopup] Available TTS voices:', voices.length);
@@ -81,13 +81,18 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       try {
         const result = await translateWord(word, context, '', targetLang);
         setTranslation(result);
-        
+
         // Auto-speak word after popup opens (in German)
         try {
           const cleanW = word.replace(/[.,!?;:"""''„-]/g, '').trim();
           if (cleanW) {
             await Tts.getInitStatus();
-            await Tts.stop();
+            // Stop any ongoing speech first (wrapped for iOS compatibility)
+            try {
+              Tts.stop();
+            } catch {
+              // Ignore stop() errors on iOS
+            }
             await Tts.setDefaultLanguage('de-DE');
             await Tts.speak(cleanW);
           }
@@ -137,15 +142,19 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
         console.log('[WordTranslatePopup] No word to speak (empty after cleaning)');
         return;
       }
-      
+
       console.log('[WordTranslatePopup] Manual speak - word:', cleanW);
-      
+
       // Ensure TTS is initialized
       await Tts.getInitStatus();
-      
-      // Stop any ongoing speech first
-      await Tts.stop();
-      
+
+      // Stop any ongoing speech first (wrapped in separate try-catch for iOS compatibility)
+      try {
+        Tts.stop();
+      } catch {
+        // Ignore stop() errors on iOS - native bridge type conversion issue
+      }
+
       // Set German language and speak
       await Tts.setDefaultLanguage('de-DE');
       await Tts.speak(cleanW);
@@ -173,7 +182,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
         <TouchableOpacity
           style={styles.popup}
           activeOpacity={1}
-          onPress={() => {}} // Prevent closing when tapping popup
+          onPress={() => { }} // Prevent closing when tapping popup
         >
           {/* Header */}
           <View style={styles.header}>
