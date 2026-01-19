@@ -16,6 +16,7 @@ interface HintBoxProps {
     onRevealWord: (wordKey: string, currentCount: number) => void;
     onWordPress: (word: string, pureWord: string) => void;
     onPointsInsufficient: () => void;
+    onAutoFillWord?: (wordIndex: number, word: string) => void;
 }
 
 const HintBox: React.FC<HintBoxProps> = ({
@@ -29,6 +30,7 @@ const HintBox: React.FC<HintBoxProps> = ({
     onRevealWord,
     onWordPress,
     onPointsInsufficient,
+    onAutoFillWord,
 }) => {
     const currentRevealCount = revealCount[currentIndex] || 0;
     const freeRevealsRemaining = Math.max(0, 2 - currentRevealCount);
@@ -70,6 +72,11 @@ const HintBox: React.FC<HintBoxProps> = ({
                 }
 
                 onRevealWord(wordKey, currentRevealCount);
+
+                // Auto-fill the revealed word into input
+                if (onAutoFillWord) {
+                    onAutoFillWord(index, pureWord);
+                }
             }
         };
 

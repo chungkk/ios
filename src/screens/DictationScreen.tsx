@@ -559,6 +559,23 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                   vibrateError();
                   Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
                 }}
+                onAutoFillWord={(wordIndex, word) => {
+                  // Auto-fill the revealed word into input at the correct position
+                  const expectedWords = currentSentence.text.split(' ');
+                  const userWords = userInput.trim().split(/\s+/).filter(w => w.length > 0);
+
+                  // Pad userWords array to match wordIndex if needed
+                  while (userWords.length < wordIndex) {
+                    userWords.push('');
+                  }
+
+                  // Insert or replace the word at the correct position
+                  userWords[wordIndex] = word;
+
+                  // Join back and update input
+                  const newInput = userWords.join(' ');
+                  setUserInput(newInput);
+                }}
               />
             )}
 
@@ -594,25 +611,25 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                   onChangeText={(text) => {
                     if (completedSentences.has(currentIndex) && !allowReEdit.has(currentIndex)) return;
 
-                    // Limit input - check all words against expected length
+                    // Relaxed validation - only limit total words and total characters
                     if (currentSentence) {
-                      const words = currentSentence.text.split(' ');
+                      const expectedWords = currentSentence.text.split(' ');
                       const userWords = text.trim().split(/\s+/).filter(w => w.length > 0);
 
                       // Don't allow more words than expected
-                      if (userWords.length > words.length) {
+                      if (userWords.length > expectedWords.length) {
                         return;
                       }
 
-                      // Check each word - don't allow word to exceed expected length
-                      for (let i = 0; i < userWords.length; i++) {
-                        const correctWord = words[i]?.replace(/[.,!?;:"""''„]/g, '') || '';
-                        const userWord = userWords[i]?.replace(/[.,!?;:"""''„]/g, '') || '';
+                      // Calculate max total characters (sum of all expected word lengths + spaces)
+                      const maxTotalChars = expectedWords.reduce((sum, w) => {
+                        const pureWord = w.replace(/[.,!?;:"""''„]/g, '');
+                        return sum + pureWord.length;
+                      }, 0) + expectedWords.length; // +length for spaces between words
 
-                        // If any word exceeds expected length, block input
-                        if (userWord.length > correctWord.length) {
-                          return;
-                        }
+                      // Don't allow input to exceed max total characters
+                      if (text.length > maxTotalChars) {
+                        return;
                       }
                     }
 
