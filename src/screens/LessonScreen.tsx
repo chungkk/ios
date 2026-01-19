@@ -66,6 +66,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [recordedSentences, setRecordedSentences] = useState<Set<number>>(new Set()); // Track sentences user has recorded
   const [rewardedSentences, setRewardedSentences] = useState<Set<number>>(new Set()); // Track sentences that got 80%+ reward
   const [progressLoaded, setProgressLoaded] = useState(false);
+  const [bonusAwarded, setBonusAwarded] = useState(false); // Track if lesson completion bonus was awarded
   // Store recording results for each sentence
   const [recordingResults, setRecordingResults] = useState<Record<number, {
     transcribed: string;
@@ -229,6 +230,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           if (savedProgress.recordingResults) {
             setRecordingResults(savedProgress.recordingResults);
           }
+          if (savedProgress.bonusAwarded) {
+            setBonusAwarded(savedProgress.bonusAwarded);
+          }
           if (__DEV__) console.log('[LessonScreen] Loaded saved progress:', savedProgress);
         }
       } catch (err) {
@@ -257,6 +261,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             recordedSentences: Array.from(recordedSentences),
             rewardedSentences: Array.from(rewardedSentences),
             recordingResults: recordingResults,
+            bonusAwarded,
           },
           studyTime,
           'shadowing' // Use correct mode so it can be retrieved later
@@ -432,6 +437,30 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         } else {
           if (__DEV__) console.log('[LessonScreen] ⏭️ Sentence already rewarded, skipping');
         }
+
+        // Check if ALL sentences are now completed (80%+) - award lesson completion bonus
+        const transcript = lesson?.transcript || [];
+        const totalSentences = transcript.length;
+        const newRewardedSize = rewardedSentences.size + 1; // +1 because we just added current
+        if (newRewardedSize === totalSentences && totalSentences > 0 && !bonusAwarded) {
+          let bonusPoints = 0;
+          if (totalSentences >= 100) {
+            bonusPoints = 50;
+          } else if (totalSentences >= 50) {
+            bonusPoints = 20;
+          }
+
+          if (bonusPoints > 0) {
+            setBonusAwarded(true);
+            vibrateComplete();
+            progressService.addUserPoints(bonusPoints, `shadowing_lesson_complete_${totalSentences}_sentences`).then(result => {
+              if (result.success && result.points !== undefined) {
+                updateUserPoints(result.points);
+                Alert.alert('🎉 Hoàn thành!', `Bạn đã hoàn thành bài Shadowing!\n+${bonusPoints} điểm thưởng!`);
+              }
+            });
+          }
+        }
       } else if (similarity >= 50) {
         // Medium vibration for partial match
         if (settings.hapticEnabled) {
@@ -444,7 +473,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       // Clear the recording sentence index after processing
       setRecordingSentenceIndex(null);
     }
-  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled, recordingSentenceIndex, activeSentenceIndex, rewardedSentences, updateUserPoints]);
+  }, [recordingState.comparisonResult, vibrateSuccess, vibrateError, settings.hapticEnabled, recordingSentenceIndex, activeSentenceIndex, rewardedSentences, updateUserPoints, bonusAwarded, lesson, vibrateComplete]);
 
   // Cycle to next speed
   const cycleSpeed = useCallback(() => {

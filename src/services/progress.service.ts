@@ -130,6 +130,7 @@ export const saveDictationProgress = async (
     rewardedSentences?: number[];
     recordingResults?: Record<number, any>;
     userInputs?: { [key: number]: string };
+    bonusAwarded?: boolean;
   },
   studyTime: number,
   mode: 'dictation' | 'shadowing' = 'dictation'

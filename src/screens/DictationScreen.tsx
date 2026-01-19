@@ -58,6 +58,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [revealCount, setRevealCount] = useState<{ [key: number]: number }>({}); // Track reveals per sentence
   const [progressLoaded, setProgressLoaded] = useState(false); // Track if progress is loaded
   const [allowReEdit, setAllowReEdit] = useState<Set<number>>(new Set()); // Allow re-editing completed sentences on double tap
+  const [bonusAwarded, setBonusAwarded] = useState(false); // Track if lesson completion bonus was awarded
 
   // Word translation popup state
   const [selectedWord, setSelectedWord] = useState('');
@@ -157,6 +158,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
               setUserInput(savedProgress.userInputs[savedProgress.currentIndex || 0]);
             }
           }
+          if (savedProgress.bonusAwarded) {
+            setBonusAwarded(savedProgress.bonusAwarded);
+          }
           console.log('[DictationScreen] Loaded saved progress:', savedProgress);
         }
       } catch (err) {
@@ -195,6 +199,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             revealCount,
             currentIndex,
             userInputs,
+            bonusAwarded,
           },
           studyTime
         );
@@ -273,6 +278,27 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       recordDictationComplete({ hintsUsed: hintsForThisSentence, pointsEarned: 1 })
         .then(() => console.log('[DictationScreen] Stats recorded successfully'))
         .catch(err => console.error('[DictationScreen] Stats error:', err));
+
+      // Check if ALL sentences are now completed - award lesson completion bonus
+      const newCompletedSize = completedSentences.size + 1; // +1 because we just added current
+      if (newCompletedSize === totalSentences && totalSentences > 0 && !bonusAwarded) {
+        let bonusPoints = 0;
+        if (totalSentences >= 100) {
+          bonusPoints = 50;
+        } else if (totalSentences >= 50) {
+          bonusPoints = 20;
+        }
+
+        if (bonusPoints > 0) {
+          setBonusAwarded(true);
+          progressService.addUserPoints(bonusPoints, `dictation_lesson_complete_${totalSentences}_sentences`).then(result => {
+            if (result.success && result.points !== undefined) {
+              updateUserPoints(result.points);
+              Alert.alert('🎉 Hoàn thành!', `Bạn đã hoàn thành bài Diktat!\n+${bonusPoints} điểm thưởng!`);
+            }
+          });
+        }
+      }
     } else if (!allCorrect && isCurrentlyCompleted && isReEditing) {
       // Was completed but user re-edited to incorrect - remove completed status
       vibratePartial();
@@ -283,7 +309,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       });
       console.log('[DictationScreen] Removed completed status for sentence:', currentIndex, '(re-edited to incorrect)');
     }
-  }, [userInput, currentSentence, currentIndex, completedSentences, allowReEdit, updateUserPoints, revealCount, vibrateSuccess, vibratePartial]);
+  }, [userInput, currentSentence, currentIndex, completedSentences, allowReEdit, updateUserPoints, revealCount, vibrateSuccess, vibratePartial, bonusAwarded, totalSentences]);
 
   // Play current sentence segment
   const playSentence = useCallback(() => {
@@ -403,7 +429,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       videoPlayerRef.current.pause();
     }
     setIsPlaying(false);
-    
+
     setSelectedWord(word);
     setSelectedContext(currentSentence?.text || '');
     setShowTranslatePopup(true);
