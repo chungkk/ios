@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Tts from 'react-native-tts';
 import { vocabularyService, VocabularyItem } from '../services/vocabulary.service';
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
@@ -204,6 +205,30 @@ const VocabularyScreen: React.FC = () => {
     }
   }, []);
 
+  // Speak word using TTS
+  const handleSpeak = useCallback(async (word: string) => {
+    try {
+      const cleanW = word.replace(/[.,!?;:"""''„-]/g, '').trim();
+      if (!cleanW) return;
+
+      // Ensure TTS is initialized
+      await Tts.getInitStatus();
+
+      // Stop any ongoing speech first (wrapped for iOS compatibility)
+      try {
+        Tts.stop();
+      } catch {
+        // Ignore stop() errors on iOS
+      }
+
+      // Set German language and speak
+      await Tts.setDefaultLanguage('de-DE');
+      await Tts.speak(cleanW);
+    } catch (ttsError: any) {
+      console.error('[VocabularyScreen] TTS Error:', ttsError?.message || ttsError);
+    }
+  }, []);
+
   // Render word card
   const renderItem = ({ item }: { item: VocabularyItem }) => {
     const status = getWordStatusFromSRS(item);
@@ -222,6 +247,13 @@ const VocabularyScreen: React.FC = () => {
           <View style={styles.cardHeader}>
             <View style={styles.wordInfo}>
               <Text style={styles.word}>{item.word}</Text>
+              <TouchableOpacity
+                style={styles.speakBtn}
+                onPress={() => handleSpeak(item.word)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="volume-high" size={16} color={colors.retroCyan} />
+              </TouchableOpacity>
               <View style={[styles.statusBadge, { backgroundColor: config.color + '20' }]}>
                 <Text style={styles.statusIcon}>{config.icon}</Text>
               </View>
@@ -562,6 +594,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   deleteBtn: {
+    padding: 4,
+  },
+  speakBtn: {
     padding: 4,
   },
   translation: {

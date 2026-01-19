@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Tts from 'react-native-tts';
 import { translateWord } from '../../services/translate.service';
@@ -38,6 +39,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
   lessonTitle,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { settings } = useSettings();
   const [translation, setTranslation] = useState('');
@@ -101,7 +103,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
         }
       } catch (err) {
         console.error('[WordTranslatePopup] Error:', err);
-        setError('Không thể dịch từ này');
+        setError(t('translate.cannotTranslate'));
       } finally {
         setIsLoading(false);
       }
@@ -126,7 +128,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       });
       setIsSaved(true);
     } catch (err: any) {
-      const errorMessage = err.message || 'Không thể lưu từ vựng';
+      const errorMessage = err.message || t('vocabulary.deleteFailed');
       setSaveError(errorMessage);
       console.error('[WordTranslatePopup] Save error:', err);
     } finally {
@@ -202,7 +204,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={colors.retroCyan} />
-                <Text style={styles.loadingText}>Đang dịch...</Text>
+                <Text style={styles.loadingText}>{t('translate.translating')}</Text>
               </View>
             ) : error ? (
               <Text style={styles.errorText}>{error}</Text>
@@ -214,7 +216,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
           {/* Context (if available) */}
           {context && (
             <View style={styles.contextContainer}>
-              <Text style={styles.contextLabel}>Ngữ cảnh:</Text>
+              <Text style={styles.contextLabel}>{t('translate.context')}:</Text>
               <Text style={styles.contextText}>{context}</Text>
             </View>
           )}
@@ -225,7 +227,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
               {isSaved ? (
                 <View style={[styles.saveButton, styles.savedButton]}>
                   <Icon name="checkmark-circle" size={18} color={colors.retroCyan} />
-                  <Text style={styles.savedText}>Đã lưu</Text>
+                  <Text style={styles.savedText}>{t('translate.saved')}</Text>
                 </View>
               ) : (
                 <>
@@ -239,7 +241,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
                     ) : (
                       <>
                         <Icon name="star" size={16} color="#fff" />
-                        <Text style={styles.saveButtonText}>Lưu từ vựng</Text>
+                        <Text style={styles.saveButtonText}>{t('translate.saveWord')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
