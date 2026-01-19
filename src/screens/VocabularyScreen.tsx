@@ -70,6 +70,18 @@ const VocabularyScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Initialize TTS on mount - ignore silent switch so TTS works in silent mode
+  useEffect(() => {
+    const initTTS = async () => {
+      try {
+        await Tts.setIgnoreSilentSwitch('ignore');
+      } catch (error) {
+        console.error('[VocabularyScreen] TTS init error:', error);
+      }
+    };
+    initTTS();
+  }, []);
+
   // Fetch vocabulary
   const fetchVocabulary = useCallback(async () => {
     if (!user) {

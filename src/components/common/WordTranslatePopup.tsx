@@ -58,6 +58,9 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       try {
         console.log('[WordTranslatePopup] Initializing TTS...');
 
+        // Ignore silent switch so TTS works even in silent mode
+        await Tts.setIgnoreSilentSwitch('ignore');
+
         // Check if TTS is available
         const voices = await Tts.voices();
         console.log('[WordTranslatePopup] Available TTS voices:', voices.length);
