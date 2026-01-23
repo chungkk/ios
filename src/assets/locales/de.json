@@ -105,7 +105,18 @@
     "shadowing": "Shadowing",
     "shadowingDesc": "Hören und wiederholen",
     "dictation": "Diktat",
-    "dictationDesc": "Hören und schreiben"
+    "dictationDesc": "Hören und schreiben",
+    "lessonComplete": "🎉 Geschafft!",
+    "lessonBonusMessage": "Du hast die Shadowing-Lektion abgeschlossen!\n+{{points}} Bonuspunkte!",
+    "recordingError": "Aufnahmefehler",
+    "noSentence": "Kein Satz ausgewählt",
+    "videoError": "Video-Fehler",
+    "videoErrorMessage": "Video konnte nicht geladen werden. Bitte erneut versuchen.",
+    "unlockFailed": "Freischaltung fehlgeschlagen",
+    "unlockError": "Lektion konnte nicht freigeschaltet werden",
+    "transcriptionFailed": "Audio konnte nicht transkribiert werden",
+    "speechNotRecognized": "Sprache nicht erkannt. Bitte mit klarerer Stimme erneut versuchen.",
+    "processingFailed": "Aufnahme konnte nicht verarbeitet werden"
   },
   "dictation": {
     "title": "Diktat",
@@ -120,7 +131,11 @@
     "hint": "Hinweis",
     "freeHint": "kostenlos",
     "complete": "Diktat abgeschlossen! 🎉",
-    "pointsEarned": "Verdiente Punkte"
+    "pointsEarned": "Verdiente Punkte",
+    "outOfPoints": "Keine Punkte mehr!",
+    "outOfPointsMessage": "Du hast nicht genug Punkte für Hinweise. Sammle mehr Punkte!",
+    "lessonComplete": "🎉 Geschafft!",
+    "lessonBonusMessage": "Du hast das Diktat abgeschlossen!\n+{{points}} Bonuspunkte!"
   },
   "vocabulary": {
     "title": "Mein Wortschatz",

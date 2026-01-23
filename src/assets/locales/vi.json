@@ -105,7 +105,18 @@
     "shadowing": "Shadowing",
     "shadowingDesc": "Nghe và lặp lại theo",
     "dictation": "Nghe chép",
-    "dictationDesc": "Nghe và viết lại"
+    "dictationDesc": "Nghe và viết lại",
+    "lessonComplete": "🎉 Hoàn thành!",
+    "lessonBonusMessage": "Bạn đã hoàn thành bài Shadowing!\n+{{points}} điểm thưởng!",
+    "recordingError": "Lỗi ghi âm",
+    "noSentence": "Chưa chọn câu",
+    "videoError": "Lỗi video",
+    "videoErrorMessage": "Không thể tải video. Vui lòng thử lại.",
+    "unlockFailed": "Mở khóa thất bại",
+    "unlockError": "Không thể mở khóa bài học",
+    "transcriptionFailed": "Không thể nhận diện giọng nói",
+    "speechNotRecognized": "Không thể nhận diện lời nói. Vui lòng thử lại với âm thanh rõ hơn.",
+    "processingFailed": "Lỗi xử lý bản ghi âm"
   },
   "dictation": {
     "title": "Nghe chép",
@@ -120,7 +131,11 @@
     "hint": "Gợi ý",
     "freeHint": "miễn phí",
     "complete": "Hoàn thành nghe chép! 🎉",
-    "pointsEarned": "Điểm nhận được"
+    "pointsEarned": "Điểm nhận được",
+    "outOfPoints": "Hết điểm!",
+    "outOfPointsMessage": "Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!",
+    "lessonComplete": "🎉 Hoàn thành!",
+    "lessonBonusMessage": "Bạn đã hoàn thành bài Diktat!\n+{{points}} điểm thưởng!"
   },
   "vocabulary": {
     "title": "Từ vựng của tôi",

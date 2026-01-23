@@ -105,7 +105,18 @@
     "shadowing": "Shadowing",
     "shadowingDesc": "Listen and repeat",
     "dictation": "Dictation",
-    "dictationDesc": "Listen and write"
+    "dictationDesc": "Listen and write",
+    "lessonComplete": "🎉 Complete!",
+    "lessonBonusMessage": "You completed the Shadowing lesson!\n+{{points}} bonus points!",
+    "recordingError": "Recording Error",
+    "noSentence": "No sentence selected",
+    "videoError": "Video Error",
+    "videoErrorMessage": "Failed to load video. Please try again.",
+    "unlockFailed": "Unlock Failed",
+    "unlockError": "Could not unlock lesson",
+    "transcriptionFailed": "Could not transcribe audio",
+    "speechNotRecognized": "Could not recognize speech. Please try again with clearer audio.",
+    "processingFailed": "Failed to process recording"
   },
   "dictation": {
     "title": "Dictation",
@@ -120,7 +131,11 @@
     "hint": "Hint",
     "freeHint": "free",
     "complete": "Dictation Complete! 🎉",
-    "pointsEarned": "Points Earned"
+    "pointsEarned": "Points Earned",
+    "outOfPoints": "Out of Points!",
+    "outOfPointsMessage": "You don't have enough points to view hints. Earn more points!",
+    "lessonComplete": "🎉 Complete!",
+    "lessonBonusMessage": "You have completed the dictation!\n+{{points}} bonus points!"
   },
   "vocabulary": {
     "title": "My Vocabulary",

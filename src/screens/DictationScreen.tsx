@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useLessonData } from '../hooks/useLessonData';
 import { useStudyTimer } from '../hooks/useStudyTimer';
 import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
@@ -30,6 +31,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
+import Toast, { ToastType } from '../components/common/Toast';
 import HintBox from '../components/dictation/HintBox';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { Sentence } from '../types/lesson.types';
@@ -41,6 +43,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const { lesson, loading, error } = useLessonData(lessonId);
   const { settings } = useSettings();
   const { userPoints, updateUserPoints } = useAuth();
+  const { t } = useTranslation();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
 
@@ -64,6 +67,12 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const [selectedWord, setSelectedWord] = useState('');
   const [selectedContext, setSelectedContext] = useState('');
   const [showTranslatePopup, setShowTranslatePopup] = useState(false);
+
+  // Toast notification state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastType, setToastType] = useState<ToastType>('info');
+  const [toastTitle, setToastTitle] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
 
   // Keyboard state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -294,7 +303,10 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
           progressService.addUserPoints(bonusPoints, `dictation_lesson_complete_${totalSentences}_sentences`).then(result => {
             if (result.success && result.points !== undefined) {
               updateUserPoints(result.points);
-              Alert.alert('🎉 Hoàn thành!', `Bạn đã hoàn thành bài Diktat!\n+${bonusPoints} điểm thưởng!`);
+              setToastType('success');
+              setToastTitle(t('dictation.lessonComplete'));
+              setToastMessage(t('dictation.lessonBonusMessage', { points: bonusPoints }));
+              setToastVisible(true);
             }
           });
         }
@@ -557,7 +569,10 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                 onWordPress={handleWordPress}
                 onPointsInsufficient={() => {
                   vibrateError();
-                  Alert.alert('Hết điểm!', 'Bạn không còn điểm để xem gợi ý. Hãy kiếm thêm điểm!');
+                  setToastType('warning');
+                  setToastTitle(t('dictation.outOfPoints'));
+                  setToastMessage(t('dictation.outOfPointsMessage'));
+                  setToastVisible(true);
                 }}
                 onAutoFillWord={(wordIndex, word) => {
                   // Auto-fill the revealed word into input at the correct position
@@ -697,6 +712,16 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         lessonId={lessonId}
         lessonTitle={lesson?.title}
         onClose={() => setShowTranslatePopup(false)}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        type={toastType}
+        title={toastTitle}
+        message={toastMessage}
+        duration={3500}
+        onDismiss={() => setToastVisible(false)}
       />
 
     </View>

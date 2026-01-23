@@ -6,6 +6,7 @@ import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useLessonData } from '../hooks/useLessonData';
 import { useStudyTimer } from '../hooks/useStudyTimer';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
@@ -27,6 +28,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
 import { colors, spacing } from '../styles/theme';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
+import Toast, { ToastType } from '../components/common/Toast';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { UserUnlockInfo } from '../types/unlock.types';
 
@@ -36,6 +38,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const { lessonId } = route.params;
   const { settings } = useSettings();
   const { updateUserPoints } = useAuth();
+  const { t } = useTranslation();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
 
@@ -98,6 +101,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [userUnlockInfo, setUserUnlockInfo] = useState<UserUnlockInfo | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
 
+  // Toast notification state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastType, setToastType] = useState<ToastType>('info');
+  const [toastTitle, setToastTitle] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+
   // Fetch user unlock info on mount
   useEffect(() => {
     const fetchUnlockInfo = async () => {
@@ -128,10 +137,27 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     mode: 'shadowing',
   });
 
-  // Voice recording
+  // Voice recording - handle error codes with i18n
+  const handleRecordingError = useCallback((errorCode: string) => {
+    let message = errorCode;
+    // Map error codes to translation keys
+    if (errorCode === 'transcription_failed') {
+      message = t('lesson.transcriptionFailed');
+    } else if (errorCode === 'speech_not_recognized') {
+      message = t('lesson.speechNotRecognized');
+    } else if (errorCode === 'processing_failed') {
+      message = t('lesson.processingFailed');
+    }
+
+    setToastType('error');
+    setToastTitle(t('lesson.recordingError'));
+    setToastMessage(message);
+    setToastVisible(true);
+  }, [t]);
+
   const { recordingState, startRecording, stopRecording, playRecording, clearRecording } = useVoiceRecording({
     onRecordingComplete: () => { },
-    onError: (err) => Alert.alert('Recording Error', err),
+    onError: handleRecordingError,
   });
 
   // Haptic feedback functions (only vibrate if enabled in settings)
@@ -328,8 +354,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [setIsPlayingFromYouTube, handleLessonComplete]);
 
   const handleError = useCallback(() => {
-    Alert.alert('Video Error', 'Failed to load video. Please try again.');
-  }, []);
+    setToastType('error');
+    setToastTitle(t('lesson.videoError'));
+    setToastMessage(t('lesson.videoErrorMessage'));
+    setToastVisible(true);
+  }, [t]);
 
   const handleSentencePress = useCallback((index: number) => {
     const sentence = lesson?.transcript[index];
@@ -367,7 +396,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
     if (!currentSentence) {
       vibrateError();
-      Alert.alert('Error', 'No sentence selected');
+      setToastType('warning');
+      setToastTitle(t('common.error'));
+      setToastMessage(t('lesson.noSentence'));
+      setToastVisible(true);
       return;
     }
 
@@ -455,7 +487,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             progressService.addUserPoints(bonusPoints, `shadowing_lesson_complete_${totalSentences}_sentences`).then(result => {
               if (result.success && result.points !== undefined) {
                 updateUserPoints(result.points);
-                Alert.alert('🎉 Hoàn thành!', `Bạn đã hoàn thành bài Shadowing!\n+${bonusPoints} điểm thưởng!`);
+                setToastType('success');
+                setToastTitle(t('lesson.lessonComplete'));
+                setToastMessage(t('lesson.lessonBonusMessage', { points: bonusPoints }));
+                setToastVisible(true);
               }
             });
           }
@@ -520,11 +555,17 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         // For now, just navigate back and let user click again
         navigation.goBack();
       } else {
-        Alert.alert('Unlock Failed', result.error || 'Could not unlock lesson');
+        setToastType('error');
+        setToastTitle(t('lesson.unlockFailed'));
+        setToastMessage(result.error || t('lesson.unlockError'));
+        setToastVisible(true);
       }
     } catch (error: any) {
       console.error('[LessonScreen] Unlock error:', error);
-      Alert.alert('Error', 'Failed to unlock lesson');
+      setToastType('error');
+      setToastTitle(t('common.error'));
+      setToastMessage(t('lesson.unlockError'));
+      setToastVisible(true);
     } finally {
       setIsUnlocking(false);
     }
@@ -668,6 +709,16 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         lessonId={lessonId}
         lessonTitle={lesson?.title}
         onClose={() => setShowTranslatePopup(false)}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        type={toastType}
+        title={toastTitle}
+        message={toastMessage}
+        duration={3500}
+        onDismiss={() => setToastVisible(false)}
       />
     </View>
   );

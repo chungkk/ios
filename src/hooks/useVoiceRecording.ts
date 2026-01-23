@@ -2,7 +2,7 @@
 // Uses @react-native-community/audio-toolkit for recording
 
 import { useState, useRef, useCallback } from 'react';
-import { Platform, PermissionsAndroid, Alert } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import { Recorder, Player } from '@react-native-community/audio-toolkit';
 import { whisperService, ComparisonResult } from '../services/whisper.service';
 
@@ -138,14 +138,14 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       const result = await whisperService.transcribe(audioUri, 'de');
 
       if (!result.success || !result.text) {
-        Alert.alert('Error', result.message || 'Failed to transcribe audio');
+        options?.onError?.(result.message || 'transcription_failed');
         setRecordingState(prev => ({ ...prev, isProcessing: false }));
         return;
       }
 
       // Validate transcription
       if (!whisperService.isValidTranscription(result.text)) {
-        Alert.alert('Error', 'Could not recognize speech. Please try again with clearer audio.');
+        options?.onError?.('speech_not_recognized');
         setRecordingState(prev => ({ ...prev, isProcessing: false }));
         return;
       }
@@ -164,7 +164,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
       // Don't show alert - result will be displayed in TranscriptView
     } catch (error) {
       if (__DEV__) console.error('[useVoiceRecording] Process error:', error);
-      Alert.alert('Error', 'Failed to process recording');
+      options?.onError?.('processing_failed');
       setRecordingState(prev => ({ ...prev, isProcessing: false }));
     }
   }, [options]);
@@ -332,7 +332,7 @@ export const useVoiceRecording = (options?: UseVoiceRecordingOptions) => {
    */
   const clearRecording = useCallback(() => {
     if (__DEV__) console.log('[useVoiceRecording] 🗑️ clearRecording called');
-    
+
     // Stop and clean up recorder
     if (recorderRef.current) {
       if (recordingState.isRecording) {
