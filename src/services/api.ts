@@ -3,7 +3,7 @@ import { getToken, saveToken, removeToken } from './storage.service';
 import { API_BASE_URL } from '@env';
 
 // Get API base URL from environment
-export const BASE_URL = API_BASE_URL || 'https://papageil.me';
+export const BASE_URL = API_BASE_URL || 'https://www.papageil.me';
 console.log('[API] ENV API_BASE_URL:', API_BASE_URL);
 console.log('[API] Using BASE_URL:', BASE_URL);
 
@@ -22,8 +22,12 @@ api.interceptors.request.use(
     console.log('[API] Request:', config.method?.toUpperCase(), config.url, 'baseURL:', BASE_URL);
     try {
       const token = await getToken();
+      console.log('[API] Token exists:', !!token, token ? `(${token.substring(0, 20)}...)` : '(null)');
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('[API] Authorization header set');
+      } else {
+        console.log('[API] WARNING: No token available, request will be unauthenticated');
       }
     } catch (error) {
       console.error('[API] Error getting token:', error);
