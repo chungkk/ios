@@ -61,7 +61,7 @@
     },
     "privacy": {
       "controller": "1. Verantwortlicher",
-      "controllerText": "PapaGeil\nE-Mail: contact@papageil.net\n\nVerantwortlich für die Datenverarbeitung ist der Betreiber der PapaGeil App gemäß den geltenden Datenschutzgesetzen.",
+      "controllerText": "PapaGeil\nE-Mail: contact@papageil.me\n\nVerantwortlich für die Datenverarbeitung ist der Betreiber der PapaGeil App gemäß den geltenden Datenschutzgesetzen.",
       "dataCollected": "2. Erhobene Daten",
       "dataCollectedText": "Wir erheben folgende Daten:\n• Registrierungsdaten (Name, E-Mail)\n• Lernfortschritt und Statistiken\n• Geräteinformationen für die App-Funktion",
       "purpose": "3. Zweck der Datenverarbeitung",
@@ -73,7 +73,7 @@
       "security": "6. Datensicherheit",
       "securityText": "Wir setzen technische und organisatorische Maßnahmen ein, um Ihre Daten vor unbefugtem Zugriff zu schützen.",
       "contact": "7. Kontakt",
-      "contactText": "Bei Fragen zum Datenschutz kontaktieren Sie uns unter:\nE-Mail: datenschutz@papageil.net\n\nSie haben außerdem das Recht, sich bei einer Aufsichtsbehörde zu beschweren."
+      "contactText": "Bei Fragen zum Datenschutz kontaktieren Sie uns unter:\nE-Mail: contact@papageil.me\n\nSie haben außerdem das Recht, sich bei einer Aufsichtsbehörde zu beschweren."
     }
   },
   "home": {
