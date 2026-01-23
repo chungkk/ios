@@ -11,14 +11,14 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  ActivityIndicator,
   Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import i18n from '../utils/i18n';
 import { useNavigation } from '@react-navigation/native';
-import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+// Avatar upload disabled
+// import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../contexts/SettingsContext';
 import { Loading } from '../components/common/Loading';
@@ -45,9 +45,8 @@ const LANGUAGES = [
 const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { user, loading, userPoints, logout, refreshUser, updateUser } = useAuth();
+  const { user, loading, userPoints, logout, updateUser } = useAuth();
   const { settings, toggleHaptic, setNativeLanguage } = useSettings();
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showAGBModal, setShowAGBModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
@@ -55,91 +54,7 @@ const SettingsScreen: React.FC = () => {
     navigation.navigate('Auth', { screen: 'Login' });
   };
 
-  // Upload avatar to server
-  const uploadAvatar = useCallback(async (uri: string, type: string, fileName: string) => {
-    setUploadingAvatar(true);
-    try {
-      const formData = new FormData();
-      formData.append('avatar', {
-        uri,
-        type,
-        name: fileName,
-      } as any);
-
-      const { getToken } = require('../services/storage.service');
-      const token = await getToken();
-      const response = await fetch(`${BASE_URL}/api/upload-avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      console.log('[SettingsScreen] Upload avatar response:', JSON.stringify(data));
-      if (data.success) {
-        await refreshUser();
-        console.log('[SettingsScreen] User after refresh:', JSON.stringify(user));
-        Alert.alert('Success', 'Avatar updated successfully!');
-      } else {
-        Alert.alert('Error', data.message || 'Failed to upload avatar');
-      }
-    } catch (error) {
-      console.error('Upload avatar error:', error);
-      Alert.alert('Error', 'Failed to upload avatar');
-    } finally {
-      setUploadingAvatar(false);
-    }
-  }, [refreshUser, user]);
-
-  // Handle avatar change
-  const handleChangeAvatar = useCallback(() => {
-    Alert.alert(
-      'Change Avatar',
-      'Choose an option',
-      [
-        {
-          text: 'Camera',
-          onPress: () => {
-            launchCamera(
-              { mediaType: 'photo', quality: 0.8, maxWidth: 500, maxHeight: 500 },
-              (response) => {
-                if (response.assets && response.assets[0]) {
-                  const asset = response.assets[0];
-                  uploadAvatar(
-                    asset.uri!,
-                    asset.type || 'image/jpeg',
-                    asset.fileName || 'avatar.jpg'
-                  );
-                }
-              }
-            );
-          },
-        },
-        {
-          text: 'Photo Library',
-          onPress: () => {
-            launchImageLibrary(
-              { mediaType: 'photo', quality: 0.8, maxWidth: 500, maxHeight: 500 },
-              (response) => {
-                if (response.assets && response.assets[0]) {
-                  const asset = response.assets[0];
-                  uploadAvatar(
-                    asset.uri!,
-                    asset.type || 'image/jpeg',
-                    asset.fileName || 'avatar.jpg'
-                  );
-                }
-              }
-            );
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  }, [uploadAvatar]);
+  // Avatar upload feature disabled
 
   const handleLogout = useCallback(() => {
     Alert.alert(
@@ -280,12 +195,8 @@ const SettingsScreen: React.FC = () => {
           <View style={styles.profileCard}>
             <View style={styles.cardTopBar} />
             <View style={styles.cardContent}>
-              <TouchableOpacity onPress={handleChangeAvatar} style={styles.avatarContainer}>
-                {uploadingAvatar ? (
-                  <View style={styles.avatar}>
-                    <ActivityIndicator color="#fff" />
-                  </View>
-                ) : user.picture ? (
+              <View style={styles.avatarContainer}>
+                {user.picture ? (
                   <Image
                     source={{ uri: user.picture.startsWith('/') ? `${BASE_URL}${user.picture}` : user.picture }}
                     style={styles.avatarImage}
@@ -297,10 +208,7 @@ const SettingsScreen: React.FC = () => {
                     </Text>
                   </View>
                 )}
-                <View style={styles.editBadge}>
-                  <Icon name="camera" size={14} color="#fff" />
-                </View>
-              </TouchableOpacity>
+              </View>
               <Text style={styles.userName}>{user.name || 'User'}</Text>
               <Text style={styles.userEmail}>{user.email}</Text>
 
