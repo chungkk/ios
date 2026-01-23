@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TextInput as RNTextInput,
@@ -9,8 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {colors, spacing, borderRadius} from '../../styles/theme';
-import {textStyles} from '../../styles/typography';
+import { colors, spacing, borderRadius } from '../../styles/theme';
+import { textStyles } from '../../styles/typography';
 
 interface CustomTextInputProps extends TextInputProps {
   label?: string;
@@ -42,10 +42,28 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
   // Auto-configure keyboard type based on variant
   const keyboardType = variant === 'email' ? 'email-address' : textInputProps.keyboardType;
 
+  // Get icon based on variant
+  const getVariantIcon = () => {
+    if (leftIcon) return leftIcon;
+    if (variant === 'email') {
+      return <Icon name="mail-outline" size={20} color={isFocused ? colors.retroCyan : colors.textMuted} />;
+    }
+    if (variant === 'password' || isPasswordField) {
+      return <Icon name="lock-closed-outline" size={20} color={isFocused ? colors.retroCyan : colors.textMuted} />;
+    }
+    return null;
+  };
+
+  const variantIcon = getVariantIcon();
+
   return (
     <View style={[styles.container, containerStyle]}>
       {/* Label */}
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <View style={styles.labelContainer}>
+          <Text style={styles.label}>{label}</Text>
+        </View>
+      )}
 
       {/* Input wrapper */}
       <View
@@ -55,13 +73,13 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
           error && styles.inputWrapper_error,
         ]}>
         {/* Left icon */}
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+        {variantIcon && <View style={styles.leftIcon}>{variantIcon}</View>}
 
         {/* Text input */}
         <RNTextInput
           {...textInputProps}
           style={[styles.input, textInputProps.style]}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor="rgba(255,255,255,0.4)"
           secureTextEntry={isPasswordField && !isPasswordVisible}
           keyboardType={keyboardType}
           autoCapitalize={variant === 'email' ? 'none' : textInputProps.autoCapitalize}
@@ -85,7 +103,7 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
             <Icon
               name={isPasswordVisible ? 'eye-outline' : 'eye-off-outline'}
               size={22}
-              color={colors.textMuted}
+              color={isFocused ? colors.retroCyan : colors.textMuted}
             />
           </TouchableOpacity>
         )}
@@ -98,7 +116,10 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
 
       {/* Error or helper text */}
       {error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={14} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       ) : helperText ? (
         <Text style={styles.helperText}>{helperText}</Text>
       ) : null}
@@ -108,47 +129,72 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  labelContainer: {
+    marginBottom: spacing.xs + 2,
   },
   label: {
     ...textStyles.label,
     color: colors.textLight,
-    marginBottom: spacing.xs,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bgSecondary,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 2,
-    borderColor: colors.borderColor,
-    borderRadius: borderRadius.medium,
-    paddingHorizontal: spacing.md,
-    height: 52,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 16,
+    paddingHorizontal: spacing.md + 4,
+    height: 56,
+    // Subtle inner shadow effect
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   inputWrapper_focused: {
-    borderColor: colors.accentBlue,
+    borderColor: colors.retroCyan,
+    backgroundColor: 'rgba(0,188,212,0.08)',
+    shadowColor: colors.retroCyan,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   inputWrapper_error: {
     borderColor: colors.error,
+    backgroundColor: 'rgba(244,67,54,0.08)',
   },
   input: {
     flex: 1,
     ...textStyles.body,
-    color: colors.textOnDark,
+    color: '#fff',
+    fontSize: 16,
     height: '100%',
     textAlignVertical: 'center',
   },
   leftIcon: {
-    marginRight: spacing.sm,
+    marginRight: spacing.sm + 4,
+    width: 24,
+    alignItems: 'center',
   },
   rightIcon: {
     marginLeft: spacing.sm,
     padding: spacing.xs,
   },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs + 2,
+    gap: 6,
+  },
   errorText: {
     ...textStyles.caption,
     color: colors.error,
-    marginTop: spacing.xs,
+    fontSize: 13,
   },
   helperText: {
     ...textStyles.caption,
@@ -158,3 +204,4 @@ const styles = StyleSheet.create({
 });
 
 export default TextInput;
+
