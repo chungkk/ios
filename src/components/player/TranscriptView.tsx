@@ -10,6 +10,7 @@ import { textStyles } from '../../styles/typography';
 interface TranscriptViewProps {
   transcript: Sentence[];
   activeSentenceIndex: number;
+  activeWordIndex?: number; // For karaoke word highlighting
   onSentencePress?: (index: number) => void;
   onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
@@ -25,6 +26,7 @@ interface TranscriptViewProps {
 export const TranscriptView: React.FC<TranscriptViewProps> = ({
   transcript,
   activeSentenceIndex,
+  activeWordIndex = -1,
   onSentencePress,
   onWordPress,
   showTranslation = true,
@@ -90,6 +92,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
             <SentenceItem
               sentence={item}
               isActive={isActive}
+              activeWordIndex={isActive ? activeWordIndex : -1}
               onPress={() => handleSentencePress(index)}
               onWordPress={onWordPress}
               showTranslation={showTranslation}

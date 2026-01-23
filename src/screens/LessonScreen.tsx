@@ -182,7 +182,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [settings.autoStop, setIsPlaying, lesson]);
 
   // Transcript sync
-  const { activeSentenceIndex, resetSentenceEndFlag } = useTranscriptSync({
+  const { activeSentenceIndex, activeWordIndex, resetSentenceEndFlag } = useTranscriptSync({
     transcript: lesson?.transcript || [],
     isPlaying,
     getCurrentTime: async () => {
@@ -661,6 +661,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
           <TranscriptView
             transcript={transcript}
             activeSentenceIndex={activeSentenceIndex}
+            activeWordIndex={activeWordIndex}
             onSentencePress={handleSentencePress}
             onWordPress={handleWordPress}
             showTranslation={settings.showTranslation}

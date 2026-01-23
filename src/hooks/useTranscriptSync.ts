@@ -1,5 +1,6 @@
 // Custom hook for transcript synchronization with video playback
 // Polling implementation with 300ms accuracy (optimized for battery)
+// Supports word-level karaoke highlighting
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Sentence } from '../types/lesson.types';
@@ -14,11 +15,33 @@ interface UseTranscriptSyncParams {
 
 interface UseTranscriptSyncResult {
   activeSentenceIndex: number;
-  activeWord: number; // For word-level highlighting (future feature)
+  activeWordIndex: number; // For word-level karaoke highlighting
   resetSentenceEndFlag: () => void;
 }
 
-const SYNC_INTERVAL = 300; // 300ms polling interval (optimized for battery)
+const SYNC_INTERVAL = 150; // 150ms polling interval for smoother karaoke
+
+// Find active word index based on current time and wordTimings
+const findActiveWordIndex = (sentence: Sentence | undefined, currentTime: number): number => {
+  if (!sentence || !sentence.wordTimings || sentence.wordTimings.length === 0) {
+    return -1;
+  }
+
+  for (let i = 0; i < sentence.wordTimings.length; i++) {
+    const wordTiming = sentence.wordTimings[i];
+    if (currentTime >= wordTiming.start && currentTime < wordTiming.end) {
+      return i;
+    }
+  }
+
+  // If past all words, return last word
+  const lastWord = sentence.wordTimings[sentence.wordTimings.length - 1];
+  if (currentTime >= lastWord.end) {
+    return sentence.wordTimings.length - 1;
+  }
+
+  return -1;
+};
 
 export const useTranscriptSync = ({
   transcript,
@@ -27,7 +50,7 @@ export const useTranscriptSync = ({
   onSentenceEnd,
 }: UseTranscriptSyncParams): UseTranscriptSyncResult => {
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number>(-1);
-  const [_activeWord, _setActiveWord] = useState<number>(-1); // For future word-level highlighting
+  const [activeWordIndex, setActiveWordIndex] = useState<number>(-1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const sentenceEndCalledRef = useRef<number>(-1);
 
@@ -55,6 +78,7 @@ export const useTranscriptSync = ({
         }
       }
 
+      // Update active sentence index
       if (newIndex !== activeSentenceIndex) {
         if (__DEV__) {
           console.log('[useTranscriptSync] Active sentence changed:', {
@@ -64,11 +88,21 @@ export const useTranscriptSync = ({
           });
         }
         setActiveSentenceIndex(newIndex);
+        setActiveWordIndex(-1); // Reset word index when sentence changes
+      }
+
+      // Update active word index for karaoke effect
+      if (newIndex >= 0 && newIndex < transcript.length) {
+        const currentSentence = transcript[newIndex];
+        const newWordIndex = findActiveWordIndex(currentSentence, currentTime);
+        if (newWordIndex !== activeWordIndex) {
+          setActiveWordIndex(newWordIndex);
+        }
       }
     } catch (error) {
       if (__DEV__) console.error('[useTranscriptSync] Error updating active sentence:', error);
     }
-  }, [transcript, activeSentenceIndex, getCurrentTime, onSentenceEnd]);
+  }, [transcript, activeSentenceIndex, activeWordIndex, getCurrentTime, onSentenceEnd]);
 
   useEffect(() => {
     if (!isPlaying || !transcript || transcript.length === 0) {
@@ -102,9 +136,10 @@ export const useTranscriptSync = ({
 
   return {
     activeSentenceIndex,
-    activeWord: _activeWord, // For future word-level highlighting
+    activeWordIndex,
     resetSentenceEndFlag,
   };
 };
 
 export default useTranscriptSync;
+

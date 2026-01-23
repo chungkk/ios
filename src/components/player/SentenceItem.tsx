@@ -1,4 +1,4 @@
-// SentenceItem component - Single transcript sentence with highlighting
+// SentenceItem component - Single transcript sentence with karaoke highlighting
 
 import React from 'react';
 import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
@@ -9,6 +9,7 @@ import { colors } from '../../styles/theme';
 interface SentenceItemProps {
   sentence: Sentence;
   isActive: boolean;
+  activeWordIndex?: number; // For karaoke word highlighting
   onPress?: () => void;
   onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
@@ -24,6 +25,7 @@ interface SentenceItemProps {
 export const SentenceItem: React.FC<SentenceItemProps> = ({
   sentence,
   isActive,
+  activeWordIndex = -1,
   onPress,
   onWordPress,
   showTranslation = true,
@@ -38,27 +40,39 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
       }
     }
   };
-  // Render text with word-by-word highlighting based on voice recording result
+
+  // Render text with word-by-word highlighting based on voice recording result and karaoke
   const renderText = () => {
     // Split text into words while preserving punctuation
     const words = sentence.text.split(/\s+/);
     const wordComparison = voiceRecordingResult?.wordComparison;
+    const hasKaraoke = isActive && activeWordIndex >= 0 && !wordComparison;
 
     return (
       <Text style={[styles.text, isActive && styles.textActive]}>
         {words.map((word, idx) => {
-          let wordStyle: any = onWordPress ? styles.clickableWord : undefined;
+          let wordStyle: any = null;
 
-          // Apply voice recording color if available
+          // Apply voice recording color if available (takes priority)
           if (wordComparison) {
             const status = wordComparison[idx];
             if (status === 'correct') {
-              wordStyle = [wordStyle, { color: '#10b981' }]; // Green
+              wordStyle = { color: '#10b981' }; // Green
             } else if (status === 'incorrect') {
-              wordStyle = [wordStyle, { color: '#ef4444' }]; // Red
+              wordStyle = { color: '#ef4444' }; // Red
             } else if (status === 'missing') {
-              wordStyle = [wordStyle, { color: '#f59e0b' }]; // Orange
+              wordStyle = { color: '#f59e0b' }; // Orange
             }
+          } else if (hasKaraoke) {
+            // Apply karaoke highlighting only if no voice recording result
+            if (idx < activeWordIndex) {
+              // Words already spoken - subtle muted color
+              wordStyle = styles.wordSpoken;
+            } else if (idx === activeWordIndex) {
+              // Current word being spoken - highlighted with background
+              wordStyle = styles.wordKaraokeActive;
+            }
+            // Future words remain default style
           }
 
           return (
@@ -224,6 +238,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: colors.retroDark,
+  },
+  // Karaoke highlighting styles - clean and minimal
+  wordSpoken: {
+    color: '#6b7280', // Muted gray for spoken words
+  },
+  wordKaraokeActive: {
+    color: colors.retroCoral,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+    textDecorationColor: colors.retroCoral,
   },
 });
 
