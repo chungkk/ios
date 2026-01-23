@@ -561,7 +561,6 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
                 }}
                 onAutoFillWord={(wordIndex, word) => {
                   // Auto-fill the revealed word into input at the correct position
-                  const expectedWords = currentSentence.text.split(' ');
                   const userWords = userInput.trim().split(/\s+/).filter(w => w.length > 0);
 
                   // Pad userWords array to match wordIndex if needed

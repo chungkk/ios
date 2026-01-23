@@ -101,7 +101,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
             await Tts.setDefaultLanguage('de-DE');
             await Tts.speak(cleanW);
           }
-        } catch (ttsErr: any) {
+        } catch {
           // TTS is optional, ignore errors
         }
       } catch (err) {
@@ -113,7 +113,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     };
 
     fetchTranslation();
-  }, [visible, word, context, targetLang]);
+  }, [visible, word, context, targetLang, t]);
 
   // Save word to vocabulary
   const handleSaveWord = useCallback(async () => {
@@ -137,7 +137,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     } finally {
       setIsSaving(false);
     }
-  }, [user, word, translation, context, lessonId, lessonTitle, isSaving]);
+  }, [user, word, translation, context, lessonId, lessonTitle, isSaving, t]);
 
   // Speak word using TTS
   const handleSpeak = useCallback(async () => {

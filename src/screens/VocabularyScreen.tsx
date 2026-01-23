@@ -66,7 +66,7 @@ const VocabularyScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFlashcard, setShowFlashcard] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<WordStatus>('all');
+  const [activeFilter] = useState<WordStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -297,14 +297,6 @@ const VocabularyScreen: React.FC = () => {
       </View>
     );
   };
-
-  // Filter tabs
-  const filterTabs: { key: WordStatus; label: string; count: number }[] = [
-    { key: 'all', label: t('vocabulary.filterAll'), count: stats.total },
-    { key: 'new', label: t('vocabulary.filterNew'), count: stats.new },
-    { key: 'learning', label: t('vocabulary.filterLearning'), count: stats.learning },
-    { key: 'mastered', label: t('vocabulary.filterMastered'), count: stats.mastered },
-  ];
 
   if (loading) return <Loading />;
 

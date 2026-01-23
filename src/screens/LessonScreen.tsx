@@ -118,7 +118,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     setCurrentTime,
     setDuration,
     setPlaybackSpeed,
-    togglePlayPause,
     setIsPlayingFromYouTube,
   } = useVideoPlayer();
 
@@ -182,7 +181,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [settings.autoStop, setIsPlaying, lesson]);
 
   // Transcript sync
-  const { activeSentenceIndex, activeWordIndex, resetSentenceEndFlag } = useTranscriptSync({
+  const { activeSentenceIndex, activeWordIndex } = useTranscriptSync({
     transcript: lesson?.transcript || [],
     isPlaying,
     getCurrentTime: async () => {
@@ -482,29 +481,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     const nextIndex = (currentIndexSpeed + 1) % SPEED_OPTIONS.length;
     setPlaybackSpeed(SPEED_OPTIONS[nextIndex]);
   }, [playbackSpeed, setPlaybackSpeed]);
-
-  // Custom play/pause handler for auto-stop mode
-  const handlePlayPause = useCallback(() => {
-    if (!isPlaying && settings.autoStop) {
-      // When auto-stop is ON and pressing play:
-      const transcript = lesson?.transcript || [];
-      const currentSentence = transcript[activeSentenceIndex];
-
-      if (currentSentence && videoPlayerRef.current) {
-        // 1. Reset the flag so onSentenceEnd can be called again
-        resetSentenceEndFlag();
-        // 2. Seek to start of current sentence
-        videoPlayerRef.current.seekTo(currentSentence.startTime);
-        // 3. Small delay to ensure seek completes before play
-        setTimeout(() => {
-          setIsPlaying(true);
-        }, 100);
-        return;
-      }
-    }
-
-    togglePlayPause();
-  }, [lesson, activeSentenceIndex, isPlaying, settings.autoStop, togglePlayPause, resetSentenceEndFlag, setIsPlaying]);
 
   // Handle word press for translation
   const handleWordPress = useCallback((word: string, context: string) => {
