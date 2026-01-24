@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,11 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import {useAuth} from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
 import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
+import AppleSignInButton from '../../components/auth/AppleSignInButton';
 import {
   validateEmail,
   validateName,
@@ -23,14 +24,14 @@ import {
   getPasswordStrengthLabel,
   getPasswordStrengthColor,
 } from '../../utils/validation';
-import {colors, spacing} from '../../styles/theme';
-import {textStyles} from '../../styles/typography';
-import type {AuthStackScreenProps} from '../../navigation/types';
+import { colors, spacing } from '../../styles/theme';
+import { textStyles } from '../../styles/typography';
+import type { AuthStackScreenProps } from '../../navigation/types';
 
 type RegisterScreenProps = AuthStackScreenProps<'Register'>;
 
-export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
-  const {register, loginWithGoogle} = useAuth();
+export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+  const { register, loginWithGoogle, loginWithApple } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -44,6 +45,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   // Calculate password strength
   const passwordStrength = getPasswordStrength(password);
@@ -108,6 +110,27 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  // Handle Apple Sign-In
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+
+    try {
+      const result = await loginWithApple();
+
+      if (result.success) {
+        console.log('[RegisterScreen] Apple Sign-In successful');
+        navigation.navigate('Main');
+      } else {
+        Alert.alert('Sign In Failed', result.error || 'Apple Sign-In failed');
+      }
+    } catch (error) {
+      console.error('[RegisterScreen] Apple Sign-In error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -192,7 +215,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
                 <Text
                   style={[
                     styles.strengthLabel,
-                    {color: passwordStrengthColor},
+                    { color: passwordStrengthColor },
                   ]}>
                   {passwordStrengthLabel}
                 </Text>
@@ -216,7 +239,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
               title="Create Account"
               onPress={handleRegister}
               loading={loading}
-              disabled={loading || googleLoading}
+              disabled={loading || googleLoading || appleLoading}
               style={styles.registerButton}
             />
           </View>
@@ -232,7 +255,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
           <GoogleSignInButton
             onPress={handleGoogleSignIn}
             loading={googleLoading}
-            disabled={loading || googleLoading}
+            disabled={loading || googleLoading || appleLoading}
+          />
+
+          {/* Apple Sign-In */}
+          <AppleSignInButton
+            onPress={handleAppleSignIn}
+            loading={appleLoading}
+            disabled={loading || googleLoading || appleLoading}
           />
 
           {/* Login Link */}

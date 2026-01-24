@@ -11,6 +11,9 @@ import {
   GoogleSignin,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import appleAuth, {
+  AppleCredentialState,
+} from '@invertase/react-native-apple-authentication';
 
 /**
  * Register new user with email/password
@@ -207,3 +210,50 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
   }
 };
 
+// ===== Apple OAuth Functions =====
+
+/**
+ * Login with Apple Sign-In
+ */
+export const loginWithApple = async (): Promise<AuthResponse> => {
+  try {
+    // Request Apple Sign-In
+    const credential = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+    });
+
+    console.log('[AuthService] Apple Sign-In credential received');
+
+    // Verify credential state
+    const credentialState = await appleAuth.getCredentialStateForUser(credential.user);
+    if (credentialState !== AppleCredentialState.AUTHORIZED) {
+      throw new Error('Apple Sign-In not authorized');
+    }
+
+    // Send identity token to backend for verification
+    const response = await api.post<AuthResponse>('/api/auth/apple', {
+      identityToken: credential.identityToken,
+      user: credential.user,
+      email: credential.email,
+      fullName: credential.fullName,
+    });
+
+    // Save token to Keychain
+    await saveToken(response.data.token);
+
+    // Cache user profile
+    await saveData(STORAGE_KEYS.USER_PROFILE, response.data.user);
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[AuthService] Apple Sign-In error:', error);
+
+    // Handle user cancellation
+    if (error.code === appleAuth.Error.CANCELED) {
+      throw new Error('Apple Sign-In was cancelled');
+    }
+
+    throw error;
+  }
+};

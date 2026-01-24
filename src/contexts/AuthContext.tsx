@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshToken: () => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithApple: () => Promise<{ success: boolean; error?: string }>;
   fetchUserPoints: () => Promise<void>;
   updateUserPoints: (newPoints: number) => void;
   updateDifficultyLevel: (difficultyLevel: string) => Promise<{ success: boolean; error?: string }>;
@@ -191,6 +192,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Login with Apple Sign-In
+  const loginWithApple = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const data = await authService.loginWithApple();
+      setUser(data.user);
+      setUserPoints(data.user.points || 0);
+      return { success: true };
+    } catch (error: any) {
+      console.error('[AuthContext] Apple login error:', error);
+      return {
+        success: false,
+        error: error?.message || 'Apple login failed',
+      };
+    }
+  };
+
   // Update user points (optimistic update)
   const updateUserPoints = (newPoints: number) => {
     setUserPoints(newPoints);
@@ -274,6 +291,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         logout,
         refreshToken,
         loginWithGoogle,
+        loginWithApple,
         fetchUserPoints,
         updateUserPoints,
         updateDifficultyLevel,
