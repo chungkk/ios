@@ -37,7 +37,8 @@
     "version": "Version",
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
-    "statistics": "Learning Statistics"
+    "statistics": "Learning Statistics",
+    "userGuide": "User Guide"
   },
   "legal": {
     "termsTitle": "Terms of Service",
@@ -250,5 +251,22 @@
     "learnMore": "Keep learning to earn points!",
     "processing": "Processing...",
     "error": "An error occurred"
+  },
+  "guide": {
+    "title": "User Guide",
+    "shadowingTitle": "Shadowing Practice",
+    "shadowingDesc": "Shadowing is a language learning method where you listen and repeat after native speakers. It's an effective way to improve pronunciation and intonation.",
+    "howToUse": "📖 How to Use",
+    "shadowingSteps": "1. Select a lesson and tap Shadowing mode\n2. Listen to the sentence\n3. Tap the record button and repeat what you heard\n4. The system will compare and rate your accuracy\n5. Sentences with ≥80% similarity are correct",
+    "tips": "💡 Tips",
+    "shadowingTips": "• Listen carefully before repeating\n• Pay attention to intonation and rhythm\n• Practice multiple times to improve\n• You can adjust video playback speed",
+    "dictationTitle": "Dictation Practice",
+    "dictationDesc": "Dictation is a method of practicing listening by hearing and writing what you hear. It helps improve listening comprehension and spelling.",
+    "dictationSteps": "1. Select a lesson and tap Dictation mode\n2. Listen to the sentence (you can replay)\n3. Type what you hear in the input field\n4. Correct words will turn green\n5. Complete all words to move to next sentence",
+    "hintSystem": "🔍 Hint System",
+    "dictationHints": "• Tap on hidden word boxes to reveal hints\n• First 2 hints per sentence are free\n• From 3rd hint onwards costs 1 point\n• Hints auto-fill into the input field",
+    "dictationTips": "• Listen to the whole sentence first\n• Pay attention to connectors and prepositions\n• Use hints wisely to save points",
+    "pointsTitle": "Points System",
+    "pointsDesc": "• Complete 1 Shadowing sentence correctly: +1 point\n• Complete 1 Dictation sentence: +1 point\n• Complete lesson with 50+ sentences: +20 bonus\n• Complete lesson with 100+ sentences: +50 bonus\n• Use hint (from 3rd time): -1 point\n• Points are used to unlock new lessons"
   }
 }

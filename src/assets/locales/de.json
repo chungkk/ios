@@ -37,7 +37,8 @@
     "version": "Version",
     "termsOfService": "Allgemeine Geschäftsbedingungen",
     "privacyPolicy": "Datenschutzrichtlinie",
-    "statistics": "Lernstatistiken"
+    "statistics": "Lernstatistiken",
+    "userGuide": "Benutzerhandbuch"
   },
   "legal": {
     "termsTitle": "Allgemeine Geschäftsbedingungen",
@@ -250,5 +251,22 @@
     "learnMore": "Lerne weiter, um Punkte zu verdienen!",
     "processing": "Wird bearbeitet...",
     "error": "Ein Fehler ist aufgetreten"
+  },
+  "guide": {
+    "title": "Benutzerhandbuch",
+    "shadowingTitle": "Shadowing-Übung",
+    "shadowingDesc": "Shadowing ist eine Sprachlernmethode, bei der du Muttersprachlern zuhörst und nachsprichst. Es ist ein effektiver Weg, Aussprache und Intonation zu verbessern.",
+    "howToUse": "📖 Anleitung",
+    "shadowingSteps": "1. Wähle eine Lektion und tippe auf Shadowing\n2. Höre dir den Satz an\n3. Tippe auf Aufnahme und wiederhole\n4. Das System vergleicht und bewertet deine Genauigkeit\n5. Sätze mit ≥80% Ähnlichkeit sind korrekt",
+    "tips": "💡 Tipps",
+    "shadowingTips": "• Höre genau zu, bevor du wiederholst\n• Achte auf Betonung und Rhythmus\n• Übe mehrmals zur Verbesserung\n• Du kannst die Wiedergabegeschwindigkeit anpassen",
+    "dictationTitle": "Diktat-Übung",
+    "dictationDesc": "Diktat ist eine Methode zum Hörverstehen, bei der du hörst und aufschreibst, was du hörst. Es verbessert das Hörverstehen und die Rechtschreibung.",
+    "dictationSteps": "1. Wähle eine Lektion und tippe auf Diktat\n2. Höre dir den Satz an (Wiederholen möglich)\n3. Tippe, was du hörst, ins Eingabefeld\n4. Richtige Wörter werden grün\n5. Vervollständige alle Wörter für den nächsten Satz",
+    "hintSystem": "🔍 Hinweis-System",
+    "dictationHints": "• Tippe auf versteckte Wörter für Hinweise\n• Die ersten 2 Hinweise pro Satz sind kostenlos\n• Ab dem 3. Hinweis kostet es 1 Punkt\n• Hinweise werden automatisch eingefügt",
+    "dictationTips": "• Höre erst den ganzen Satz\n• Achte auf Verbindungswörter und Präpositionen\n• Nutze Hinweise klug, um Punkte zu sparen",
+    "pointsTitle": "Punkte-System",
+    "pointsDesc": "• 1 Shadowing-Satz korrekt: +1 Punkt\n• 1 Diktat-Satz abschließen: +1 Punkt\n• Lektion mit 50+ Sätzen: +20 Bonus\n• Lektion mit 100+ Sätzen: +50 Bonus\n• Hinweis nutzen (ab 3. Mal): -1 Punkt\n• Punkte werden zum Freischalten neuer Lektionen verwendet"
   }
 }

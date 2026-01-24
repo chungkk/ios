@@ -49,6 +49,7 @@ const SettingsScreen: React.FC = () => {
   const { settings, toggleHaptic, setNativeLanguage } = useSettings();
   const [showAGBModal, setShowAGBModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showUserGuideModal, setShowUserGuideModal] = useState(false);
 
   const handleLogin = () => {
     navigation.navigate('Auth', { screen: 'Login' });
@@ -313,6 +314,16 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowUserGuideModal(true)} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <Icon name="book" size={22} color={colors.retroYellow} />
+              <Text style={styles.settingText}>{t('settings.userGuide')}</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+
           {/* Rate App - hidden until app is published on App Store
           <TouchableOpacity style={styles.settingItem} onPress={handleRateApp} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
@@ -429,6 +440,61 @@ const SettingsScreen: React.FC = () => {
             <Text style={styles.modalText}>{t('legal.privacy.contactText')}</Text>
 
             <Text style={styles.modalDate}>{t('legal.lastUpdated')}</Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* User Guide Modal */}
+      <Modal visible={showUserGuideModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t('guide.title')}</Text>
+            <TouchableOpacity onPress={() => setShowUserGuideModal(false)} style={styles.modalCloseBtn}>
+              <Icon name="close" size={24} color={colors.retroDark} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
+            {/* Shadowing Guide */}
+            <View style={styles.guideSection}>
+              <View style={styles.guideTitleRow}>
+                <Icon name="mic" size={24} color={colors.retroPurple} />
+                <Text style={styles.guideTitle}>{t('guide.shadowingTitle')}</Text>
+              </View>
+              <Text style={styles.modalText}>{t('guide.shadowingDesc')}</Text>
+
+              <Text style={styles.guideSubtitle}>{t('guide.howToUse')}</Text>
+              <Text style={styles.modalText}>{t('guide.shadowingSteps')}</Text>
+
+              <Text style={styles.guideSubtitle}>{t('guide.tips')}</Text>
+              <Text style={styles.modalText}>{t('guide.shadowingTips')}</Text>
+            </View>
+
+            {/* Dictation Guide */}
+            <View style={styles.guideSection}>
+              <View style={styles.guideTitleRow}>
+                <Icon name="create" size={24} color={colors.retroCoral} />
+                <Text style={styles.guideTitle}>{t('guide.dictationTitle')}</Text>
+              </View>
+              <Text style={styles.modalText}>{t('guide.dictationDesc')}</Text>
+
+              <Text style={styles.guideSubtitle}>{t('guide.howToUse')}</Text>
+              <Text style={styles.modalText}>{t('guide.dictationSteps')}</Text>
+
+              <Text style={styles.guideSubtitle}>{t('guide.hintSystem')}</Text>
+              <Text style={styles.modalText}>{t('guide.dictationHints')}</Text>
+
+              <Text style={styles.guideSubtitle}>{t('guide.tips')}</Text>
+              <Text style={styles.modalText}>{t('guide.dictationTips')}</Text>
+            </View>
+
+            {/* Points System */}
+            <View style={styles.guideSection}>
+              <View style={styles.guideTitleRow}>
+                <Icon name="diamond" size={24} color={colors.retroYellow} />
+                <Text style={styles.guideTitle}>{t('guide.pointsTitle')}</Text>
+              </View>
+              <Text style={styles.modalText}>{t('guide.pointsDesc')}</Text>
+            </View>
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -814,6 +880,33 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  // User Guide styles
+  guideSection: {
+    marginBottom: spacing.xl,
+    padding: spacing.md,
+    backgroundColor: colors.retroCream,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.retroBorder,
+  },
+  guideTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  guideTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  guideSubtitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.retroDark,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
 });
 

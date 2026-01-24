@@ -37,7 +37,8 @@
     "version": "Phiên bản",
     "termsOfService": "Điều khoản dịch vụ",
     "privacyPolicy": "Chính sách bảo mật",
-    "statistics": "Thống kê học tập"
+    "statistics": "Thống kê học tập",
+    "userGuide": "Hướng dẫn sử dụng"
   },
   "legal": {
     "termsTitle": "Điều khoản dịch vụ",
@@ -250,5 +251,22 @@
     "learnMore": "Học thêm để kiếm points!",
     "processing": "Đang xử lý...",
     "error": "Có lỗi xảy ra"
+  },
+  "guide": {
+    "title": "Hướng dẫn sử dụng",
+    "shadowingTitle": "Luyện nói (Shadowing)",
+    "shadowingDesc": "Shadowing là phương pháp luyện nói bằng cách nghe và nhắc lại theo người bản xứ. Đây là cách hiệu quả để cải thiện phát âm và ngữ điệu.",
+    "howToUse": "📖 Cách sử dụng",
+    "shadowingSteps": "1. Chọn một bài học và nhấn vào chế độ Shadowing\n2. Nghe câu được phát\n3. Nhấn nút ghi âm và nhắc lại câu vừa nghe\n4. Hệ thống sẽ so sánh và đánh giá độ chính xác\n5. Câu đạt ≥80% sẽ được tính là đúng",
+    "tips": "💡 Mẹo hay",
+    "shadowingTips": "• Nghe kỹ trước khi nhắc lại\n• Chú ý ngữ điệu và nhịp điệu\n• Luyện tập nhiều lần để cải thiện\n• Có thể điều chỉnh tốc độ video",
+    "dictationTitle": "Nghe chép (Dictation)",
+    "dictationDesc": "Dictation là phương pháp luyện nghe bằng cách nghe và viết lại những gì nghe được. Giúp cải thiện kỹ năng nghe hiểu và chính tả.",
+    "dictationSteps": "1. Chọn một bài học và nhấn vào chế độ Dictation\n2. Nghe câu được phát (có thể nghe lại nhiều lần)\n3. Gõ những gì bạn nghe được vào ô nhập\n4. Các từ đúng sẽ hiện màu xanh\n5. Hoàn thành tất cả các từ để chuyển câu tiếp",
+    "hintSystem": "🔍 Hệ thống gợi ý",
+    "dictationHints": "• Nhấn vào ô từ ẩn để xem gợi ý\n• 2 gợi ý đầu tiên mỗi câu miễn phí\n• Từ gợi ý thứ 3 trở đi sẽ trừ 1 điểm\n• Gợi ý sẽ tự động điền vào ô nhập",
+    "dictationTips": "• Nghe cả câu trước khi viết\n• Chú ý các từ nối và giới từ\n• Sử dụng gợi ý thông minh để tiết kiệm điểm",
+    "pointsTitle": "Hệ thống điểm",
+    "pointsDesc": "• Hoàn thành 1 câu Shadowing đúng: +1 điểm\n• Hoàn thành 1 câu Dictation: +1 điểm\n• Hoàn thành bài học 50+ câu: +20 điểm thưởng\n• Hoàn thành bài học 100+ câu: +50 điểm thưởng\n• Sử dụng gợi ý (từ lần 3): -1 điểm\n• Điểm dùng để mở khóa bài học mới"
   }
 }
