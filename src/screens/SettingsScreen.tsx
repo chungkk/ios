@@ -264,11 +264,12 @@ const SettingsScreen: React.FC = () => {
           <Text style={styles.headerTitle}>⚙️ {t('settings.title')}</Text>
         </View>
 
-        {/* Profile Card */}
+        {/* Profile Card - Compact */}
         {user ? (
           <View style={styles.profileCard}>
             <View style={styles.cardTopBar} />
-            <View style={styles.cardContent}>
+            <View style={styles.profileRow}>
+              {/* Avatar */}
               <View style={styles.avatarContainer}>
                 {user.picture ? (
                   <Image
@@ -283,17 +284,21 @@ const SettingsScreen: React.FC = () => {
                   </View>
                 )}
               </View>
-              <Text style={styles.userName}>{user.name || 'User'}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
+
+              {/* User Info */}
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>{user.name || 'User'}</Text>
+                <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
+              </View>
 
               {/* Stats */}
               <View style={styles.statsRow}>
                 <View style={styles.statBadge}>
-                  <Icon name="diamond" size={18} color={colors.retroYellow} />
+                  <Text style={styles.statIcon}>💎</Text>
                   <Text style={styles.statBadgeValue}>{userPoints || 0}</Text>
                 </View>
                 <View style={styles.statBadge}>
-                  <Icon name="flame" size={18} color={colors.retroCoral} />
+                  <Text style={styles.statIcon}>🔥</Text>
                   <Text style={styles.statBadgeValue}>{streakValue}</Text>
                 </View>
               </View>
@@ -861,7 +866,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   cardTopBar: {
-    height: 5,
+    height: 4,
     backgroundColor: colors.retroPurple,
   },
   cardContent: {
@@ -870,92 +875,94 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
   },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: '#fff',
+    gap: 12,
+  },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.retroPurple,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: colors.retroPurple,
-    shadowColor: colors.retroPurple,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  avatarImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 4,
-    borderColor: colors.retroPurple,
-  },
-  editBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.retroCyan,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#fff',
-    shadowColor: colors.retroCyan,
+    shadowColor: colors.retroPurple,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
   },
+  avatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.retroCyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
   avatarText: {
-    fontSize: 36,
+    fontSize: 22,
     fontWeight: '800',
     color: '#fff',
   },
+  userInfo: {
+    flex: 1,
+  },
   userName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.retroDark,
-    marginBottom: 4,
-    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 20,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.retroPurple,
+    opacity: 0.85,
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 6,
   },
   statBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 25,
-    borderWidth: 2,
+    backgroundColor: colors.retroCream,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: colors.retroBorder,
-    gap: 8,
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    gap: 4,
+  },
+  statIcon: {
+    fontSize: 14,
   },
   statBadgeValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroDark,
   },
   statItem: {
     alignItems: 'center',
