@@ -38,7 +38,19 @@
     "termsOfService": "Điều khoản dịch vụ",
     "privacyPolicy": "Chính sách bảo mật",
     "statistics": "Thống kê học tập",
-    "userGuide": "Hướng dẫn sử dụng"
+    "userGuide": "Hướng dẫn sử dụng",
+    "accountManagement": "Quản lý tài khoản",
+    "changeName": "Đổi tên",
+    "changePassword": "Đổi mật khẩu",
+    "newName": "Tên mới",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "nameUpdated": "Đã cập nhật tên thành công",
+    "passwordChanged": "Đã đổi mật khẩu thành công",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp",
+    "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+    "oauthPasswordNote": "Bạn đăng nhập bằng tài khoản xã hội và không thể đổi mật khẩu"
   },
   "legal": {
     "termsTitle": "Điều khoản dịch vụ",

@@ -330,9 +330,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   registerLink: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.retroCyan,
-    fontWeight: '700',
+    fontWeight: '800',
+    textDecorationLine: 'underline',
   },
 });
 

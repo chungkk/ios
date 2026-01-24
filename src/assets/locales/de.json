@@ -38,7 +38,19 @@
     "termsOfService": "Allgemeine Geschäftsbedingungen",
     "privacyPolicy": "Datenschutzrichtlinie",
     "statistics": "Lernstatistiken",
-    "userGuide": "Benutzerhandbuch"
+    "userGuide": "Benutzerhandbuch",
+    "accountManagement": "Kontoverwaltung",
+    "changeName": "Name ändern",
+    "changePassword": "Passwort ändern",
+    "newName": "Neuer Name",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "nameUpdated": "Name erfolgreich geändert",
+    "passwordChanged": "Passwort erfolgreich geändert",
+    "passwordMismatch": "Passwörter stimmen nicht überein",
+    "passwordTooShort": "Passwort muss mindestens 6 Zeichen haben",
+    "oauthPasswordNote": "Sie haben sich mit einem sozialen Konto angemeldet und können das Passwort nicht ändern"
   },
   "legal": {
     "termsTitle": "Allgemeine Geschäftsbedingungen",

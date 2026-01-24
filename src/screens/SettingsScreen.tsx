@@ -23,8 +23,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../contexts/SettingsContext';
 import { Loading } from '../components/common/Loading';
 import Button from '../components/common/Button';
+import { TextInput } from '../components/common/TextInput';
+import Toast from '../components/common/Toast';
 import { colors, spacing } from '../styles/theme';
 import { BASE_URL } from '../services/api';
+import { changePassword } from '../services/auth.service';
 
 const LANGUAGES = [
   { value: 'de', label: 'Deutsch' },
@@ -50,6 +53,20 @@ const SettingsScreen: React.FC = () => {
   const [showAGBModal, setShowAGBModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
+  const [showChangeNameModal, setShowChangeNameModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  // Form state for account management
+  const [newName, setNewName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const handleLogin = () => {
     navigation.navigate('Auth', { screen: 'Login' });
@@ -152,6 +169,62 @@ const SettingsScreen: React.FC = () => {
       [{ text: t('common.ok') }]
     );
   }, [t]);
+
+  // Handle save name
+  const handleSaveName = useCallback(async () => {
+    if (!newName.trim()) {
+      return;
+    }
+    setIsSubmitting(true);
+    setFormError('');
+    try {
+      if (updateUser) {
+        await updateUser({ name: newName.trim() });
+        setShowChangeNameModal(false);
+        setNewName('');
+        setToastMessage(t('settings.nameUpdated'));
+        setToastVisible(true);
+      }
+    } catch (error: any) {
+      setFormError(error.message || t('settings.updateFailed'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [newName, updateUser, t]);
+
+  // Handle save password
+  const handleSavePassword = useCallback(async () => {
+    setFormError('');
+
+    // Validation
+    if (newPassword.length < 6) {
+      setFormError(t('settings.passwordTooShort'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setFormError(t('settings.passwordMismatch'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await changePassword({
+        currentPassword,
+        newPassword,
+      });
+      setShowChangePasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setToastMessage(t('settings.passwordChanged'));
+      setToastVisible(true);
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || t('settings.updateFailed');
+      setFormError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentPassword, newPassword, confirmPassword, t]);
 
   // TODO: Uncomment when rate app UI is enabled
   // const handleRateApp = useCallback(() => {
@@ -299,6 +372,54 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Account Management Section - Only for logged in users */}
+        {user && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings.accountManagement')}</Text>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                setNewName(user.name || '');
+                setFormError('');
+                setShowChangeNameModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingLeft}>
+                <Icon name="person" size={22} color={colors.retroCyan} />
+                <Text style={styles.settingText}>{t('settings.changeName')}</Text>
+              </View>
+              <View style={styles.settingRight}>
+                <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Only show Change Password for email-authenticated users (hide for OAuth) */}
+            {user.authProvider !== 'google' && user.authProvider !== 'apple' && (
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={() => {
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setFormError('');
+                  setShowChangePasswordModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.settingLeft}>
+                  <Icon name="key" size={22} color={colors.retroYellow} />
+                  <Text style={styles.settingText}>{t('settings.changePassword')}</Text>
+                </View>
+                <View style={styles.settingRight}>
+                  <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* About Section */}
         <View style={styles.section}>
@@ -498,6 +619,117 @@ const SettingsScreen: React.FC = () => {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Change Name Modal */}
+      <Modal visible={showChangeNameModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainerDark}>
+          <View style={styles.modalHeaderDark}>
+            <Text style={styles.modalTitleDark}>{t('settings.changeName')}</Text>
+            <TouchableOpacity
+              onPress={() => setShowChangeNameModal(false)}
+              style={styles.modalCloseBtn}
+            >
+              <Icon name="close" size={24} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.formContent}>
+            <TextInput
+              label={t('settings.newName')}
+              value={newName}
+              onChangeText={setNewName}
+              autoCapitalize="words"
+              autoFocus
+              error={formError}
+            />
+
+            <View style={styles.formButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowChangeNameModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveButton, isSubmitting && styles.saveButtonDisabled]}
+                onPress={handleSaveName}
+                disabled={isSubmitting || !newName.trim()}
+              >
+                <Text style={styles.saveButtonText}>
+                  {isSubmitting ? t('common.loading') : t('common.save')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal visible={showChangePasswordModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainerDark}>
+          <View style={styles.modalHeaderDark}>
+            <Text style={styles.modalTitleDark}>{t('settings.changePassword')}</Text>
+            <TouchableOpacity
+              onPress={() => setShowChangePasswordModal(false)}
+              style={styles.modalCloseBtn}
+            >
+              <Icon name="close" size={24} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.formContent} keyboardShouldPersistTaps="handled">
+            <TextInput
+              label={t('settings.currentPassword')}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              variant="password"
+              autoFocus
+            />
+            <TextInput
+              label={t('settings.newPassword')}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              variant="password"
+            />
+            <TextInput
+              label={t('settings.confirmPassword')}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              variant="password"
+              error={formError}
+            />
+
+            <View style={styles.formButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowChangePasswordModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  (isSubmitting || !currentPassword || !newPassword || !confirmPassword) &&
+                  styles.saveButtonDisabled,
+                ]}
+                onPress={handleSavePassword}
+                disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}
+              >
+                <Text style={styles.saveButtonText}>
+                  {isSubmitting ? t('common.loading') : t('common.save')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Success Toast */}
+      <Toast
+        visible={toastVisible}
+        type="success"
+        title={t('common.success')}
+        message={toastMessage}
+        onDismiss={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -907,6 +1139,72 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
+  },
+  // Dark modal styles (for account management)
+  modalContainerDark: {
+    flex: 1,
+    backgroundColor: colors.bgPrimary,
+  },
+  modalHeaderDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.retroBorder,
+  },
+  modalTitleDark: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  formContent: {
+    flex: 1,
+    padding: spacing.lg,
+  },
+  formButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.retroPurple,
+    borderWidth: 2,
+    borderColor: colors.retroPurple,
+    alignItems: 'center',
+    shadowColor: colors.retroPurple,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  saveButtonDisabled: {
+    backgroundColor: colors.textMuted,
+    borderColor: colors.textMuted,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
 

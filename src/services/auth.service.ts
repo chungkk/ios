@@ -4,6 +4,7 @@ import {
   RegisterRequest,
   LoginRequest,
   UpdateProfileRequest,
+  ChangePasswordRequest,
 } from '../types/user.types';
 import { AuthResponse, MeResponse, PointsResponse } from '../types/api.types';
 import { saveToken, removeToken, saveData, STORAGE_KEYS } from './storage.service';
@@ -105,6 +106,18 @@ export const updateProfile = async (data: UpdateProfileRequest): Promise<User> =
     return response.data.user;
   } catch (error) {
     console.error('[AuthService] UpdateProfile error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Change user password (for email-authenticated users only)
+ */
+export const changePassword = async (data: ChangePasswordRequest): Promise<void> => {
+  try {
+    await api.put('/api/auth/change-password', data);
+  } catch (error) {
+    console.error('[AuthService] ChangePassword error:', error);
     throw error;
   }
 };

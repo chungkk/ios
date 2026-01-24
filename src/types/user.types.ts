@@ -1,6 +1,6 @@
 // User entity types - migrated from Next.js ppgeil project
 
-export type AuthProvider = 'email' | 'google';
+export type AuthProvider = 'email' | 'google' | 'apple';
 export type NativeLanguage = 'vi' | 'en' | 'de';
 export type UserLevel = 'beginner' | 'experienced';
 export type DifficultyLevel = 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | 'c2';
@@ -43,4 +43,10 @@ export interface UpdateProfileRequest {
   nativeLanguage?: NativeLanguage;
   preferredDifficultyLevel?: DifficultyLevel;
   level?: string;
+}
+
+// Change password request
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }

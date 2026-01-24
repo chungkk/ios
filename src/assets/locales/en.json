@@ -38,7 +38,19 @@
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
     "statistics": "Learning Statistics",
-    "userGuide": "User Guide"
+    "userGuide": "User Guide",
+    "accountManagement": "Account Management",
+    "changeName": "Change Name",
+    "changePassword": "Change Password",
+    "newName": "New Name",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "nameUpdated": "Name updated successfully",
+    "passwordChanged": "Password changed successfully",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "oauthPasswordNote": "You signed in with a social account and cannot change password"
   },
   "legal": {
     "termsTitle": "Terms of Service",
