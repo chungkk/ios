@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing } from '../styles/theme';
+import { useAuth } from '../hooks/useAuth';
 import {
   getStatsSummary,
   getWeeklyActivity,
@@ -30,7 +31,8 @@ type TimePeriod = 'today' | 'week' | 'month';
 
 const StatisticsScreen: React.FC = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const [stats, setStats] = useState<StatsSummary | null>(null);
   const [weeklyActivity, setWeeklyActivity] = useState<WeeklyActivity | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
@@ -38,6 +40,10 @@ const StatisticsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const loadStats = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       const [summary, activity] = await Promise.all([
         getStatsSummary(),
@@ -50,7 +56,7 @@ const StatisticsScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadStats();
@@ -145,11 +151,51 @@ const StatisticsScreen: React.FC = () => {
   //   );
   // };
 
+  // Handle login navigation
+  const handleLogin = () => {
+    navigation.navigate('Auth', { screen: 'Login' });
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Not logged in state
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>📊 {t('statistics.title')}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+            <Icon name="close" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Not Logged In Card */}
+        <View style={styles.notLoggedInContainer}>
+          <View style={styles.notLoggedInCard}>
+            <View style={styles.notLoggedInAccent} />
+            <View style={styles.notLoggedInContent}>
+              <Text style={styles.notLoggedInEmoji}>📊</Text>
+              <Text style={styles.notLoggedInTitle}>{t('statistics.title')}</Text>
+              <View style={styles.notLoggedInDivider} />
+              <Icon name="lock-closed" size={40} color={colors.retroPurple} style={styles.notLoggedInIcon} />
+              <Text style={styles.notLoggedInMessage}>{t('profile.loginRequired')}</Text>
+              <Text style={styles.notLoggedInHint}>{t('statistics.loginToView')}</Text>
+
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Icon name="log-in-outline" size={20} color="#fff" />
+                <Text style={styles.loginButtonText}>{t('profile.login')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -199,15 +245,6 @@ const StatisticsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Summary Hero Card */}
-        <View style={styles.heroRow}>
-          <View style={[styles.heroCard, { backgroundColor: colors.retroYellow }]}>
-            <Icon name="diamond" size={24} color={colors.retroDark} />
-            <Text style={styles.heroValue}>+{totalPoints}</Text>
-            <Text style={styles.heroLabel}>{t('statistics.diamondsEarned')}</Text>
-          </View>
-        </View>
-
         {/* Shadowing Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -236,13 +273,7 @@ const StatisticsScreen: React.FC = () => {
                     {currentStats?.shadowing.incorrect || 0}
                   </Text>
                 </View>
-                <View style={styles.statLine}>
-                  <Text style={styles.statLabel}>{t('statistics.diamonds')}:</Text>
-                  <View style={styles.diamondInline}>
-                    <Icon name="diamond" size={16} color={colors.retroYellow} />
-                    <Text style={styles.statValue}>{currentStats?.shadowing.pointsEarned || 0}</Text>
-                  </View>
-                </View>
+
               </View>
               <View style={styles.progressContainer}>
                 <View style={[styles.progressCircle, { borderColor: colors.retroPurple }]}>
@@ -267,8 +298,14 @@ const StatisticsScreen: React.FC = () => {
             <View style={styles.statRow}>
               <View style={styles.statColumn}>
                 <View style={styles.statLine}>
-                  <Text style={styles.statLabel}>{t('statistics.completed')}:</Text>
+                  <Text style={styles.statLabel}>{t('statistics.completedSentences')}:</Text>
                   <Text style={styles.statValue}>{currentStats?.dictation.completed || 0}</Text>
+                </View>
+                <View style={styles.statLine}>
+                  <Text style={styles.statLabel}>{t('statistics.wordsCompleted')}:</Text>
+                  <Text style={[styles.statValue, { color: colors.success }]}>
+                    {currentStats?.dictation.wordsCompleted || 0}
+                  </Text>
                 </View>
                 <View style={styles.statLine}>
                   <Text style={styles.statLabel}>{t('statistics.hintsUsed')}:</Text>
@@ -276,18 +313,11 @@ const StatisticsScreen: React.FC = () => {
                     {currentStats?.dictation.hintsUsed || 0}
                   </Text>
                 </View>
-                <View style={styles.statLine}>
-                  <Text style={styles.statLabel}>{t('statistics.diamonds')}:</Text>
-                  <View style={styles.diamondInline}>
-                    <Icon name="diamond" size={16} color={colors.retroYellow} />
-                    <Text style={styles.statValue}>{currentStats?.dictation.pointsEarned || 0}</Text>
-                  </View>
-                </View>
               </View>
               <View style={styles.progressContainer}>
                 <View style={[styles.progressCircle, { borderColor: colors.retroCoral }]}>
-                  <Icon name="checkmark-circle" size={28} color={colors.retroCoral} />
-                  <Text style={styles.progressLabel}>{currentStats?.dictation.completed || 0} câu</Text>
+                  <Text style={[styles.progressPercent, { color: colors.retroCoral }]}>{currentStats?.dictation.wordsCompleted || 0}</Text>
+                  <Text style={styles.progressLabel}>{t('statistics.words')}</Text>
                 </View>
               </View>
             </View>
@@ -308,37 +338,53 @@ const StatisticsScreen: React.FC = () => {
               <View style={styles.chartLegend}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: colors.retroPurple }]} />
-                  <Text style={styles.legendText}>Shadowing</Text>
+                  <Text style={styles.legendText}>{t('statistics.shadowing')}</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: colors.retroCoral }]} />
-                  <Text style={styles.legendText}>Dictation</Text>
+                  <Text style={styles.legendText}>{t('statistics.dictation')}</Text>
                 </View>
               </View>
               <View style={styles.chartBars}>
-                {weeklyActivity.dates.map((date, index) => (
-                  <View key={date} style={styles.chartColumn}>
-                    <View style={styles.barContainer}>
-                      {/* Shadowing bar */}
-                      <View
-                        style={[
-                          styles.bar,
-                          styles.barShadowing,
-                          { height: Math.max(4, (weeklyActivity.shadowing[index] / maxChartValue) * 80) },
-                        ]}
-                      />
-                      {/* Dictation bar */}
-                      <View
-                        style={[
-                          styles.bar,
-                          styles.barDictation,
-                          { height: Math.max(4, (weeklyActivity.dictation[index] / maxChartValue) * 80) },
-                        ]}
-                      />
+                {weeklyActivity.dates.map((date, index) => {
+                  const shadowingCount = weeklyActivity.shadowing[index] || 0;
+                  const dictationCount = weeklyActivity.dictation[index] || 0;
+                  const shadowingHeight = Math.max(4, (shadowingCount / maxChartValue) * 100);
+                  const dictationHeight = Math.max(4, (dictationCount / maxChartValue) * 100);
+
+                  return (
+                    <View key={date} style={styles.chartColumn}>
+                      {/* Numbers above bars */}
+                      <View style={styles.barValuesRow}>
+                        <Text style={[styles.barValue, { color: colors.retroPurple }]}>
+                          {shadowingCount > 0 ? shadowingCount : ''}
+                        </Text>
+                        <Text style={[styles.barValue, { color: colors.retroCoral }]}>
+                          {dictationCount > 0 ? dictationCount : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.barContainer}>
+                        {/* Shadowing bar */}
+                        <View
+                          style={[
+                            styles.bar,
+                            styles.barShadowing,
+                            { height: shadowingHeight },
+                          ]}
+                        />
+                        {/* Dictation bar */}
+                        <View
+                          style={[
+                            styles.bar,
+                            styles.barDictation,
+                            { height: dictationHeight },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.chartLabel}>{formatDayName(date)}</Text>
                     </View>
-                    <Text style={styles.chartLabel}>{formatDayName(date)}</Text>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             </View>
           </View>
@@ -497,18 +543,20 @@ const styles = StyleSheet.create({
   statLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    marginBottom: 10,
   },
   statLabel: {
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
+    width: 100,
   },
   statValue: {
     fontSize: 18,
     fontWeight: '800',
     color: colors.retroDark,
+    width: 50,
+    textAlign: 'left',
   },
   progressContainer: {
     alignItems: 'center',
@@ -538,6 +586,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 115,
+    gap: 2,
+    flexShrink: 0,
   },
   progressRingBg: {
     borderColor: colors.bgSecondary,
@@ -577,8 +632,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    height: 120,
-    paddingTop: 20,
+    height: 150,
+    paddingTop: 10,
   },
   chartColumn: {
     alignItems: 'center',
@@ -587,12 +642,25 @@ const styles = StyleSheet.create({
   barContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 80,
+    height: 100,
+    gap: 3,
+  },
+  barValuesRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 2,
+    marginBottom: 4,
+    minHeight: 16,
+  },
+  barValue: {
+    fontSize: 10,
+    fontWeight: '800',
+    minWidth: 14,
+    textAlign: 'center',
   },
   bar: {
-    width: 12,
-    borderRadius: 4,
+    width: 14,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: colors.retroBorder,
   },
@@ -624,6 +692,80 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textLight,
     lineHeight: 18,
+  },
+  // Not Logged In State
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  notLoggedInCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    overflow: 'hidden',
+  },
+  notLoggedInAccent: {
+    height: 6,
+    backgroundColor: colors.retroCyan,
+  },
+  notLoggedInContent: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  notLoggedInEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  notLoggedInTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.retroDark,
+    marginBottom: 16,
+  },
+  notLoggedInDivider: {
+    width: 60,
+    height: 3,
+    backgroundColor: colors.retroYellow,
+    borderRadius: 2,
+    marginBottom: 20,
+  },
+  notLoggedInIcon: {
+    marginBottom: 12,
+  },
+  notLoggedInMessage: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.retroDark,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  notLoggedInHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.retroPurple,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: 10,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
 

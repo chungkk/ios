@@ -221,11 +221,15 @@
     "incorrect": "Incorrect",
     "avgSimilarity": "Avg. Match",
     "completed": "Completed",
+    "completedSentences": "Sentences",
+    "wordsCompleted": "Words",
+    "words": "words",
     "hintsUsed": "Hints",
     "accuracy": "Accuracy",
     "diamonds": "Diamonds",
     "weeklyActivity": "Weekly Activity",
-    "tip": "Practice daily to build your streak and earn more diamonds!"
+    "tip": "Practice daily to build your streak and earn more diamonds!",
+    "loginToView": "Login to view your learning statistics"
   },
   "unlock": {
     "title": "Unlock Lesson",

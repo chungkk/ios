@@ -457,6 +457,7 @@ const styles = StyleSheet.create({
   },
   // Header Card
   headerCard: {
+    marginHorizontal: spacing.md,
     marginVertical: spacing.md,
     padding: spacing.md,
     backgroundColor: colors.retroCream,
@@ -553,6 +554,7 @@ const styles = StyleSheet.create({
   },
   // Word List
   list: {
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
   },
   wordCard: {

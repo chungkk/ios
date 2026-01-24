@@ -221,11 +221,15 @@
     "incorrect": "Falsch",
     "avgSimilarity": "Ø Ähnlichkeit",
     "completed": "Fertig",
+    "completedSentences": "Sätze",
+    "wordsCompleted": "Wörter",
+    "words": "Wörter",
     "hintsUsed": "Tipps",
     "accuracy": "Genauigkeit",
     "diamonds": "Diamanten",
     "weeklyActivity": "Wochenaktivität",
-    "tip": "Übe täglich, um deine Serie aufzubauen und mehr Diamanten zu verdienen!"
+    "tip": "Übe täglich, um deine Serie aufzubauen und mehr Diamanten zu verdienen!",
+    "loginToView": "Melde dich an, um deine Lernstatistiken zu sehen"
   },
   "unlock": {
     "title": "Lektion freischalten",

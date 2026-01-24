@@ -221,11 +221,15 @@
     "incorrect": "Sai",
     "avgSimilarity": "TB độ giống",
     "completed": "Hoàn thành",
+    "completedSentences": "Câu",
+    "wordsCompleted": "Từ",
+    "words": "từ",
     "hintsUsed": "Gợi ý",
     "accuracy": "Độ chính xác",
     "diamonds": "Kim cương",
     "weeklyActivity": "Hoạt động tuần",
-    "tip": "Luyện tập hàng ngày để duy trì chuỗi và kiếm nhiều kim cương hơn!"
+    "tip": "Luyện tập mỗi ngày để xây dựng chuỗi và kiếm thêm kim cương!",
+    "loginToView": "Đăng nhập để xem thống kê học tập của bạn"
   },
   "unlock": {
     "title": "Mở khóa bài học",

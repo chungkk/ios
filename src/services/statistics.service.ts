@@ -20,7 +20,8 @@ export interface ShadowingStats {
 
 export interface DictationStats {
   completed: number;          // Số câu hoàn thành đúng
-  hintsUsed: number;          // Số hint đã dùng
+  wordsCompleted: number;     // Số từ đã hoàn thành
+  hintsUsed: number;          // Số hint đã dùng (số từ được gợi ý)
   pointsEarned: number;
   studyTimeSeconds: number;
 }
@@ -60,6 +61,7 @@ const getEmptyDayStats = (date: string): DailyStats => ({
   },
   dictation: {
     completed: 0,
+    wordsCompleted: 0,
     hintsUsed: 0,
     pointsEarned: 0,
     studyTimeSeconds: 0,
@@ -189,7 +191,8 @@ export const recordSingleShadowingSentence = async (data: {
  * Record a dictation sentence completion
  */
 export const recordDictationComplete = async (data: {
-  hintsUsed: number;
+  wordsInSentence: number;  // Số từ trong câu
+  hintsUsed: number;        // Số từ đã dùng gợi ý
   pointsEarned: number;
 }): Promise<void> => {
   try {
@@ -201,11 +204,13 @@ export const recordDictationComplete = async (data: {
     }
 
     allStats[today].dictation.completed += 1;
+    allStats[today].dictation.wordsCompleted += data.wordsInSentence || 0;
     allStats[today].dictation.hintsUsed += data.hintsUsed;
     allStats[today].dictation.pointsEarned += data.pointsEarned;
 
     await saveDailyStats(allStats);
     console.log('[StatisticsService] Recorded dictation complete:', {
+      wordsInSentence: data.wordsInSentence,
       hintsUsed: data.hintsUsed,
       todayStats: allStats[today].dictation,
     });
@@ -260,6 +265,7 @@ export const recordSingleDictationSentence = async (data: {
 }): Promise<void> => {
   if (data.correct) {
     await recordDictationComplete({
+      wordsInSentence: 0,
       hintsUsed: 0,
       pointsEarned: data.pointsEarned,
     });
@@ -308,6 +314,7 @@ const aggregateStats = (allStats: Record<string, DailyStats>, startDate: Date, e
 
       // Dictation
       result.dictation.completed += dayStats.dictation.completed;
+      result.dictation.wordsCompleted += dayStats.dictation.wordsCompleted || 0;
       result.dictation.hintsUsed += dayStats.dictation.hintsUsed;
       result.dictation.pointsEarned += dayStats.dictation.pointsEarned;
       result.dictation.studyTimeSeconds += dayStats.dictation.studyTimeSeconds;

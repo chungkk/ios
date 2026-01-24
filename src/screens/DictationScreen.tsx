@@ -283,8 +283,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
 
       // Record statistics for this single sentence (with hints tracking)
       const hintsForThisSentence = revealCount[currentIndex] || 0;
-      console.log('[DictationScreen] Recording stats for completed sentence:', currentIndex, 'hints:', hintsForThisSentence);
-      recordDictationComplete({ hintsUsed: hintsForThisSentence, pointsEarned: 1 })
+      const wordsInSentence = currentSentence.text.split(' ').length;
+      console.log('[DictationScreen] Recording stats for completed sentence:', currentIndex, 'words:', wordsInSentence, 'hints:', hintsForThisSentence);
+      recordDictationComplete({ wordsInSentence, hintsUsed: hintsForThisSentence, pointsEarned: 1 })
         .then(() => console.log('[DictationScreen] Stats recorded successfully'))
         .catch(err => console.error('[DictationScreen] Stats error:', err));
 
