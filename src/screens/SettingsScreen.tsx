@@ -445,7 +445,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
     padding: spacing.md,
@@ -465,7 +464,7 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
   },
   profileCard: {
-    margin: spacing.md,
+    marginVertical: spacing.md,
     backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     borderRadius: 20,
     borderWidth: 2,
@@ -478,7 +477,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   loginCard: {
-    margin: spacing.md,
+    marginVertical: spacing.md,
     backgroundColor: '#fff',
     borderRadius: 16,
     borderWidth: 2,
@@ -494,7 +493,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: spacing.md,
     marginBottom: spacing.md,
     padding: spacing.lg,
     backgroundColor: '#1a1a2e',
@@ -675,7 +673,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.retroBorder,
   },
   section: {
-    marginHorizontal: spacing.md,
     marginTop: spacing.lg,
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -747,7 +744,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   logoutSection: {
-    marginHorizontal: spacing.md,
     marginTop: spacing.xl,
   },
   version: {

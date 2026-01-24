@@ -318,7 +318,6 @@ const styles = StyleSheet.create({
   },
   // Welcome Header
   header: {
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   welcomeRow: {
@@ -402,7 +401,6 @@ const styles = StyleSheet.create({
   // Neo-Retro Category Section - Compact
   categorySection: {
     marginBottom: 16,
-    marginHorizontal: spacing.sm,
     padding: 14,
     backgroundColor: colors.retroCream,
     borderWidth: 2,

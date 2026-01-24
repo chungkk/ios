@@ -8,8 +8,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {colors, spacing, borderRadius, shadows} from '../../styles/theme';
-import {textStyles} from '../../styles/typography';
+import { colors, spacing, borderRadius, shadows } from '../../styles/theme';
+import { textStyles } from '../../styles/typography';
 
 interface GoogleSignInButtonProps {
   onPress: () => void;
@@ -51,11 +51,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#ffffff',
     borderWidth: 2,
-    borderColor: colors.borderColor,
-    borderRadius: borderRadius.medium,
-    height: 48,
-    paddingHorizontal: spacing.lg,
-    ...shadows.sm,
+    borderColor: '#e0e0e0',
+    borderRadius: 14,
+    height: 56,
+    paddingHorizontal: spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   button_disabled: {
     opacity: 0.5,
@@ -66,11 +70,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   googleIcon: {
-    marginRight: spacing.sm,
+    marginRight: 12,
   },
   buttonText: {
-    ...textStyles.button,
+    fontSize: 16,
+    fontWeight: '700',
     color: '#1a1a1a',
+    letterSpacing: 0.3,
   },
 });
 

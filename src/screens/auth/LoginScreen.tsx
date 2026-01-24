@@ -20,7 +20,6 @@ import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
 import AppleSignInButton from '../../components/auth/AppleSignInButton';
 import { validateEmail, validateRequired } from '../../utils/validation';
 import { colors, spacing } from '../../styles/theme';
-import { textStyles } from '../../styles/typography';
 import type { AuthStackScreenProps } from '../../navigation/types';
 
 type LoginScreenProps = AuthStackScreenProps<'Login'>;
@@ -37,37 +36,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
 
-  // Validate form
   const validateForm = (): boolean => {
     const emailErr = validateEmail(email);
     const passwordErr = validateRequired(password, 'Password');
-
     setEmailError(emailErr);
     setPasswordError(passwordErr);
-
     return !emailErr && !passwordErr;
   };
 
-  // Trigger error vibration (only if enabled in settings)
   const triggerErrorVibration = () => {
     if (!settings.hapticEnabled) return;
     Vibration.vibrate([0, 50, 50, 50]);
   };
 
-  // Handle login submit
   const handleLogin = async () => {
     if (!validateForm()) {
       triggerErrorVibration();
       return;
     }
-
     setLoading(true);
-
     try {
       const result = await login(email.trim(), password);
-
       if (result.success) {
-        console.log('[LoginScreen] Login successful');
         navigation.navigate('Main');
       } else {
         triggerErrorVibration();
@@ -82,15 +72,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Handle Google Sign-In
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-
     try {
       const result = await loginWithGoogle();
-
       if (result.success) {
-        console.log('[LoginScreen] Google Sign-In successful');
         navigation.navigate('Main');
       } else {
         triggerErrorVibration();
@@ -105,15 +91,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Handle Apple Sign-In
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-
     try {
       const result = await loginWithApple();
-
       if (result.success) {
-        console.log('[LoginScreen] Apple Sign-In successful');
         navigation.navigate('Main');
       } else {
         triggerErrorVibration();
@@ -128,12 +110,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Navigate to Register screen
   const handleRegisterPress = () => {
     navigation.navigate('Register');
   };
 
-  // Close modal
   const handleClose = () => {
     navigation.getParent()?.goBack();
   };
@@ -142,7 +122,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Close Button */}
       <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-        <Icon name="close" size={24} color={colors.retroDark} />
+        <Icon name="close" size={22} color={colors.retroDark} />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -152,15 +132,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
+
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>
-              Sign in to continue learning German
-            </Text>
+            <View style={styles.logoBadge}>
+              <Text style={styles.logoEmoji}>🇩🇪</Text>
+            </View>
+            <Text style={styles.title}>Willkommen!</Text>
+            <Text style={styles.subtitle}>Sign in to continue learning German</Text>
           </View>
 
-          {/* Login Form */}
+          {/* Form */}
           <View style={styles.form}>
             <TextInput
               label="Email"
@@ -202,18 +184,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerBadge}>
+              <Text style={styles.dividerText}>OR</Text>
+            </View>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Google Sign-In */}
+          {/* Social Login */}
           <GoogleSignInButton
             onPress={handleGoogleSignIn}
             loading={googleLoading}
             disabled={loading || googleLoading || appleLoading}
           />
 
-          {/* Apple Sign-In */}
           <AppleSignInButton
             onPress={handleAppleSignIn}
             loading={appleLoading}
@@ -242,9 +225,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.retroCream,
     borderWidth: 2,
     borderColor: colors.retroBorder,
@@ -252,10 +235,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
     shadowColor: '#1a1a2e',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.15,
     shadowRadius: 0,
-    elevation: 3,
+    elevation: 4,
   },
   keyboardView: {
     flex: 1,
@@ -263,27 +246,53 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.xxl + 20,
     paddingBottom: spacing.xl,
   },
+  // Header
   header: {
+    alignItems: 'center',
     marginBottom: spacing.xl,
   },
+  logoBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: colors.retroCream,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  logoEmoji: {
+    fontSize: 36,
+  },
   title: {
-    ...textStyles.h1,
-    color: colors.textLight,
-    marginBottom: spacing.sm,
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.retroCream,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   subtitle: {
-    ...textStyles.body,
-    color: colors.textLight,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
+  // Form
   form: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   loginButton: {
     marginTop: spacing.md,
   },
+  // Divider
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,13 +301,24 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.borderColor,
+    backgroundColor: colors.retroBorder,
+  },
+  dividerBadge: {
+    backgroundColor: colors.bgPrimary,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    marginHorizontal: spacing.sm,
   },
   dividerText: {
-    ...textStyles.caption,
-    color: colors.textLight,
-    marginHorizontal: spacing.md,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 1,
   },
+  // Footer
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -306,13 +326,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   footerText: {
-    ...textStyles.body,
-    color: colors.textLight,
+    fontSize: 15,
+    color: colors.textMuted,
   },
   registerLink: {
-    ...textStyles.body,
-    color: colors.accentBlue,
-    fontWeight: '600',
+    fontSize: 15,
+    color: colors.retroCyan,
+    fontWeight: '700',
   },
 });
 

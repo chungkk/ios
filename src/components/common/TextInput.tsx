@@ -9,8 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { colors, spacing, borderRadius } from '../../styles/theme';
-import { textStyles } from '../../styles/typography';
+import { colors, spacing } from '../../styles/theme';
 
 interface CustomTextInputProps extends TextInputProps {
   label?: string;
@@ -36,20 +35,24 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  // Determine if this is a password field
   const isPasswordField = variant === 'password' || secureTextEntry;
-
-  // Auto-configure keyboard type based on variant
   const keyboardType = variant === 'email' ? 'email-address' : textInputProps.keyboardType;
 
-  // Get icon based on variant
   const getVariantIcon = () => {
     if (leftIcon) return leftIcon;
     if (variant === 'email') {
-      return <Icon name="mail-outline" size={20} color={isFocused ? colors.retroCyan : colors.textMuted} />;
+      return (
+        <View style={[styles.iconBadge, isFocused && styles.iconBadgeFocused]}>
+          <Icon name="mail" size={16} color={isFocused ? '#fff' : colors.textMuted} />
+        </View>
+      );
     }
     if (variant === 'password' || isPasswordField) {
-      return <Icon name="lock-closed-outline" size={20} color={isFocused ? colors.retroCyan : colors.textMuted} />;
+      return (
+        <View style={[styles.iconBadge, isFocused && styles.iconBadgeFocused]}>
+          <Icon name="lock-closed" size={16} color={isFocused ? '#fff' : colors.textMuted} />
+        </View>
+      );
     }
     return null;
   };
@@ -60,9 +63,7 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
     <View style={[styles.container, containerStyle]}>
       {/* Label */}
       {label && (
-        <View style={styles.labelContainer}>
-          <Text style={styles.label}>{label}</Text>
-        </View>
+        <Text style={[styles.label, isFocused && styles.labelFocused]}>{label}</Text>
       )}
 
       {/* Input wrapper */}
@@ -79,7 +80,7 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
         <RNTextInput
           {...textInputProps}
           style={[styles.input, textInputProps.style]}
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor="rgba(255,255,255,0.35)"
           secureTextEntry={isPasswordField && !isPasswordVisible}
           keyboardType={keyboardType}
           autoCapitalize={variant === 'email' ? 'none' : textInputProps.autoCapitalize}
@@ -101,8 +102,8 @@ export const TextInput: React.FC<CustomTextInputProps> = ({
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             activeOpacity={0.7}>
             <Icon
-              name={isPasswordVisible ? 'eye-outline' : 'eye-off-outline'}
-              size={22}
+              name={isPasswordVisible ? 'eye' : 'eye-off'}
+              size={20}
               color={isFocused ? colors.retroCyan : colors.textMuted}
             />
           </TouchableOpacity>
@@ -131,77 +132,76 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.lg,
   },
-  labelContainer: {
-    marginBottom: spacing.xs + 2,
-  },
   label: {
-    ...textStyles.label,
-    color: colors.textLight,
     fontSize: 14,
     fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: 8,
     letterSpacing: 0.3,
+  },
+  labelFocused: {
+    color: colors.retroCyan,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
-    paddingHorizontal: spacing.md + 4,
-    height: 56,
-    // Subtle inner shadow effect
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 54,
   },
   inputWrapper_focused: {
     borderColor: colors.retroCyan,
     backgroundColor: 'rgba(0,188,212,0.08)',
-    shadowColor: colors.retroCyan,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
   inputWrapper_error: {
     borderColor: colors.error,
-    backgroundColor: 'rgba(244,67,54,0.08)',
+    backgroundColor: 'rgba(244,67,54,0.06)',
   },
   input: {
     flex: 1,
-    ...textStyles.body,
-    color: '#fff',
     fontSize: 16,
+    fontWeight: '500',
+    color: '#fff',
     height: '100%',
-    textAlignVertical: 'center',
+    letterSpacing: 0.3,
   },
   leftIcon: {
-    marginRight: spacing.sm + 4,
-    width: 24,
+    marginRight: 12,
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  iconBadgeFocused: {
+    backgroundColor: colors.retroCyan,
+  },
   rightIcon: {
-    marginLeft: spacing.sm,
-    padding: spacing.xs,
+    marginLeft: 8,
+    padding: 4,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xs + 2,
+    marginTop: 6,
     gap: 6,
   },
   errorText: {
-    ...textStyles.caption,
-    color: colors.error,
     fontSize: 13,
+    color: colors.error,
+    fontWeight: '500',
   },
   helperText: {
-    ...textStyles.caption,
+    fontSize: 13,
     color: colors.textMuted,
-    marginTop: spacing.xs,
+    marginTop: 6,
   },
 });
 
 export default TextInput;
-
