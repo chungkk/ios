@@ -378,6 +378,7 @@ const SettingsScreen: React.FC = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('settings.accountManagement')}</Text>
 
+            {/* Change Name - temporarily disabled
             <TouchableOpacity
               style={styles.settingItem}
               onPress={() => {
@@ -395,6 +396,7 @@ const SettingsScreen: React.FC = () => {
                 <Icon name="chevron-forward" size={18} color={colors.textMuted} />
               </View>
             </TouchableOpacity>
+            */}
 
             {/* Only show Change Password for email-authenticated users (hide for OAuth) */}
             {user.authProvider !== 'google' && user.authProvider !== 'apple' && (

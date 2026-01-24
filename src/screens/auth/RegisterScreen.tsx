@@ -80,7 +80,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
       if (result.success) {
         console.log('[RegisterScreen] Registration successful');
-        navigation.navigate('Main');
+        // Dismiss the Auth modal properly
+        navigation.getParent()?.goBack();
       } else {
         Alert.alert('Registration Failed', result.error || 'Unable to create account');
       }
@@ -101,7 +102,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
       if (result.success) {
         console.log('[RegisterScreen] Google Sign-In successful');
-        navigation.navigate('Main');
+        // Dismiss the Auth modal properly
+        navigation.getParent()?.goBack();
       } else {
         Alert.alert('Sign In Failed', result.error || 'Google Sign-In failed');
       }
@@ -122,7 +124,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
       if (result.success) {
         console.log('[RegisterScreen] Apple Sign-In successful');
-        navigation.navigate('Main');
+        // Dismiss the Auth modal properly
+        navigation.getParent()?.goBack();
       } else {
         Alert.alert('Sign In Failed', result.error || 'Apple Sign-In failed');
       }

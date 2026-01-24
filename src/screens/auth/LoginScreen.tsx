@@ -58,7 +58,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       const result = await login(email.trim(), password);
       if (result.success) {
-        navigation.navigate('Main');
+        // Dismiss the Auth modal properly
+        navigation.getParent()?.goBack();
       } else {
         triggerErrorVibration();
         Alert.alert('Login Failed', result.error || 'Invalid email or password');
@@ -77,7 +78,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       const result = await loginWithGoogle();
       if (result.success) {
-        navigation.navigate('Main');
+        // Dismiss the Auth modal properly
+        navigation.getParent()?.goBack();
       } else {
         triggerErrorVibration();
         Alert.alert('Sign In Failed', result.error || 'Google Sign-In failed');
@@ -96,7 +98,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       const result = await loginWithApple();
       if (result.success) {
-        navigation.navigate('Main');
+        // Dismiss the Auth modal properly
+        navigation.getParent()?.goBack();
       } else {
         triggerErrorVibration();
         Alert.alert('Sign In Failed', result.error || 'Apple Sign-In failed');
