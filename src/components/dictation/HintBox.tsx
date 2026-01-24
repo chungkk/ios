@@ -142,10 +142,9 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
     },
     maskedSentenceBoxKeyboard: {
-        marginHorizontal: spacing.sm,
+        marginHorizontal: spacing.md,
         marginBottom: 6,
-        borderRadius: 8,
-        padding: 6,
+        // Keep same padding and borderRadius to prevent layout shift
     },
     hintHeader: {
         flexDirection: 'row',
