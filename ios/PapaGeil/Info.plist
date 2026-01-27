@@ -22,6 +22,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.143809251678-8jdcnfu2cl3j4q2b1o6vdh435i9v8p2k</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -37,7 +48,6 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to your camera to take photos for your profile avatar.</string>
-
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs access to your microphone to record audio for language learning practice.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -67,16 +77,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.143809251678-8jdcnfu2cl3j4q2b1o6vdh435i9v8p2k</string>
-			</array>
-			<key>CFBundleURLName</key>
-			<string>Google Sign-In</string>
-		</dict>
-	</array>
 </dict>
 </plist>
