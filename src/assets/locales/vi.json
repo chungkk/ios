@@ -50,7 +50,12 @@
     "passwordChanged": "Đã đổi mật khẩu thành công",
     "passwordMismatch": "Mật khẩu xác nhận không khớp",
     "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
-    "oauthPasswordNote": "Bạn đăng nhập bằng tài khoản xã hội và không thể đổi mật khẩu"
+    "oauthPasswordNote": "Bạn đăng nhập bằng tài khoản xã hội và không thể đổi mật khẩu",
+    "deleteAccount": "Xóa tài khoản",
+    "deleteAccountConfirm": "Xóa tài khoản?",
+    "deleteAccountWarning": "Hành động này là vĩnh viễn và không thể hoàn tác. Tất cả dữ liệu bao gồm tiến trình học, từ vựng và thống kê sẽ bị xóa.",
+    "deleteAccountSuccess": "Tài khoản của bạn đã được xóa thành công",
+    "deleteAccountFailed": "Không thể xóa tài khoản. Vui lòng thử lại."
   },
   "legal": {
     "termsTitle": "Điều khoản dịch vụ",

@@ -19,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string, level?: 'beginner' | 'experienced') => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   refreshToken: () => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
@@ -280,6 +281,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUserPoints(0);
   };
 
+  // Delete account permanently (Apple Guideline 5.1.1(v))
+  const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await authService.deleteAccount();
+      setUser(null);
+      setUserPoints(0);
+      return { success: true };
+    } catch (error: any) {
+      console.error('[AuthContext] Delete account error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || error?.message || 'Failed to delete account',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -289,6 +306,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         register,
         logout,
+        deleteAccount,
         refreshToken,
         loginWithGoogle,
         loginWithApple,

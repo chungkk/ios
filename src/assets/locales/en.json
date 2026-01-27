@@ -50,7 +50,12 @@
     "passwordChanged": "Password changed successfully",
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
-    "oauthPasswordNote": "You signed in with a social account and cannot change password"
+    "oauthPasswordNote": "You signed in with a social account and cannot change password",
+    "deleteAccount": "Delete Account",
+    "deleteAccountConfirm": "Delete Account?",
+    "deleteAccountWarning": "This action is permanent and cannot be undone. All your data including learning progress, vocabulary, and statistics will be deleted.",
+    "deleteAccountSuccess": "Your account has been deleted successfully",
+    "deleteAccountFailed": "Failed to delete account. Please try again."
   },
   "legal": {
     "termsTitle": "Terms of Service",

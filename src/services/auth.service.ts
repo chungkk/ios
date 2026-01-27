@@ -268,3 +268,32 @@ export const loginWithApple = async (): Promise<AuthResponse> => {
     throw error;
   }
 };
+
+/**
+ * Delete user account permanently
+ * Required by Apple App Store Guideline 5.1.1(v)
+ */
+export const deleteAccount = async (): Promise<void> => {
+  try {
+    await api.delete('/api/auth/delete-account');
+
+    // Clear local data after successful deletion
+    await removeToken();
+    await saveData(STORAGE_KEYS.USER_PROFILE, null);
+
+    // Sign out from Google if authenticated
+    try {
+      const hasPrevious = GoogleSignin.hasPreviousSignIn();
+      if (hasPrevious) {
+        await GoogleSignin.signOut();
+      }
+    } catch (googleError) {
+      console.log('[AuthService] Google sign out skipped:', googleError);
+    }
+
+    console.log('[AuthService] Account deleted successfully');
+  } catch (error) {
+    console.error('[AuthService] DeleteAccount error:', error);
+    throw error;
+  }
+};

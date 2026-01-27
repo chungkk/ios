@@ -48,7 +48,7 @@ const LANGUAGES = [
 const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { user, loading, userPoints, logout, updateUser } = useAuth();
+  const { user, loading, userPoints, logout, deleteAccount, updateUser } = useAuth();
   const { settings, toggleHaptic, setNativeLanguage } = useSettings();
   const [showAGBModal, setShowAGBModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -90,6 +90,37 @@ const SettingsScreen: React.FC = () => {
       ]
     );
   }, [logout, t]);
+
+  // Handle delete account - Apple Guideline 5.1.1(v)
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      t('settings.deleteAccountConfirm'),
+      t('settings.deleteAccountWarning'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              const result = await deleteAccount();
+              if (result.success) {
+                setToastMessage(t('settings.deleteAccountSuccess'));
+                setToastVisible(true);
+              } else {
+                Alert.alert(t('common.error'), result.error || t('settings.deleteAccountFailed'));
+              }
+            } catch (error: any) {
+              Alert.alert(t('common.error'), error.message || t('settings.deleteAccountFailed'));
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [deleteAccount, t]);
 
   // Handle native language change
   const handleChangeLanguage = useCallback(() => {
@@ -425,6 +456,23 @@ const SettingsScreen: React.FC = () => {
                 </View>
               </TouchableOpacity>
             )}
+
+            {/* Delete Account - Required by Apple Guideline 5.1.1(v) */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={handleDeleteAccount}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingLeft}>
+                <Icon name="trash" size={22} color={colors.retroCoral} />
+                <Text style={[styles.settingText, { color: colors.retroCoral }]}>
+                  {t('settings.deleteAccount')}
+                </Text>
+              </View>
+              <View style={styles.settingRight}>
+                <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+              </View>
+            </TouchableOpacity>
           </View>
         )}
 

@@ -50,7 +50,12 @@
     "passwordChanged": "Passwort erfolgreich geändert",
     "passwordMismatch": "Passwörter stimmen nicht überein",
     "passwordTooShort": "Passwort muss mindestens 6 Zeichen haben",
-    "oauthPasswordNote": "Sie haben sich mit einem sozialen Konto angemeldet und können das Passwort nicht ändern"
+    "oauthPasswordNote": "Sie haben sich mit einem sozialen Konto angemeldet und können das Passwort nicht ändern",
+    "deleteAccount": "Konto löschen",
+    "deleteAccountConfirm": "Konto löschen?",
+    "deleteAccountWarning": "Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden. Alle Daten einschließlich Lernfortschritt, Vokabeln und Statistiken werden gelöscht.",
+    "deleteAccountSuccess": "Dein Konto wurde erfolgreich gelöscht",
+    "deleteAccountFailed": "Konto konnte nicht gelöscht werden. Bitte erneut versuchen."
   },
   "legal": {
     "termsTitle": "Allgemeine Geschäftsbedingungen",
