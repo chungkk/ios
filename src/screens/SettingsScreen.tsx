@@ -55,6 +55,7 @@ const SettingsScreen: React.FC = () => {
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
   const [showChangeNameModal, setShowChangeNameModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   // Form state for account management
   const [newName, setNewName] = useState('');
@@ -123,38 +124,22 @@ const SettingsScreen: React.FC = () => {
   }, [deleteAccount, t]);
 
   // Handle native language change
-  const handleChangeLanguage = useCallback(() => {
-    Alert.alert(
-      t('settings.nativeLanguage'),
-      t('settings.selectLanguage'),
-      [
-        ...LANGUAGES.map(lang => ({
-          text: lang.label,
-          onPress: async () => {
-            try {
-              // Save to local settings (works without login)
-              await setNativeLanguage(lang.value);
+  const handleSelectLanguage = useCallback(async (langValue: string) => {
+    try {
+      // Save to local settings (works without login)
+      await setNativeLanguage(langValue);
 
-              // Also update on server if logged in
-              if (user && updateUser) {
-                await updateUser({ nativeLanguage: lang.value as 'vi' | 'en' | 'de' });
-              }
+      // Also update on server if logged in
+      if (user && updateUser) {
+        await updateUser({ nativeLanguage: langValue as 'vi' | 'en' | 'de' });
+      }
 
-              setTimeout(() => {
-                // Use new language for success message
-                Alert.alert(
-                  i18n.t('common.success', { lng: lang.value }),
-                  i18n.t('settings.languageChanged', { lng: lang.value })
-                );
-              }, 100);
-            } catch {
-              Alert.alert(t('common.error'), t('settings.updateFailed'));
-            }
-          },
-        })),
-        { text: t('common.cancel'), style: 'cancel' },
-      ]
-    );
+      setShowLanguageModal(false);
+      setToastMessage(i18n.t('settings.languageChanged', { lng: langValue }));
+      setToastVisible(true);
+    } catch {
+      Alert.alert(t('common.error'), t('settings.updateFailed'));
+    }
   }, [user, updateUser, setNativeLanguage, t]);
 
   // TODO: Uncomment when learning level change UI is enabled
@@ -371,7 +356,7 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
 
-          <TouchableOpacity style={styles.settingItem} onPress={handleChangeLanguage} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowLanguageModal(true)} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Icon name="language" size={22} color={colors.retroCyan} />
               <Text style={styles.settingText}>{t('settings.nativeLanguage')}</Text>
@@ -582,6 +567,68 @@ const SettingsScreen: React.FC = () => {
             <Text style={styles.modalDate}>{t('legal.lastUpdated')}</Text>
           </ScrollView>
         </SafeAreaView>
+      </Modal>
+
+      {/* Language Selection Modal - Retro Style */}
+      <Modal
+        visible={showLanguageModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <View style={styles.languageModalOverlay}>
+          <View style={styles.languageModalContainer}>
+            {/* Header with neon glow */}
+            <View style={styles.languageModalHeader}>
+              <Icon name="language" size={28} color={colors.retroCyan} />
+              <Text style={styles.languageModalTitle}>{t('settings.nativeLanguage')}</Text>
+            </View>
+
+            <Text style={styles.languageModalSubtitle}>{t('settings.selectLanguage')}</Text>
+
+            {/* Language Options */}
+            <View style={styles.languageOptionsContainer}>
+              {LANGUAGES.map((lang, index) => {
+                const isSelected = (user?.nativeLanguage || settings.nativeLanguage || 'de') === lang.value;
+                return (
+                  <TouchableOpacity
+                    key={lang.value}
+                    style={[
+                      styles.languageOption,
+                      isSelected && styles.languageOptionSelected,
+                    ]}
+                    onPress={() => handleSelectLanguage(lang.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.languageOptionFlag,
+                    ]}>
+                      {lang.value === 'de' ? '🇩🇪' : lang.value === 'en' ? '🇬🇧' : '🇻🇳'}
+                    </Text>
+                    <Text style={[
+                      styles.languageOptionText,
+                      isSelected && styles.languageOptionTextSelected,
+                    ]}>
+                      {lang.label}
+                    </Text>
+                    {isSelected && (
+                      <Icon name="checkmark-circle" size={22} color={colors.retroCyan} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={styles.languageModalCancelBtn}
+              onPress={() => setShowLanguageModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.languageModalCancelText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Privacy Policy Modal */}
@@ -1262,6 +1309,104 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  // Language Modal Retro Styles - Neo-Retro Theme
+  languageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  languageModalContainer: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: colors.retroCream,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: colors.retroBorder,
+    padding: spacing.lg,
+    // Neo-Retro offset shadow (không blur)
+    shadowColor: colors.retroShadow,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 6,
+  },
+  languageModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  languageModalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  languageModalSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  languageOptionsContainer: {
+    gap: spacing.md,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    gap: spacing.md,
+    // Neo-Retro offset shadow
+    shadowColor: colors.retroShadow,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  languageOptionSelected: {
+    backgroundColor: '#fff',
+    borderColor: colors.retroCyan,
+    borderWidth: 3,
+  },
+  languageOptionFlag: {
+    fontSize: 28,
+  },
+  languageOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.retroDark,
+  },
+  languageOptionTextSelected: {
+    color: colors.retroCyan,
+  },
+  languageModalCancelBtn: {
+    marginTop: spacing.lg,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    alignItems: 'center',
+    // Neo-Retro offset shadow
+    shadowColor: colors.retroShadow,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  languageModalCancelText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textSecondary,
   },
 });
 
