@@ -12,9 +12,7 @@ import {
   GoogleSignin,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
-import appleAuth, {
-  AppleCredentialState,
-} from '@invertase/react-native-apple-authentication';
+import appleAuth from '@invertase/react-native-apple-authentication';
 
 /**
  * Register new user with email/password
@@ -240,7 +238,7 @@ export const loginWithApple = async (): Promise<AuthResponse> => {
 
     // Verify credential state
     const credentialState = await appleAuth.getCredentialStateForUser(credential.user);
-    if (credentialState !== AppleCredentialState.AUTHORIZED) {
+    if (credentialState !== appleAuth.State.AUTHORIZED) {
       throw new Error('Apple Sign-In not authorized');
     }
 
