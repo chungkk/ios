@@ -74,7 +74,7 @@
     },
     "privacy": {
       "controller": "1. Người chịu trách nhiệm",
-      "controllerText": "PapaGeil\nEmail: contact@papageil.me\n\nNgười vận hành ứng dụng PapaGeil chịu trách nhiệm về việc xử lý dữ liệu theo các quy định bảo vệ dữ liệu hiện hành.",
+      "controllerText": "PapaGeil\nEmail: contact@papageil.net\n\nNgười vận hành ứng dụng PapaGeil chịu trách nhiệm về việc xử lý dữ liệu theo các quy định bảo vệ dữ liệu hiện hành.",
       "dataCollected": "2. Dữ liệu thu thập",
       "dataCollectedText": "Chúng tôi thu thập các dữ liệu sau:\n• Thông tin đăng ký (tên, email)\n• Tiến trình học tập và thống kê\n• Thông tin thiết bị để vận hành ứng dụng",
       "purpose": "3. Mục đích xử lý dữ liệu",
@@ -86,7 +86,7 @@
       "security": "6. Bảo mật dữ liệu",
       "securityText": "Chúng tôi áp dụng các biện pháp kỹ thuật và tổ chức để bảo vệ dữ liệu của bạn khỏi truy cập trái phép.",
       "contact": "7. Liên hệ",
-      "contactText": "Nếu có câu hỏi về bảo mật, liên hệ:\nEmail: contact@papageil.me\n\nBạn cũng có quyền khiếu nại với cơ quan giám sát bảo vệ dữ liệu."
+      "contactText": "Nếu có câu hỏi về bảo mật, liên hệ:\nEmail: contact@papageil.net\n\nBạn cũng có quyền khiếu nại với cơ quan giám sát bảo vệ dữ liệu."
     }
   },
   "home": {

@@ -3,7 +3,7 @@ import { getToken, saveToken, removeToken } from './storage.service';
 import { API_BASE_URL } from '@env';
 
 // Get API base URL from environment
-export const BASE_URL = API_BASE_URL || 'https://www.papageil.me';
+export const BASE_URL = API_BASE_URL || 'https://www.papageil.net';
 console.log('[API] ENV API_BASE_URL:', API_BASE_URL);
 console.log('[API] Using BASE_URL:', BASE_URL);
 
