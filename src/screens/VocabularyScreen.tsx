@@ -13,6 +13,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
@@ -61,6 +62,64 @@ const getWordStatusFromSRS = (item: VocabularyItem): WordStatus => {
 const VocabularyScreen: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { width: screenWidth } = useWindowDimensions();
+
+  // iPad detection and scaling
+  const IPAD_BREAKPOINT = 768;
+  const isIPad = screenWidth >= IPAD_BREAKPOINT;
+
+  // Dynamic styles for iPad optimization
+  const dynamicStyles = useMemo(() => ({
+    // Not Logged In Card - scale up for iPad
+    notLoggedInCard: {
+      maxWidth: isIPad ? 520 : 320,
+    },
+    notLoggedInEmoji: {
+      fontSize: isIPad ? 72 : 48,
+      marginBottom: isIPad ? 16 : 8,
+    },
+    notLoggedInTitle: {
+      fontSize: isIPad ? 32 : 22,
+      marginBottom: isIPad ? 24 : 16,
+    },
+    notLoggedInDivider: {
+      width: isIPad ? 80 : 60,
+      height: isIPad ? 4 : 3,
+      marginBottom: isIPad ? 28 : 20,
+    },
+    notLoggedInIcon: {
+      size: isIPad ? 56 : 40,
+      marginBottom: isIPad ? 16 : 12,
+    },
+    notLoggedInMessage: {
+      fontSize: isIPad ? 22 : 16,
+      marginBottom: isIPad ? 12 : 8,
+    },
+    notLoggedInHint: {
+      fontSize: isIPad ? 18 : 14,
+      lineHeight: isIPad ? 28 : 20,
+    },
+    notLoggedInContent: {
+      padding: isIPad ? 40 : 24, // spacing.xl = 24
+    },
+    // Feature items - scale up for iPad
+    notLoggedInFeatures: {
+      gap: isIPad ? 28 : 16,
+      marginTop: isIPad ? 36 : 24,
+    },
+    featureItem: {
+      paddingVertical: isIPad ? 20 : 12,
+      paddingHorizontal: isIPad ? 28 : 16,
+      borderRadius: isIPad ? 16 : 12,
+    },
+    featureIcon: {
+      fontSize: isIPad ? 36 : 24,
+      marginBottom: isIPad ? 8 : 4,
+    },
+    featureText: {
+      fontSize: isIPad ? 15 : 11,
+    },
+  }), [isIPad]);
 
   // State
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
@@ -309,30 +368,35 @@ const VocabularyScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.notLoggedInContainer}>
-          <View style={styles.notLoggedInCard}>
+          <View style={[styles.notLoggedInCard, dynamicStyles.notLoggedInCard]}>
             <View style={styles.notLoggedInAccent} />
-            <View style={styles.notLoggedInContent}>
-              <Text style={styles.notLoggedInEmoji}>📚</Text>
-              <Text style={styles.notLoggedInTitle}>{t('vocabulary.title')}</Text>
-              <View style={styles.notLoggedInDivider} />
-              <Icon name="lock-closed" size={40} color={colors.retroPurple} style={styles.notLoggedInIcon} />
-              <Text style={styles.notLoggedInMessage}>{t('profile.loginRequired')}</Text>
-              <Text style={styles.notLoggedInHint}>{t('vocabulary.noWordsMessage')}</Text>
+            <View style={[styles.notLoggedInContent, dynamicStyles.notLoggedInContent]}>
+              <Text style={[styles.notLoggedInEmoji, dynamicStyles.notLoggedInEmoji]}>📚</Text>
+              <Text style={[styles.notLoggedInTitle, dynamicStyles.notLoggedInTitle]}>{t('vocabulary.title')}</Text>
+              <View style={[styles.notLoggedInDivider, dynamicStyles.notLoggedInDivider]} />
+              <Icon
+                name="lock-closed"
+                size={dynamicStyles.notLoggedInIcon.size}
+                color={colors.retroPurple}
+                style={{ marginBottom: dynamicStyles.notLoggedInIcon.marginBottom }}
+              />
+              <Text style={[styles.notLoggedInMessage, dynamicStyles.notLoggedInMessage]}>{t('profile.loginRequired')}</Text>
+              <Text style={[styles.notLoggedInHint, dynamicStyles.notLoggedInHint]}>{t('vocabulary.noWordsMessage')}</Text>
             </View>
           </View>
 
-          <View style={styles.notLoggedInFeatures}>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>✨</Text>
-              <Text style={styles.featureText}>{t('vocabulary.filterNew')}</Text>
+          <View style={[styles.notLoggedInFeatures, dynamicStyles.notLoggedInFeatures]}>
+            <View style={[styles.featureItem, dynamicStyles.featureItem]}>
+              <Text style={[styles.featureIcon, dynamicStyles.featureIcon]}>✨</Text>
+              <Text style={[styles.featureText, dynamicStyles.featureText]}>{t('vocabulary.filterNew')}</Text>
             </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>📖</Text>
-              <Text style={styles.featureText}>{t('vocabulary.filterLearning')}</Text>
+            <View style={[styles.featureItem, dynamicStyles.featureItem]}>
+              <Text style={[styles.featureIcon, dynamicStyles.featureIcon]}>📖</Text>
+              <Text style={[styles.featureText, dynamicStyles.featureText]}>{t('vocabulary.filterLearning')}</Text>
             </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🎯</Text>
-              <Text style={styles.featureText}>{t('vocabulary.flashcard')}</Text>
+            <View style={[styles.featureItem, dynamicStyles.featureItem]}>
+              <Text style={[styles.featureIcon, dynamicStyles.featureIcon]}>🎯</Text>
+              <Text style={[styles.featureText, dynamicStyles.featureText]}>{t('vocabulary.flashcard')}</Text>
             </View>
           </View>
         </View>
