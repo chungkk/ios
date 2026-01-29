@@ -207,7 +207,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [settings.autoStop, setIsPlaying, lesson]);
 
   // Transcript sync
-  const { activeSentenceIndex, activeWordIndex } = useTranscriptSync({
+  const { activeSentenceIndex, activeWordIndex, resetSentenceEndFlag } = useTranscriptSync({
     transcript: lesson?.transcript || [],
     isPlaying,
     getCurrentTime: async () => {
@@ -220,6 +220,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     },
     onSentenceEnd: handleSentenceEnd,
   });
+
+  // Reset sentence end flag when autoStop is toggled
+  // This fixes the bug where toggling autoStop off and on would cause
+  // the next sentence to play before stopping
+  useEffect(() => {
+    resetSentenceEndFlag();
+  }, [settings.autoStop, resetSentenceEndFlag]);
 
   // Clear recording when sentence changes (only if not actively recording/processing)
   React.useEffect(() => {
