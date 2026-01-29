@@ -305,6 +305,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chungkk.deutschlearning;
 				PRODUCT_NAME = PapaGeil;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -337,6 +338,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.chungkk.deutschlearning;
 				PRODUCT_NAME = PapaGeil;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
