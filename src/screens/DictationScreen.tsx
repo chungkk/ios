@@ -189,7 +189,35 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
 
   // Save progress to server (debounced)
   const saveProgressRef = useRef<NodeJS.Timeout | null>(null);
-  const saveProgress = useCallback(() => {
+  const isSavingRef = useRef(false);
+
+  // Ref to track latest values for unmount save
+  const latestValuesRef = useRef({
+    revealedWords,
+    completedSentences,
+    revealCount,
+    currentIndex,
+    userInputs,
+    userInput,
+    bonusAwarded,
+    studyTime,
+  });
+
+  // Keep ref updated with latest values
+  useEffect(() => {
+    latestValuesRef.current = {
+      revealedWords,
+      completedSentences,
+      revealCount,
+      currentIndex,
+      userInputs,
+      userInput,
+      bonusAwarded,
+      studyTime,
+    };
+  }, [revealedWords, completedSentences, revealCount, currentIndex, userInputs, userInput, bonusAwarded, studyTime]);
+
+  const saveProgress = useCallback((immediate = false) => {
     if (!progressLoaded) return; // Don't save until loaded
 
     // Clear previous timeout
@@ -197,27 +225,45 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       clearTimeout(saveProgressRef.current);
     }
 
-    // Debounce save - wait 1 second after last change
-    saveProgressRef.current = setTimeout(async () => {
+    const doSave = async () => {
+      if (isSavingRef.current) return;
+      isSavingRef.current = true;
+
       try {
+        // Merge current userInput into userInputs for accurate save
+        const mergedInputs = {
+          ...latestValuesRef.current.userInputs,
+          [latestValuesRef.current.currentIndex]: latestValuesRef.current.userInput
+        };
+
         await progressService.saveDictationProgress(
           lessonId,
           {
-            revealedWords,
-            completedSentences: Array.from(completedSentences),
-            revealCount,
-            currentIndex,
-            userInputs,
-            bonusAwarded,
+            revealedWords: latestValuesRef.current.revealedWords,
+            completedSentences: Array.from(latestValuesRef.current.completedSentences),
+            revealCount: latestValuesRef.current.revealCount,
+            currentIndex: latestValuesRef.current.currentIndex,
+            userInputs: mergedInputs,
+            bonusAwarded: latestValuesRef.current.bonusAwarded,
           },
-          studyTime
+          latestValuesRef.current.studyTime
         );
         console.log('[DictationScreen] Progress saved');
       } catch (err) {
         console.error('[DictationScreen] Error saving progress:', err);
+      } finally {
+        isSavingRef.current = false;
       }
-    }, 1000);
-  }, [lessonId, revealedWords, completedSentences, revealCount, currentIndex, userInputs, studyTime, progressLoaded, bonusAwarded]);
+    };
+
+    if (immediate) {
+      // Save immediately (used on unmount)
+      doSave();
+    } else {
+      // Debounce save - wait 1 second after last change
+      saveProgressRef.current = setTimeout(doSave, 1000);
+    }
+  }, [lessonId, progressLoaded]);
 
   // Auto-save when state changes
   useEffect(() => {
@@ -228,14 +274,20 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
       }
       saveProgress();
     }
+  }, [revealedWords, completedSentences, revealCount, currentIndex, userInput, progressLoaded, saveProgress, userInputs]);
 
-    // Cleanup timeout on unmount to prevent memory leak
+  // Save immediately on unmount
+  useEffect(() => {
     return () => {
       if (saveProgressRef.current) {
         clearTimeout(saveProgressRef.current);
       }
+      // Save immediately on unmount to prevent data loss
+      if (progressLoaded) {
+        saveProgress(true);
+      }
     };
-  }, [revealedWords, completedSentences, revealCount, currentIndex, userInput, progressLoaded, saveProgress, userInputs]);
+  }, [progressLoaded, saveProgress]);
 
   // Check if current sentence is completed (all words correct)
   // Also handles re-edit: removes completed status if user changes answer to incorrect

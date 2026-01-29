@@ -15,6 +15,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Tts from 'react-native-tts';
 import { vocabularyService, VocabularyItem } from '../services/vocabulary.service';
@@ -99,9 +100,12 @@ const VocabularyScreen: React.FC = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    fetchVocabulary();
-  }, [fetchVocabulary]);
+  // Fetch vocabulary when screen is focused (fixes issue where new words don't appear)
+  useFocusEffect(
+    useCallback(() => {
+      fetchVocabulary();
+    }, [fetchVocabulary])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
