@@ -9,9 +9,13 @@ import {
   Modal,
   StyleSheet,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { colors, spacing } from '../../styles/theme';
 import type { Lesson } from '../../types/lesson.types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
 
 export type LessonMode = 'shadowing' | 'dictation';
 
@@ -24,11 +28,11 @@ interface ModeSelectionPopupProps {
 
 const formatStudyTime = (seconds: number): string => {
   if (!seconds || seconds === 0) return '0s';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   } else if (minutes > 0) {
@@ -78,7 +82,7 @@ export const ModeSelectionPopup: React.FC<ModeSelectionPopupProps> = ({
         <View style={styles.popup}>
           {/* Gradient top bar */}
           <View style={styles.topBar} />
-          
+
           {/* Close button */}
           <TouchableOpacity
             style={styles.closeBtn}
@@ -144,10 +148,10 @@ const styles = StyleSheet.create({
   },
   popup: {
     backgroundColor: colors.retroCream,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: isTablet ? 28 : 20,
+    padding: isTablet ? 32 : 20,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: isTablet ? 600 : 400,
     borderWidth: 3,
     borderColor: colors.retroBorder,
     // Shadow
@@ -193,20 +197,20 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
   },
   popupTitle: {
-    fontSize: 22,
+    fontSize: isTablet ? 28 : 22,
     fontWeight: '900',
     color: colors.retroPurple,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: isTablet ? spacing.lg : spacing.md,
     marginTop: spacing.sm,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   lessonInfo: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: spacing.md,
+    borderRadius: isTablet ? 16 : 12,
+    padding: isTablet ? 18 : 12,
+    marginBottom: isTablet ? spacing.lg : spacing.md,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     // Shadow
@@ -217,19 +221,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   lessonTitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontWeight: '700',
     color: colors.retroDark,
-    lineHeight: 20,
+    lineHeight: isTablet ? 26 : 20,
   },
   modesContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: isTablet ? 20 : 12,
   },
   modeOption: {
     flex: 1,
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: isTablet ? 20 : 16,
+    padding: isTablet ? 24 : 14,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     alignItems: 'center',
@@ -241,12 +245,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   modeIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: isTablet ? 64 : 44,
+    height: isTablet ? 64 : 44,
+    borderRadius: isTablet ? 16 : 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: isTablet ? 16 : 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     // Shadow
@@ -257,22 +261,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   modeIconText: {
-    fontSize: 22,
+    fontSize: isTablet ? 32 : 22,
   },
   modeName: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontWeight: '800',
     color: colors.retroDark,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 6,
+    marginBottom: isTablet ? 10 : 6,
   },
   modeDescription: {
-    fontSize: 11,
+    fontSize: isTablet ? 14 : 11,
     color: '#636e72',
     textAlign: 'center',
-    lineHeight: 15,
-    marginBottom: 10,
+    lineHeight: isTablet ? 20 : 15,
+    marginBottom: isTablet ? 16 : 10,
   },
   modeStudyTime: {
     flexDirection: 'row',

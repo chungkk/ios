@@ -2,8 +2,11 @@
 // Shows masked words with reveal functionality
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, Dimensions } from 'react-native';
 import { colors, spacing } from '../../styles/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
 
 interface HintBoxProps {
     sentence: string;
@@ -131,8 +134,8 @@ const HintBox: React.FC<HintBoxProps> = ({
 const styles = StyleSheet.create({
     maskedSentenceBox: {
         backgroundColor: '#fff',
-        padding: 14,
-        borderRadius: 12,
+        padding: isTablet ? 28 : 14,
+        borderRadius: isTablet ? 20 : 12,
         marginBottom: spacing.sm,
         borderWidth: 1.5,
         borderColor: colors.retroBorder,
@@ -153,18 +156,18 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     maskedLabel: {
-        fontSize: 12,
+        fontSize: isTablet ? 20 : 12,
         fontWeight: '700',
         color: colors.textMuted,
     },
     freeHintText: {
-        fontSize: 9,
+        fontSize: isTablet ? 12 : 9,
         fontWeight: '700',
         color: '#fff',
         backgroundColor: colors.retroCyan,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
+        paddingHorizontal: isTablet ? 10 : 6,
+        paddingVertical: isTablet ? 4 : 2,
+        borderRadius: isTablet ? 6 : 4,
         borderWidth: 1,
         borderColor: colors.retroBorder,
         overflow: 'hidden',
@@ -175,16 +178,16 @@ const styles = StyleSheet.create({
     maskedWordsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 6,
+        gap: isTablet ? 14 : 6,
     },
     maskedWordWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     wordBox: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
+        paddingHorizontal: isTablet ? 16 : 8,
+        paddingVertical: isTablet ? 12 : 4,
+        borderRadius: isTablet ? 10 : 6,
         borderWidth: 1.5,
         flexDirection: 'row',
         alignItems: 'center',
@@ -206,35 +209,35 @@ const styles = StyleSheet.create({
         borderColor: colors.retroCyan,
     },
     hiddenAsterisks: {
-        fontSize: 14,
+        fontSize: isTablet ? 22 : 14,
         fontWeight: '500',
         color: colors.textMuted,
         letterSpacing: 1,
     },
     wrongAsterisks: {
-        fontSize: 14,
+        fontSize: isTablet ? 22 : 14,
         fontWeight: '500',
         color: colors.retroCoral,
         letterSpacing: 1,
     },
     matchedChars: {
-        fontSize: 14,
+        fontSize: isTablet ? 22 : 14,
         fontWeight: '700',
         color: colors.retroCyan,
     },
     remainingAsterisks: {
-        fontSize: 14,
+        fontSize: isTablet ? 22 : 14,
         fontWeight: '500',
         color: colors.textMuted,
         letterSpacing: 1,
     },
     revealedWord: {
-        fontSize: 14,
+        fontSize: isTablet ? 22 : 14,
         fontWeight: '700',
         color: colors.retroCyan,
     },
     punctuation: {
-        fontSize: 14,
+        fontSize: isTablet ? 22 : 14,
         color: colors.retroDark,
         marginLeft: 1,
     },

@@ -14,6 +14,7 @@ import {
   Platform,
   Vibration,
   Keyboard,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -724,7 +725,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             onPress={goToPrevious}
             disabled={currentIndex === 0}
           >
-            <Icon name="chevron-back" size={24} color={currentIndex === 0 ? colors.textMuted : colors.retroDark} />
+            <Icon name="chevron-back" size={isTablet ? 32 : 24} color={currentIndex === 0 ? colors.textMuted : colors.retroDark} />
           </TouchableOpacity>
 
           {/* Center Controls */}
@@ -734,7 +735,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
               style={[styles.controlBtn, styles.controlBtnReplay]}
               onPress={playSentence}
             >
-              <Icon name="refresh" size={22} color="#fff" />
+              <Icon name="refresh" size={isTablet ? 30 : 22} color="#fff" />
             </TouchableOpacity>
 
             {/* Play/Pause - Center Large */}
@@ -742,7 +743,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
               style={[styles.controlBtn, styles.controlBtnPlay]}
               onPress={togglePlayPause}
             >
-              <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" style={!isPlaying && { marginLeft: 3 }} />
+              <Icon name={isPlaying ? 'pause' : 'play'} size={isTablet ? 40 : 28} color="#fff" style={!isPlaying && { marginLeft: isTablet ? 4 : 3 }} />
             </TouchableOpacity>
           </View>
 
@@ -752,7 +753,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             onPress={goToNext}
             disabled={currentIndex >= totalSentences - 1}
           >
-            <Icon name="chevron-forward" size={24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : colors.retroDark} />
+            <Icon name="chevron-forward" size={isTablet ? 32 : 24} color={currentIndex >= totalSentences - 1 ? colors.textMuted : colors.retroDark} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -781,6 +782,9 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   );
 };
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -790,8 +794,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.md,
+    paddingVertical: isTablet ? spacing.md : spacing.sm,
     backgroundColor: colors.retroCream,
     borderBottomWidth: 2,
     borderBottomColor: colors.retroBorder,
@@ -800,12 +804,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.retroCyan,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: isTablet ? 12 : 8,
+    paddingHorizontal: isTablet ? 18 : 12,
+    borderRadius: isTablet ? 16 : 12,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    gap: 4,
+    gap: isTablet ? 6 : 4,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.15,
@@ -813,7 +817,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   backText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     color: '#fff',
     fontWeight: '700',
   },
@@ -821,12 +825,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.retroYellow,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingVertical: isTablet ? 10 : 6,
+    paddingHorizontal: isTablet ? 18 : 12,
+    borderRadius: isTablet ? 14 : 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    gap: 6,
+    gap: isTablet ? 10 : 6,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.15,
@@ -834,7 +838,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   timerText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontWeight: '800',
     color: colors.retroDark,
     fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
@@ -842,9 +846,9 @@ const styles = StyleSheet.create({
   },
   speedButton: {
     backgroundColor: colors.retroCyan,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingVertical: isTablet ? 10 : 6,
+    paddingHorizontal: isTablet ? 18 : 12,
+    borderRadius: isTablet ? 14 : 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     shadowColor: '#1a1a2e',
@@ -854,13 +858,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   speedButtonText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontWeight: '800',
     color: '#fff',
     fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
   },
   videoContainer: {
-    height: 200,
+    height: isTablet ? 450 : 200,
     backgroundColor: '#000',
   },
   content: {
@@ -886,19 +890,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.md,
+    paddingVertical: isTablet ? 16 : 10,
     backgroundColor: 'rgba(155, 89, 182, 0.08)',
     borderBottomWidth: 2,
     borderBottomColor: colors.retroBorder,
   },
   diktatTitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontWeight: '700',
     backgroundColor: colors.retroPurple,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: isTablet ? 16 : 10,
+    paddingVertical: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 12 : 8,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
     overflow: 'hidden',
@@ -908,14 +912,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginHorizontal: 12,
-    gap: 8,
+    marginHorizontal: isTablet ? 20 : 12,
+    gap: isTablet ? 12 : 8,
   },
   progressBarContainer: {
     flex: 1,
-    height: 10,
+    height: isTablet ? 16 : 10,
     backgroundColor: '#e0e0e0',
-    borderRadius: 5,
+    borderRadius: isTablet ? 8 : 5,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     overflow: 'hidden',
@@ -926,52 +930,52 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressText: {
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontWeight: '800',
     color: '#000',
     backgroundColor: '#FFD700',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: isTablet ? 14 : 8,
+    paddingVertical: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 10 : 6,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
     overflow: 'hidden',
-    minWidth: 40,
+    minWidth: isTablet ? 60 : 40,
     textAlign: 'center',
   },
   counterBox: {
     flexDirection: 'row',
     alignItems: 'baseline',
     backgroundColor: colors.retroCream,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: isTablet ? 16 : 10,
+    paddingVertical: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 12 : 8,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
   counterCurrent: {
     color: colors.retroPurple,
-    fontSize: 15,
+    fontSize: isTablet ? 22 : 15,
     fontWeight: '800',
   },
   counterSeparator: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontWeight: '600',
-    marginHorizontal: 2,
+    marginHorizontal: isTablet ? 4 : 2,
   },
   counterTotal: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontWeight: '600',
   },
   // HintBox styles moved to components/dictation/HintBox.tsx
   inputContainer: {
     backgroundColor: colors.retroCream,
-    borderRadius: 16,
+    borderRadius: isTablet ? 20 : 16,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    marginHorizontal: spacing.md,
+    marginHorizontal: isTablet ? spacing.lg : spacing.md,
     marginBottom: spacing.sm,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 3, height: 3 },
@@ -989,15 +993,15 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
   },
   textInput: {
-    padding: 18,
-    fontSize: 17,
+    padding: isTablet ? 32 : 18,
+    fontSize: isTablet ? 24 : 17,
     color: colors.retroDark,
-    minHeight: 120,
+    minHeight: isTablet ? 240 : 120,
     textAlignVertical: 'top',
   },
   textInputKeyboard: {
-    minHeight: 60,
-    padding: 12,
+    minHeight: isTablet ? 100 : 60,
+    padding: isTablet ? 20 : 12,
   },
   resultBox: {
     padding: 16,
@@ -1095,8 +1099,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 2,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: isTablet ? 8 : 2,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.sm,
     backgroundColor: colors.retroCream,
     borderTopWidth: 1,
     borderTopColor: colors.retroBorder,
@@ -1104,7 +1108,7 @@ const styles = StyleSheet.create({
   centerControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: isTablet ? 20 : 14,
   },
   bottomControlsKeyboard: {
     backgroundColor: 'transparent',
@@ -1123,27 +1127,27 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   controlBtnNav: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: isTablet ? 64 : 48,
+    height: isTablet ? 64 : 48,
+    borderRadius: isTablet ? 32 : 24,
     backgroundColor: colors.retroPurple,
   },
   controlBtnNavEdge: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: isTablet ? 70 : 50,
+    height: isTablet ? 70 : 50,
+    borderRadius: isTablet ? 35 : 25,
     backgroundColor: '#fff',
   },
   controlBtnReplay: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: isTablet ? 60 : 44,
+    height: isTablet ? 60 : 44,
+    borderRadius: isTablet ? 30 : 22,
     backgroundColor: colors.retroCoral,
   },
   controlBtnPlay: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: isTablet ? 88 : 64,
+    height: isTablet ? 88 : 64,
+    borderRadius: isTablet ? 44 : 32,
     backgroundColor: colors.retroCyan,
     borderWidth: 3,
     shadowOffset: { width: 3, height: 3 },

@@ -8,22 +8,27 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
+const iconSize = isTablet ? 28 : 20;
+
 interface SettingsMenuProps {
   visible: boolean;
   onClose: () => void;
-  
+
   // Speed control
   playbackSpeed: number;
   onSpeedCycle: () => void;
-  
+
   // Auto-stop control
   autoStop: boolean;
   onAutoStopToggle: () => void;
-  
+
   // Translation control
   showTranslation: boolean;
   onTranslationToggle: () => void;
@@ -58,7 +63,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             activeOpacity={0.8}
           >
             <View style={[styles.iconContainer, { backgroundColor: colors.retroCyan }]}>
-              <Icon name="language-outline" size={20} color={colors.retroDark} />
+              <Icon name="language-outline" size={iconSize} color={colors.retroDark} />
             </View>
             <Text style={styles.menuText}>Hiện dịch</Text>
             <View style={styles.toggle}>
@@ -78,7 +83,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             activeOpacity={0.8}
           >
             <View style={[styles.iconContainer, { backgroundColor: colors.retroPink }]}>
-              <Icon name="speedometer-outline" size={20} color={colors.retroDark} />
+              <Icon name="speedometer-outline" size={iconSize} color={colors.retroDark} />
             </View>
             <Text style={styles.menuText}>Tốc độ</Text>
             <View style={styles.speedBadge}>
@@ -96,7 +101,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             activeOpacity={0.8}
           >
             <View style={[styles.iconContainer, { backgroundColor: colors.retroYellow }]}>
-              <Icon name="pause-outline" size={20} color={colors.retroDark} />
+              <Icon name="pause-outline" size={iconSize} color={colors.retroDark} />
             </View>
             <Text style={styles.menuText}>Auto stop</Text>
             <View style={styles.toggle}>
@@ -117,14 +122,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 95,
-    paddingRight: spacing.md,
+    paddingTop: isTablet ? 120 : 95,
+    paddingRight: isTablet ? spacing.lg : spacing.md,
   },
   menuContainer: {
     backgroundColor: colors.retroCream,
-    borderRadius: 16,
-    minWidth: 240,
-    paddingVertical: spacing.md,
+    borderRadius: isTablet ? 24 : 16,
+    minWidth: isTablet ? 340 : 240,
+    paddingVertical: isTablet ? spacing.lg : spacing.md,
     borderWidth: 3,
     borderColor: colors.retroBorder,
     // Neo-retro shadow
@@ -140,20 +145,20 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
+    height: isTablet ? 6 : 4,
     backgroundColor: colors.retroCoral,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.md,
+    paddingVertical: isTablet ? spacing.md : spacing.sm,
+    gap: isTablet ? spacing.lg : spacing.md,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: isTablet ? 48 : 36,
+    height: isTablet ? 48 : 36,
+    borderRadius: isTablet ? 14 : 10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -167,22 +172,22 @@ const styles = StyleSheet.create({
   },
   menuText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: isTablet ? 20 : 15,
     color: colors.retroDark,
     fontWeight: '700',
   },
   divider: {
     height: 2,
     backgroundColor: colors.retroBorder,
-    marginHorizontal: spacing.md,
-    marginVertical: spacing.xs,
+    marginHorizontal: isTablet ? spacing.lg : spacing.md,
+    marginVertical: isTablet ? spacing.sm : spacing.xs,
     opacity: 0.15,
   },
   speedBadge: {
     backgroundColor: colors.retroPurple,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: isTablet ? 18 : 12,
+    paddingVertical: isTablet ? 10 : 6,
+    borderRadius: isTablet ? 14 : 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     // Shadow
@@ -193,7 +198,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   speedValue: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     color: '#ffffff',
     fontWeight: '800',
   },
@@ -201,12 +206,12 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   toggleTrack: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
+    width: isTablet ? 60 : 48,
+    height: isTablet ? 36 : 28,
+    borderRadius: isTablet ? 18 : 14,
     backgroundColor: '#dfe6e9',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: isTablet ? 4 : 3,
     borderWidth: 2,
     borderColor: colors.retroBorder,
   },
@@ -214,9 +219,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.retroCyan,
   },
   toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: isTablet ? 26 : 20,
+    height: isTablet ? 26 : 20,
+    borderRadius: isTablet ? 13 : 10,
     backgroundColor: '#ffffff',
     borderWidth: 2,
     borderColor: colors.retroBorder,

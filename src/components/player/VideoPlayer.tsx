@@ -36,7 +36,7 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     // Initialize YouTube player with videoId and playsinline option
     const player = useYouTubePlayer(videoId, {
       playsinline: true, // Play inline instead of fullscreen on iOS
-      controls: true,
+      controls: false, // Hide YouTube controls (volume, play button)
       rel: false,
     });
 
@@ -159,7 +159,6 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         <YoutubeView
           player={player}
           style={styles.player}
-          height={250}
           webViewProps={{
             allowsInlineMediaPlayback: true,
             mediaPlaybackRequiresUserAction: false,
@@ -172,13 +171,13 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: '#000', // Pure black for video
     overflow: 'hidden',
-    height: 250,
   },
   player: {
+    flex: 1,
     alignSelf: 'stretch',
-    height: 250,
   },
 });
 

@@ -2,7 +2,7 @@
 // Video player with synchronized transcript for shadowing practice
 
 import React, { useRef, useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration } from 'react-native';
+import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -637,7 +637,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         </TouchableOpacity>
       </View>
 
-      {/* Video Player - Full Width */}
+      {/* Video Player */}
       {videoId && (
         <View style={styles.videoContainer}>
           <VideoPlayer
@@ -664,7 +664,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         onTranslationToggle={toggleShowTranslation}
       />
 
-      {/* Transcript Section - Full Width */}
+      {/* Transcript Section */}
       <View style={styles.transcriptSection}>
         <View style={styles.transcriptTopBar} />
         <View style={styles.transcriptHeader}>
@@ -731,6 +731,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   );
 };
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -741,8 +744,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.md,
+    paddingVertical: isTablet ? 16 : 10,
     backgroundColor: colors.retroCream,
     borderBottomWidth: 2,
     borderBottomColor: colors.retroBorder,
@@ -751,12 +754,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.retroCyan,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: isTablet ? 12 : 8,
+    paddingHorizontal: isTablet ? 18 : 12,
+    borderRadius: isTablet ? 16 : 12,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    gap: 4,
+    gap: isTablet ? 6 : 4,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.15,
@@ -764,7 +767,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   backText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     color: '#fff',
     fontWeight: '700',
   },
@@ -772,12 +775,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.retroYellow,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingVertical: isTablet ? 10 : 6,
+    paddingHorizontal: isTablet ? 18 : 12,
+    borderRadius: isTablet ? 14 : 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    gap: 6,
+    gap: isTablet ? 10 : 6,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.15,
@@ -785,25 +788,25 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   timerText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontWeight: '800',
     color: colors.retroDark,
     fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
     letterSpacing: 1,
   },
   settingsButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: isTablet ? 48 : 36,
+    height: isTablet ? 48 : 36,
+    borderRadius: isTablet ? 24 : 18,
     backgroundColor: colors.retroCream,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Video Container - Full Width like Dictation
+  // Video Container - Larger on iPad for better balance
   videoContainer: {
-    height: 200,
+    height: isTablet ? 450 : 200,
     backgroundColor: '#000',
   },
   // Progress bar
@@ -816,9 +819,9 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     flex: 1,
-    height: 10,
+    height: isTablet ? 16 : 10,
     backgroundColor: '#e0e0e0',
-    borderRadius: 5,
+    borderRadius: isTablet ? 8 : 5,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     overflow: 'hidden',
@@ -829,17 +832,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressText: {
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontWeight: '800',
     color: '#000',
     backgroundColor: '#FFD700',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: isTablet ? 14 : 8,
+    paddingVertical: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 10 : 6,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
     overflow: 'hidden',
-    minWidth: 40,
+    minWidth: isTablet ? 60 : 40,
     textAlign: 'center',
   },
   // Sentence Counter (in transcript header)
@@ -847,30 +850,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     backgroundColor: colors.retroCream,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: isTablet ? 16 : 10,
+    paddingVertical: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 12 : 8,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
   counterCurrent: {
     color: colors.retroPurple,
-    fontSize: 15,
+    fontSize: isTablet ? 22 : 15,
     fontWeight: '800',
   },
   counterSeparator: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontWeight: '600',
-    marginHorizontal: 2,
+    marginHorizontal: isTablet ? 4 : 2,
   },
   counterTotal: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontWeight: '600',
   },
 
-  // Transcript Section - Full Width
+  // Transcript Section
   transcriptSection: {
     flex: 1,
     backgroundColor: '#fff',
@@ -883,20 +886,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.md,
+    paddingVertical: isTablet ? 16 : 10,
     backgroundColor: 'rgba(255, 107, 129, 0.08)',
     borderBottomWidth: 2,
     borderBottomColor: colors.retroBorder,
   },
   transcriptTitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontWeight: '700',
     color: colors.retroDark,
     backgroundColor: colors.retroCoral,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: isTablet ? 16 : 10,
+    paddingVertical: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 12 : 8,
     borderWidth: 1.5,
     borderColor: colors.retroBorder,
     overflow: 'hidden',

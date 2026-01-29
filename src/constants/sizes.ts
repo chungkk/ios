@@ -5,6 +5,9 @@ import { Dimensions } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Detect iPad/Tablet based on screen width (iPad min width is 768)
+const isTablet = SCREEN_WIDTH >= 768;
+
 // Screen dimensions
 export const screen = {
   width: SCREEN_WIDTH,
@@ -20,7 +23,7 @@ export const layout = {
   // Header heights
   headerHeight: 60,
   headerHeightLarge: 80,
-  
+
   // Bottom navigation
   bottomNavHeight: 60,
   bottomNavHeightWithSafeArea: 80, // + safe area
@@ -57,9 +60,10 @@ export const layout = {
   thumbnailXLarge: 200,
 
   // Lesson card dimensions - Neo-Retro compact style
-  lessonCardWidth: SCREEN_WIDTH * 0.48, // ~48% of screen width for compact cards
-  lessonCardHeight: 160,
-  lessonCardImageHeight: 85,
+  // iPad: wider cards with taller image for more square aspect ratio
+  lessonCardWidth: isTablet ? SCREEN_WIDTH * 0.30 : SCREEN_WIDTH * 0.48,
+  lessonCardHeight: isTablet ? 200 : 160,
+  lessonCardImageHeight: isTablet ? 140 : 85, // Taller on iPad for more square look
 };
 
 // Spacing scale (matches theme.ts)

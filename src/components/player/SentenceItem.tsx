@@ -1,10 +1,13 @@
 // SentenceItem component - Single transcript sentence with karaoke highlighting
 
 import React from 'react';
-import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, View, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import type { Sentence } from '../../types/lesson.types';
 import { colors } from '../../styles/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
 
 interface SentenceItemProps {
   sentence: Sentence;
@@ -97,7 +100,7 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
       disabled={!onPress}
     >
       <View style={[styles.playIconContainer, isActive && styles.playIconContainerActive]}>
-        <Icon name="play" size={12} color="rgba(59, 130, 246, 0.8)" style={styles.playIcon} />
+        <Icon name="play" size={isTablet ? 20 : 12} color="rgba(59, 130, 246, 0.8)" style={styles.playIcon} />
       </View>
       <View style={styles.textContainer}>
         {renderText()}
@@ -134,10 +137,10 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 12,
-    marginVertical: 4,
-    marginHorizontal: 10,
-    borderRadius: 12,
+    padding: isTablet ? 24 : 12,
+    marginVertical: isTablet ? 8 : 4,
+    marginHorizontal: isTablet ? 28 : 10,
+    borderRadius: isTablet ? 20 : 12,
     backgroundColor: colors.retroCream,
     borderWidth: 2,
     borderColor: colors.retroBorder,
@@ -156,15 +159,15 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   playIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: isTablet ? 44 : 28,
+    height: isTablet ? 44 : 28,
+    borderRadius: isTablet ? 12 : 8,
     backgroundColor: colors.retroCream,
     borderWidth: 2,
     borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: isTablet ? 18 : 10,
     marginTop: 2,
     shadowColor: '#1a1a2e',
     shadowOffset: { width: 2, height: 2 },
@@ -187,14 +190,14 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   text: {
-    fontSize: 15,
+    fontSize: isTablet ? 22 : 15,
     color: colors.retroDark,
-    lineHeight: 24,
+    lineHeight: isTablet ? 36 : 24,
     fontWeight: '500',
     opacity: 0.8,
   },
   textActive: {
-    fontSize: 16,
+    fontSize: isTablet ? 24 : 16,
     fontWeight: '700',
     color: '#1a1a2e',
     opacity: 1,
@@ -205,14 +208,14 @@ const styles = StyleSheet.create({
     textDecorationColor: colors.retroCyan,
   },
   translation: {
-    fontSize: 13,
+    fontSize: isTablet ? 20 : 13,
     color: colors.textSecondary,
-    marginTop: 6,
+    marginTop: isTablet ? 14 : 6,
     fontStyle: 'italic',
-    lineHeight: 20,
+    lineHeight: isTablet ? 30 : 20,
   },
   translationActive: {
-    fontSize: 13,
+    fontSize: isTablet ? 20 : 13,
     color: colors.retroPurple,
     fontWeight: '500',
   },

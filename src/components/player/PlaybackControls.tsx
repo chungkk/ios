@@ -1,9 +1,12 @@
 // Playback controls component - 5-button layout matching iOS design
 
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
 
 interface PlaybackControlsProps {
   onPrevious?: () => void;
@@ -26,6 +29,9 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlayingRecording = false,
   onPlayRecording,
 }) => {
+  const navIconSize = isTablet ? 32 : 24;
+  const micIconSize = isTablet ? 44 : 32;
+  const replayIconSize = isTablet ? 32 : 24;
 
   return (
     <View style={styles.container}>
@@ -35,7 +41,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         onPress={onPrevious}
         activeOpacity={0.7}
       >
-        <Icon name="chevron-back" size={24} color={colors.retroDark} />
+        <Icon name="chevron-back" size={navIconSize} color={colors.retroDark} />
       </TouchableOpacity>
 
       {/* Center Controls */}
@@ -52,11 +58,11 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           disabled={isProcessing}
         >
           {isProcessing ? (
-            <Icon name="hourglass-outline" size={32} color="#ffffff" />
+            <Icon name="hourglass-outline" size={micIconSize} color="#ffffff" />
           ) : isRecording ? (
-            <Icon name="stop" size={32} color="#ffffff" />
+            <Icon name="stop" size={micIconSize} color="#ffffff" />
           ) : (
-            <Icon name="mic" size={32} color="#ffffff" />
+            <Icon name="mic" size={micIconSize} color="#ffffff" />
           )}
         </TouchableOpacity>
 
@@ -72,7 +78,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           >
             <Icon
               name={isPlayingRecording ? 'pause' : 'play'}
-              size={24}
+              size={replayIconSize}
               color="#ffffff"
               style={isPlayingRecording ? {} : styles.playIconOffset}
             />
@@ -86,7 +92,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         onPress={onNext}
         activeOpacity={0.7}
       >
-        <Icon name="chevron-forward" size={24} color={colors.retroDark} />
+        <Icon name="chevron-forward" size={navIconSize} color={colors.retroDark} />
       </TouchableOpacity>
     </View>
   );
@@ -98,8 +104,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: isTablet ? spacing.lg : spacing.sm,
+    paddingVertical: isTablet ? 8 : 2,
     backgroundColor: colors.retroCream,
     borderTopWidth: 1,
     borderTopColor: colors.retroBorder,
@@ -107,12 +113,12 @@ const styles = StyleSheet.create({
   centerControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: isTablet ? 20 : 14,
   },
   navButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: isTablet ? 70 : 50,
+    height: isTablet ? 70 : 50,
+    borderRadius: isTablet ? 35 : 25,
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: colors.retroBorder,
@@ -125,9 +131,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: isTablet ? 88 : 64,
+    height: isTablet ? 88 : 64,
+    borderRadius: isTablet ? 44 : 32,
     backgroundColor: colors.retroCyan,
     borderWidth: 3,
     borderColor: colors.retroBorder,
@@ -140,9 +146,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   micButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: isTablet ? 88 : 64,
+    height: isTablet ? 88 : 64,
+    borderRadius: isTablet ? 44 : 32,
     backgroundColor: colors.retroCoral,
     borderWidth: 3,
     borderColor: colors.retroBorder,
@@ -161,9 +167,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#999',
   },
   replayButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: isTablet ? 60 : 44,
+    height: isTablet ? 60 : 44,
+    borderRadius: isTablet ? 30 : 22,
     backgroundColor: colors.retroPurple,
     borderWidth: 2,
     borderColor: colors.retroBorder,

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Dimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -12,6 +13,9 @@ import VocabularyScreen from '../screens/VocabularyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 768;
+
 // Tab Bar Icons - Professional Style (filled when active, outline when inactive)
 const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => {
   const activeIcon = iconName;
@@ -20,7 +24,7 @@ const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) 
   return (
     <Icon
       name={focused ? activeIcon : inactiveIcon}
-      size={24}
+      size={isTablet ? 32 : 24}
       color={focused ? colors.retroPurple : colors.textSecondary}
     />
   );
@@ -56,9 +60,9 @@ export const MainNavigator = () => {
           backgroundColor: colors.retroCream,
           borderTopColor: colors.retroBorder,
           borderTopWidth: 3,
-          height: 75,
-          paddingBottom: 14,
-          paddingTop: 10,
+          height: isTablet ? 95 : 75,
+          paddingBottom: isTablet ? 20 : 14,
+          paddingTop: isTablet ? 14 : 10,
           shadowColor: '#1a1a2e',
           shadowOffset: { width: 0, height: -3 },
           shadowOpacity: 0.1,
@@ -68,9 +72,9 @@ export const MainNavigator = () => {
         tabBarActiveTintColor: colors.retroPurple,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: isTablet ? 15 : 11,
           fontWeight: '700',
-          marginTop: 4,
+          marginTop: isTablet ? 6 : 4,
         },
       }}
     >
@@ -113,3 +117,4 @@ export const MainNavigator = () => {
 };
 
 export default MainNavigator;
+
