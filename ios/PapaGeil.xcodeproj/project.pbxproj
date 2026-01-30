@@ -288,7 +288,7 @@
 				CODE_SIGN_ENTITLEMENTS = PapaGeil/PapaGeil.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 6CH84XZG3T;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = PapaGeil/Info.plist;
@@ -297,7 +297,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.01;
+				MARKETING_VERSION = 1.02;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -322,7 +322,7 @@
 				CODE_SIGN_ENTITLEMENTS = PapaGeil/PapaGeil.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 6CH84XZG3T;
 				INFOPLIST_FILE = PapaGeil/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -330,7 +330,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.01;
+				MARKETING_VERSION = 1.02;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
