@@ -69,10 +69,28 @@ export const useTranscriptSync = ({
 
       const newIndex = findActiveSentence(transcript, currentTime);
 
-      // Check if current sentence has ended (time passed endTime)
+      // Check if current sentence has ended
+      // Case 1: Time has passed endTime of current sentence
+      // Case 2: We're transitioning from sentence A to sentence B (newIndex > activeSentenceIndex)
+      //         This happens when timestamps are continuous (sentenceB.startTime === sentenceA.endTime)
       if (activeSentenceIndex >= 0 && activeSentenceIndex < transcript.length) {
         const currentSentence = transcript[activeSentenceIndex];
-        if (currentSentence && currentTime >= currentSentence.endTime && sentenceEndCalledRef.current !== activeSentenceIndex) {
+        const shouldTriggerEnd = currentSentence && (
+          // Time passed endTime
+          currentTime >= currentSentence.endTime ||
+          // Or transitioning to a later sentence (sentence changed forward)
+          (newIndex > activeSentenceIndex && newIndex !== -1)
+        );
+
+        if (shouldTriggerEnd && sentenceEndCalledRef.current !== activeSentenceIndex) {
+          if (__DEV__) {
+            console.log('[useTranscriptSync] Sentence ended:', {
+              sentenceIndex: activeSentenceIndex,
+              currentTime: currentTime.toFixed(2),
+              endTime: currentSentence.endTime.toFixed(2),
+              newIndex,
+            });
+          }
           sentenceEndCalledRef.current = activeSentenceIndex;
           onSentenceEnd?.(activeSentenceIndex);
         }
