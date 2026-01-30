@@ -1,7 +1,7 @@
 // Playback controls component - 5-button layout matching iOS design
 
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing } from '../../styles/theme';
 
@@ -33,6 +33,79 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   const micIconSize = isTablet ? 44 : 32;
   const replayIconSize = isTablet ? 32 : 24;
 
+  // Animation values for Pulse + Ripple effects
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rippleScale = useRef(new Animated.Value(1)).current;
+  const rippleOpacity = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    if (isRecording) {
+      // Pulse animation - button scales up and down
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.08,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      // Ripple animation - expanding circle fading out
+      const rippleAnimation = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(rippleScale, {
+              toValue: 1.6,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rippleScale, {
+              toValue: 1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(rippleOpacity, {
+              toValue: 0,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rippleOpacity, {
+              toValue: 0.6,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ])
+      );
+
+      pulseAnimation.start();
+      rippleAnimation.start();
+
+      return () => {
+        pulseAnimation.stop();
+        rippleAnimation.stop();
+        pulseAnim.setValue(1);
+        rippleScale.setValue(1);
+        rippleOpacity.setValue(0.6);
+      };
+    } else {
+      // Reset animations when not recording
+      pulseAnim.setValue(1);
+      rippleScale.setValue(1);
+      rippleOpacity.setValue(0);
+    }
+  }, [isRecording, pulseAnim, rippleScale, rippleOpacity]);
+
+  const micButtonSize = isTablet ? 88 : 64;
+
   return (
     <View style={styles.container}>
       {/* Previous Sentence */}
@@ -46,25 +119,46 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
 
       {/* Center Controls */}
       <View style={styles.centerControls}>
-        {/* Microphone Button */}
-        <TouchableOpacity
-          style={[
-            styles.micButton,
-            isRecording && styles.micButtonRecording,
-            isProcessing && styles.micButtonProcessing,
-          ]}
-          onPress={onMicrophone}
-          activeOpacity={0.7}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <Icon name="hourglass-outline" size={micIconSize} color="#ffffff" />
-          ) : isRecording ? (
-            <Icon name="stop" size={micIconSize} color="#ffffff" />
-          ) : (
-            <Icon name="mic" size={micIconSize} color="#ffffff" />
+        {/* Microphone Button with Pulse + Ripple */}
+        <View style={styles.micButtonContainer}>
+          {/* Ripple effect layer - only visible when recording */}
+          {isRecording && (
+            <Animated.View
+              style={[
+                styles.rippleEffect,
+                {
+                  width: micButtonSize,
+                  height: micButtonSize,
+                  borderRadius: micButtonSize / 2,
+                  transform: [{ scale: rippleScale }],
+                  opacity: rippleOpacity,
+                },
+              ]}
+            />
           )}
-        </TouchableOpacity>
+
+          {/* Main mic button with pulse */}
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <TouchableOpacity
+              style={[
+                styles.micButton,
+                isRecording && styles.micButtonRecording,
+                isProcessing && styles.micButtonProcessing,
+              ]}
+              onPress={onMicrophone}
+              activeOpacity={0.7}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <Icon name="hourglass-outline" size={micIconSize} color="#ffffff" />
+              ) : isRecording ? (
+                <Icon name="stop" size={micIconSize} color="#ffffff" />
+              ) : (
+                <Icon name="mic" size={micIconSize} color="#ffffff" />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
         {/* Play Recording Button - Only show if has recording */}
         {hasRecording && (
@@ -114,6 +208,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: isTablet ? 20 : 14,
+  },
+  micButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rippleEffect: {
+    position: 'absolute',
+    backgroundColor: '#ff4444',
   },
   navButton: {
     width: isTablet ? 70 : 50,
