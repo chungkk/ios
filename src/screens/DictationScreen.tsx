@@ -88,7 +88,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   // Haptic feedback functions (only vibrate if enabled in settings)
   const vibrateSuccess = useCallback(() => {
     if (!settings.hapticEnabled) return;
-    Vibration.vibrate(50);
+    Vibration.vibrate(10); // Very light vibration for sentence completion
   }, [settings.hapticEnabled]);
 
   const vibrateError = useCallback(() => {
