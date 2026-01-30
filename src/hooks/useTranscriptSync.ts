@@ -53,11 +53,26 @@ export const useTranscriptSync = ({
   const [activeWordIndex, setActiveWordIndex] = useState<number>(-1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const sentenceEndCalledRef = useRef<number>(-1);
+  const wasPlayingRef = useRef<boolean>(false);
 
   // Reset flag so onSentenceEnd can be called again for the same sentence
   const resetSentenceEndFlag = useCallback(() => {
     sentenceEndCalledRef.current = -1;
   }, []);
+
+  // Reset sentenceEndCalledRef when playback resumes (isPlaying: false -> true)
+  // This fixes the bug where auto-stop doesn't work when user clicks play again
+  // after the video was stopped by auto-stop
+  useEffect(() => {
+    if (isPlaying && !wasPlayingRef.current) {
+      // Playback just started/resumed
+      if (__DEV__) {
+        console.log('[useTranscriptSync] Playback resumed, resetting sentenceEndCalledRef');
+      }
+      sentenceEndCalledRef.current = -1;
+    }
+    wasPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   const updateActiveSentence = useCallback(async () => {
     try {
