@@ -2,7 +2,7 @@
 // Video player with synchronized transcript for shadowing practice
 
 import React, { useRef, useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration, Dimensions } from 'react-native';
+import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration, Dimensions, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -639,7 +639,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
       {/* Video Player */}
       {videoId && (
-        <View style={styles.videoContainer}>
+        <Pressable
+          style={styles.videoContainer}
+          onPress={() => setIsPlaying(!isPlaying)}
+        >
           <VideoPlayer
             ref={videoPlayerRef}
             videoId={videoId}
@@ -649,7 +652,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             onStateChange={handleStateChange}
             onError={handleError}
           />
-        </View>
+        </Pressable>
       )}
 
       {/* Settings Menu */}
