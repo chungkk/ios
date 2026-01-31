@@ -2,7 +2,7 @@
 // Video player with synchronized transcript for shadowing practice
 
 import React, { useRef, useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration, Dimensions, Pressable } from 'react-native';
+import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform, Vibration, Dimensions, Pressable, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -41,6 +41,12 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const { t } = useTranslation();
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
+
+  // Reactive layout detection for iPad landscape
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
+  const isTabletDevice = screenWidth >= 768 || screenHeight >= 768;
+  const isLandscapeTablet = isLandscape && isTabletDevice;
 
   // Hide navigation header and tab bar
   useLayoutEffect(() => {
@@ -537,6 +543,28 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     setShowTranslatePopup(true);
   }, [setIsPlaying]);
 
+  // Dynamic styles for iPad landscape layout - MUST be before early returns
+  const dynamicStyles = React.useMemo(() => ({
+    mainContent: {
+      flex: 1,
+      flexDirection: isLandscapeTablet ? 'row' as const : 'column' as const,
+    },
+    videoColumn: {
+      width: isLandscapeTablet ? '50%' as const : '100%' as const,
+      height: isLandscapeTablet ? '100%' as const : (isTabletDevice ? 450 : 200),
+      backgroundColor: '#000',
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      overflow: 'hidden' as const,
+    },
+    transcriptColumn: {
+      width: isLandscapeTablet ? '50%' as const : '100%' as const,
+      height: isLandscapeTablet ? '100%' as const : undefined,
+      flex: isLandscapeTablet ? undefined : 1,
+      backgroundColor: '#fff',
+    },
+  }), [isLandscapeTablet, isTabletDevice]);
+
   if (loading) return <Loading />;
 
   if (error || !lesson) {
@@ -637,65 +665,68 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
         </TouchableOpacity>
       </View>
 
-      {/* Video Player */}
-      {videoId && (
-        <Pressable
-          style={styles.videoContainer}
-          onPress={() => setIsPlaying(!isPlaying)}
-        >
-          <VideoPlayer
-            ref={videoPlayerRef}
-            videoId={videoId}
-            isPlaying={isPlaying}
-            playbackSpeed={playbackSpeed}
-            onReady={handleReady}
-            onStateChange={handleStateChange}
-            onError={handleError}
-          />
-        </Pressable>
-      )}
+      {/* Main Content - Side by Side on iPad Landscape */}
+      <View style={dynamicStyles.mainContent}>
+        {/* Video Player - Left Column on iPad Landscape */}
+        {videoId && (
+          <Pressable
+            style={dynamicStyles.videoColumn}
+            onPress={() => setIsPlaying(!isPlaying)}
+          >
+            <VideoPlayer
+              ref={videoPlayerRef}
+              videoId={videoId}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              onReady={handleReady}
+              onStateChange={handleStateChange}
+              onError={handleError}
+            />
+          </Pressable>
+        )}
 
-      {/* Settings Menu */}
-      <SettingsMenu
-        visible={showSettingsMenu}
-        onClose={() => setShowSettingsMenu(false)}
-        playbackSpeed={playbackSpeed}
-        onSpeedCycle={cycleSpeed}
-        autoStop={settings.autoStop}
-        onAutoStopToggle={toggleAutoStop}
-        showTranslation={settings.showTranslation}
-        onTranslationToggle={toggleShowTranslation}
-      />
+        {/* Settings Menu */}
+        <SettingsMenu
+          visible={showSettingsMenu}
+          onClose={() => setShowSettingsMenu(false)}
+          playbackSpeed={playbackSpeed}
+          onSpeedCycle={cycleSpeed}
+          autoStop={settings.autoStop}
+          onAutoStopToggle={toggleAutoStop}
+          showTranslation={settings.showTranslation}
+          onTranslationToggle={toggleShowTranslation}
+        />
 
-      {/* Transcript Section */}
-      <View style={styles.transcriptSection}>
-        <View style={styles.transcriptTopBar} />
-        <View style={styles.transcriptHeader}>
-          <Text style={styles.transcriptTitle}>📝 Transcript</Text>
-          <View style={styles.progressWrapper}>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBarFill, { width: `${shadowingProgress}%` }]} />
+        {/* Transcript Section - Right Column on iPad Landscape */}
+        <View style={[styles.transcriptSection, dynamicStyles.transcriptColumn]}>
+          <View style={styles.transcriptTopBar} />
+          <View style={styles.transcriptHeader}>
+            <Text style={styles.transcriptTitle}>📝 Transcript</Text>
+            <View style={styles.progressWrapper}>
+              <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBarFill, { width: `${shadowingProgress}%` }]} />
+              </View>
+              <Text style={styles.progressText}>{Math.round(shadowingProgress)}%</Text>
             </View>
-            <Text style={styles.progressText}>{Math.round(shadowingProgress)}%</Text>
+            <View style={styles.counterBox}>
+              <Text style={styles.counterCurrent}>{activeSentenceIndex + 1}</Text>
+              <Text style={styles.counterSeparator}>/</Text>
+              <Text style={styles.counterTotal}>{transcript.length}</Text>
+            </View>
           </View>
-          <View style={styles.counterBox}>
-            <Text style={styles.counterCurrent}>{activeSentenceIndex + 1}</Text>
-            <Text style={styles.counterSeparator}>/</Text>
-            <Text style={styles.counterTotal}>{transcript.length}</Text>
+          <View style={styles.transcriptContent}>
+            <TranscriptView
+              transcript={transcript}
+              activeSentenceIndex={activeSentenceIndex}
+              activeWordIndex={activeWordIndex}
+              onSentencePress={handleSentencePress}
+              onWordPress={handleWordPress}
+              showTranslation={settings.showTranslation}
+              recordingResults={recordingResults}
+            />
           </View>
         </View>
-        <View style={styles.transcriptContent}>
-          <TranscriptView
-            transcript={transcript}
-            activeSentenceIndex={activeSentenceIndex}
-            activeWordIndex={activeWordIndex}
-            onSentencePress={handleSentencePress}
-            onWordPress={handleWordPress}
-            showTranslation={settings.showTranslation}
-            recordingResults={recordingResults}
-          />
-        </View>
-      </View>
+      </View> {/* End mainContent */}
 
       {/* Bottom Controls - Neo-Retro Style */}
       <View style={[styles.controlsWrapper, { paddingBottom: insets.bottom || 14 }]}>
@@ -807,7 +838,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Video Container - Larger on iPad for better balance
+  // Video Container - Now handled by dynamicStyles for responsive layout
+  // Keeping for fallback/portrait mode
   videoContainer: {
     height: isTablet ? 450 : 200,
     backgroundColor: '#000',
