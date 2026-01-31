@@ -9,7 +9,9 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../hooks/useAuth';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
@@ -31,7 +33,7 @@ import type { AuthStackScreenProps } from '../../navigation/types';
 type RegisterScreenProps = AuthStackScreenProps<'Register'>;
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
-  const { register, loginWithGoogle, loginWithApple } = useAuth();
+  const { register, resendVerification, loginWithGoogle, loginWithApple } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -46,6 +48,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+
+  // Verification pending state
+  const [showVerificationPending, setShowVerificationPending] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+
+  // Bounce animation for verification icon
+  const [bounceAnim] = useState(new Animated.Value(0));
 
   // Calculate password strength
   const passwordStrength = getPasswordStrength(password);
@@ -67,6 +77,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     return !nameErr && !emailErr && !passwordErr && !confirmErr;
   };
 
+  // Start bounce animation
+  const startBounceAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: -10,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  };
+
   // Handle register submit
   const handleRegister = async () => {
     if (!validateForm()) {
@@ -78,11 +106,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     try {
       const result = await register(name.trim(), email.trim(), password);
 
-      if (result.success) {
-        console.log('[RegisterScreen] Registration successful');
-        // Dismiss the Auth modal properly
-        navigation.getParent()?.goBack();
-      } else {
+      if (result.success && result.requiresVerification) {
+        // Show verification pending UI
+        setRegisteredEmail(result.email || email.trim());
+        setShowVerificationPending(true);
+        startBounceAnimation();
+      } else if (!result.success) {
         Alert.alert('Registration Failed', result.error || 'Unable to create account');
       }
     } catch (error) {
@@ -90,6 +119,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle resend verification email
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    try {
+      const result = await resendVerification(registeredEmail);
+      if (result.success) {
+        Alert.alert('Email Sent', result.message || 'Verification email has been sent.');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to resend verification email.');
+      }
+    } catch (error) {
+      console.error('[RegisterScreen] Resend verification error:', error);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -141,6 +188,63 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const handleLoginPress = () => {
     navigation.navigate('Login');
   };
+
+  // Verification Pending UI
+  if (showVerificationPending) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.verificationContent}
+          showsVerticalScrollIndicator={false}>
+          {/* Animated Icon */}
+          <Animated.View
+            style={[
+              styles.verificationIconContainer,
+              { transform: [{ translateY: bounceAnim }] },
+            ]}>
+            <Icon name="mail-outline" size={64} color={colors.accentBlue} />
+          </Animated.View>
+
+          {/* Title */}
+          <Text style={styles.verificationTitle}>Check Your Email</Text>
+
+          {/* Description */}
+          <Text style={styles.verificationDescription}>
+            We've sent a verification link to:
+          </Text>
+
+          {/* Email Highlight */}
+          <View style={styles.emailHighlight}>
+            <Icon name="mail" size={20} color={colors.accentBlue} />
+            <Text style={styles.emailText}>{registeredEmail}</Text>
+          </View>
+
+          {/* Instructions */}
+          <Text style={styles.verificationInstructions}>
+            Click the link in your email to verify your account and start learning German!
+          </Text>
+
+          {/* Resend Button */}
+          <Button
+            title="Resend Verification Email"
+            onPress={handleResendVerification}
+            loading={resendLoading}
+            disabled={resendLoading}
+            style={styles.resendButton}
+            variant="secondary"
+          />
+
+          {/* Back to Login */}
+          <TouchableOpacity
+            style={styles.backToLoginButton}
+            onPress={handleLoginPress}>
+            <Icon name="arrow-back" size={18} color={colors.accentBlue} />
+            <Text style={styles.backToLoginText}>Back to Sign In</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -358,6 +462,75 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   loginLink: {
+    ...textStyles.body,
+    color: colors.accentBlue,
+    fontWeight: '600',
+  },
+  // Verification Pending Styles
+  verificationContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
+  },
+  verificationIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.bgSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+    borderWidth: 3,
+    borderColor: colors.accentBlue,
+  },
+  verificationTitle: {
+    ...textStyles.h1,
+    color: colors.textLight,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  verificationDescription: {
+    ...textStyles.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  emailHighlight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgSecondary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.accentBlue,
+    gap: spacing.sm,
+  },
+  emailText: {
+    ...textStyles.body,
+    color: colors.accentBlue,
+    fontWeight: '700',
+  },
+  verificationInstructions: {
+    ...textStyles.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 22,
+  },
+  resendButton: {
+    width: '100%',
+    marginBottom: spacing.lg,
+  },
+  backToLoginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  backToLoginText: {
     ...textStyles.body,
     color: colors.accentBlue,
     fontWeight: '600',

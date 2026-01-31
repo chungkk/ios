@@ -1,6 +1,6 @@
 // API response types - shared across all services
 
-import {User} from './user.types';
+import { User } from './user.types';
 
 // Authentication responses
 export interface AuthResponse {
@@ -10,6 +10,13 @@ export interface AuthResponse {
 
 export interface MeResponse {
   user: User;
+}
+
+// Registration response (requires email verification)
+export interface RegisterResponse {
+  requiresVerification: boolean;
+  message: string;
+  email: string;
 }
 
 export interface PointsResponse {

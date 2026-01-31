@@ -17,7 +17,8 @@ interface AuthContextType {
   loading: boolean;
   userPoints: number;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string, level?: 'beginner' | 'experienced') => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, level?: 'beginner' | 'experienced') => Promise<{ success: boolean; requiresVerification?: boolean; email?: string; error?: string }>;
+  resendVerification: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   refreshToken: () => Promise<{ success: boolean; error?: string }>;
@@ -136,23 +137,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Register new user
+  // Register new user (requires email verification)
   const register = async (
     name: string,
     email: string,
     password: string,
     level: 'beginner' | 'experienced' = 'beginner',
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; requiresVerification?: boolean; email?: string; error?: string }> => {
     try {
       const data = await authService.register({ name, email, password, level });
-      setUser(data.user);
-      setUserPoints(data.user.points || 0);
-      return { success: true };
+      // Registration successful - user needs to verify email
+      return {
+        success: true,
+        requiresVerification: data.requiresVerification,
+        email: data.email,
+      };
     } catch (error: any) {
       console.error('[AuthContext] Register error:', error);
       return {
         success: false,
         error: error?.response?.data?.error || error?.response?.data?.message || 'Registration failed',
+      };
+    }
+  };
+
+  // Resend verification email
+  const resendVerification = async (
+    email: string,
+  ): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const data = await authService.resendVerification(email);
+      return { success: true, message: data.message };
+    } catch (error: any) {
+      console.error('[AuthContext] Resend verification error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.error || error?.response?.data?.message || 'Failed to resend verification email',
       };
     }
   };
@@ -305,6 +325,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         userPoints,
         login,
         register,
+        resendVerification,
         logout,
         deleteAccount,
         refreshToken,

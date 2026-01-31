@@ -6,7 +6,7 @@ import {
   UpdateProfileRequest,
   ChangePasswordRequest,
 } from '../types/user.types';
-import { AuthResponse, MeResponse, PointsResponse } from '../types/api.types';
+import { AuthResponse, MeResponse, PointsResponse, RegisterResponse } from '../types/api.types';
 import { saveToken, removeToken, saveData, STORAGE_KEYS } from './storage.service';
 import {
   GoogleSignin,
@@ -16,20 +16,28 @@ import appleAuth from '@invertase/react-native-apple-authentication';
 
 /**
  * Register new user with email/password
+ * Returns requiresVerification=true - user must verify email before logging in
  */
-export const register = async (data: RegisterRequest): Promise<AuthResponse> => {
+export const register = async (data: RegisterRequest): Promise<RegisterResponse> => {
   try {
-    const response = await api.post<AuthResponse>('/api/auth/register', data);
-
-    // Save token to Keychain
-    await saveToken(response.data.token);
-
-    // Cache user profile
-    await saveData(STORAGE_KEYS.USER_PROFILE, response.data.user);
-
+    const response = await api.post<RegisterResponse>('/api/auth/register', data);
+    // Note: No token is returned until email is verified
     return response.data;
   } catch (error) {
     console.error('[AuthService] Register error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resend verification email
+ */
+export const resendVerification = async (email: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await api.post<{ success?: boolean; message: string }>('/api/auth/resend-verification', { email });
+    return { success: true, message: response.data.message };
+  } catch (error) {
+    console.error('[AuthService] ResendVerification error:', error);
     throw error;
   }
 };
