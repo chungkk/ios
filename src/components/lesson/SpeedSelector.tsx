@@ -37,6 +37,7 @@ export const SpeedSelector: React.FC<SpeedSelectorProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      supportedOrientations={['portrait', 'landscape']}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={styles.container}>

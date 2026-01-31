@@ -77,6 +77,7 @@ export const ModeSelectionPopup: React.FC<ModeSelectionPopupProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      supportedOrientations={['portrait', 'landscape']}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={styles.popup}>

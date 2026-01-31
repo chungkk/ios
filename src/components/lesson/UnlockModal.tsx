@@ -61,6 +61,7 @@ const UnlockModal: React.FC<UnlockModalProps> = ({
             transparent
             animationType="fade"
             onRequestClose={onClose}
+            supportedOrientations={['portrait', 'landscape']}
         >
             <TouchableWithoutFeedback onPress={onClose}>
                 <View style={styles.overlay}>

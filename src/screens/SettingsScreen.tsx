@@ -575,6 +575,7 @@ const SettingsScreen: React.FC = () => {
         animationType="fade"
         transparent={true}
         onRequestClose={() => setShowLanguageModal(false)}
+        supportedOrientations={['portrait', 'landscape']}
       >
         <View style={styles.languageModalOverlay}>
           <View style={styles.languageModalContainer}>

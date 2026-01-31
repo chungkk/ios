@@ -50,6 +50,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      supportedOrientations={['portrait', 'landscape']}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={styles.menuContainer}>

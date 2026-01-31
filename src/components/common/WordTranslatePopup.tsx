@@ -178,6 +178,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      supportedOrientations={['portrait', 'landscape']}
     >
       <TouchableOpacity
         style={styles.overlay}
