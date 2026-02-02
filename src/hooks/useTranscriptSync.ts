@@ -63,15 +63,41 @@ export const useTranscriptSync = ({
   // Reset sentenceEndCalledRef when playback resumes (isPlaying: false -> true)
   // This fixes the bug where auto-stop doesn't work when user clicks play again
   // after the video was stopped by auto-stop
+  // 
+  // IMPORTANT: We add a delay before resetting the flag to allow the video seek
+  // operation to complete. Without this delay, when user clicks on a sentence:
+  // 1. setIsPlaying(true) is called, which resets sentenceEndCalledRef immediately
+  // 2. But the video seek hasn't completed yet (still at previous endTime)
+  // 3. The polling interval detects currentTime >= endTime and triggers auto-stop
+  // 4. This causes the play button click to appear "broken"
+  const resetDelayRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (isPlaying && !wasPlayingRef.current) {
-      // Playback just started/resumed
+      // Playback just started/resumed - delay reset to allow seek to complete
       if (__DEV__) {
-        console.log('[useTranscriptSync] Playback resumed, resetting sentenceEndCalledRef');
+        console.log('[useTranscriptSync] Playback resumed, scheduling sentenceEndCalledRef reset');
       }
-      sentenceEndCalledRef.current = -1;
+      // Clear any pending reset
+      if (resetDelayRef.current) {
+        clearTimeout(resetDelayRef.current);
+      }
+      // Delay reset by 300ms to allow video seek to complete
+      resetDelayRef.current = setTimeout(() => {
+        if (__DEV__) {
+          console.log('[useTranscriptSync] Resetting sentenceEndCalledRef after delay');
+        }
+        sentenceEndCalledRef.current = -1;
+        resetDelayRef.current = null;
+      }, 300);
     }
     wasPlayingRef.current = isPlaying;
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (resetDelayRef.current) {
+        clearTimeout(resetDelayRef.current);
+      }
+    };
   }, [isPlaying]);
 
   const updateActiveSentence = useCallback(async () => {
