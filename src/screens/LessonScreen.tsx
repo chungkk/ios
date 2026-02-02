@@ -544,18 +544,26 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   }, [setIsPlaying]);
 
   // Dynamic styles for iPad landscape layout - MUST be before early returns
+  // For iPhone/iPad portrait: use aspectRatio to maintain 16:9 video proportions
+  // For iPad landscape: use 50% width side-by-side layout
   const dynamicStyles = React.useMemo(() => ({
     mainContent: {
       flex: 1,
       flexDirection: isLandscapeTablet ? 'row' as const : 'column' as const,
     },
-    videoColumn: {
-      width: isLandscapeTablet ? '50%' as const : '100%' as const,
-      height: isLandscapeTablet ? '100%' as const : (isTabletDevice ? 450 : 200),
+    videoColumn: isLandscapeTablet ? {
+      // iPad landscape: 50% width, full height
+      width: '50%' as const,
+      height: '100%' as const,
       backgroundColor: '#000',
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
       overflow: 'hidden' as const,
+    } : {
+      // iPhone & iPad portrait: full width, aspect ratio based height
+      width: '100%' as const,
+      aspectRatio: 16 / 9,
+      backgroundColor: '#000',
     },
     transcriptColumn: {
       width: isLandscapeTablet ? '50%' as const : '100%' as const,
