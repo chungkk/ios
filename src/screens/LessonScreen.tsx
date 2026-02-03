@@ -88,6 +88,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [recordingSentenceIndex, setRecordingSentenceIndex] = useState<number | null>(null);
   // Ref to track if recording is in progress (prevent race condition)
   const isRecordingInProgressRef = useRef(false);
+  // Ref to track if user is seeking to a new sentence (prevent auto-stop interference)
+  const isSeekingRef = useRef(false);
 
   // Settings state
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -195,6 +197,8 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   // Handle sentence end for auto-stop
   const handleSentenceEnd = useCallback((sentenceIndex: number) => {
     if (!settings.autoStop) return;
+    // Skip auto-stop if user is manually seeking to a new sentence
+    if (isSeekingRef.current) return;
 
     if (__DEV__) console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
     const transcript = lesson?.transcript || [];
@@ -376,8 +380,20 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const handleSentencePress = useCallback((index: number) => {
     const sentence = lesson?.transcript[index];
     if (sentence && videoPlayerRef.current) {
+      // Set seeking flag to temporarily disable auto-stop during seek
+      isSeekingRef.current = true;
+
+      // Seek to sentence start time
       videoPlayerRef.current.seekTo(sentence.startTime);
+
+      // Set isPlaying state - this triggers the useEffect in VideoPlayer
+      // which will call player.play() after the state updates
       setIsPlaying(true);
+
+      // Clear seeking flag after seek completes (give it 500ms)
+      setTimeout(() => {
+        isSeekingRef.current = false;
+      }, 500);
     }
   }, [lesson, setIsPlaying]);
 
