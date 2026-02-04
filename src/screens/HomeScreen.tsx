@@ -33,7 +33,7 @@ type HomeScreenProps = HomeStackScreenProps<'HomeScreen'>;
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
-  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'experienced'>('beginner');
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'experienced'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
