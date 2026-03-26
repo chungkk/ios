@@ -130,9 +130,25 @@ export const useTranscriptSync = ({
           (newIndex > activeSentenceIndex && newIndex !== -1)
         );
 
+        if (__DEV__ && currentSentence) {
+          // Log every 5th poll to avoid spam, but always log near endTime
+          const nearEnd = Math.abs(currentTime - currentSentence.endTime) < 1;
+          if (nearEnd || Math.random() < 0.1) {
+            console.log('[useTranscriptSync] 🔍 Poll:', {
+              currentTime: currentTime.toFixed(2),
+              sentenceIdx: activeSentenceIndex,
+              endTime: currentSentence.endTime.toFixed(2),
+              shouldTriggerEnd,
+              sentenceEndCalled: sentenceEndCalledRef.current,
+              newIndex,
+              hasOnSentenceEnd: !!onSentenceEnd,
+            });
+          }
+        }
+
         if (shouldTriggerEnd && sentenceEndCalledRef.current !== activeSentenceIndex) {
           if (__DEV__) {
-            console.log('[useTranscriptSync] Sentence ended:', {
+            console.log('[useTranscriptSync] ⏹️ Sentence ended:', {
               sentenceIndex: activeSentenceIndex,
               currentTime: currentTime.toFixed(2),
               endTime: currentSentence.endTime.toFixed(2),
@@ -141,6 +157,16 @@ export const useTranscriptSync = ({
           }
           sentenceEndCalledRef.current = activeSentenceIndex;
           onSentenceEnd?.(activeSentenceIndex);
+        }
+      } else if (__DEV__) {
+        // Log when activeSentenceIndex is not valid (might explain why auto-stop never triggers)
+        if (Math.random() < 0.05) {
+          console.log('[useTranscriptSync] ⚠️ No active sentence:', {
+            activeSentenceIndex,
+            transcriptLength: transcript.length,
+            currentTime: currentTime.toFixed(2),
+            newIndex,
+          });
         }
       }
 

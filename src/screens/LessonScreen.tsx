@@ -198,11 +198,16 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   // Handle sentence end for auto-stop
   const handleSentenceEnd = useCallback((sentenceIndex: number) => {
+    if (__DEV__) console.log('[LessonScreen] 📣 handleSentenceEnd called:', {
+      sentenceIndex,
+      autoStop: settings.autoStop,
+      isSeeking: isSeekingRef.current,
+    });
     if (!settings.autoStop) return;
     // Skip auto-stop if user is manually seeking to a new sentence
     if (isSeekingRef.current) return;
 
-    if (__DEV__) console.log('[LessonScreen] Auto-stop at sentence', sentenceIndex);
+    if (__DEV__) console.log('[LessonScreen] ⏹️ Auto-stop EXECUTING at sentence', sentenceIndex);
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[sentenceIndex];
 
@@ -212,6 +217,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     // 2. Also call pause() directly for immediate audio stop
     if (videoPlayerRef.current) {
       videoPlayerRef.current.pause();
+      if (__DEV__) console.log('[LessonScreen] ⏹️ pause() called on player ref');
     }
 
     // 3. Seek back to start of sentence AFTER pause has been processed
@@ -219,22 +225,29 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     if (currentSentence && videoPlayerRef.current) {
       setTimeout(() => {
         videoPlayerRef.current?.seekTo(currentSentence.startTime);
+        if (__DEV__) console.log('[LessonScreen] ⏹️ seekTo called:', currentSentence.startTime);
       }, 150);
     }
   }, [settings.autoStop, setIsPlaying, lesson]);
+
+  // Stable getCurrentTime callback - CRITICAL: must be useCallback to prevent
+  // useTranscriptSync from recreating its polling interval every render.
+  // Previously this was inline and called setCurrentTime(time) which triggered
+  // re-renders on every 150ms poll, causing the interval to constantly reset
+  // and miss sentence-end detection for auto-stop.
+  const getCurrentTimeForSync = useCallback(async () => {
+    if (videoPlayerRef.current) {
+      const time = await videoPlayerRef.current.getCurrentTime();
+      return time;
+    }
+    return 0;
+  }, []);
 
   // Transcript sync
   const { activeSentenceIndex, activeWordIndex, resetSentenceEndFlag } = useTranscriptSync({
     transcript: lesson?.transcript || [],
     isPlaying,
-    getCurrentTime: async () => {
-      if (videoPlayerRef.current) {
-        const time = await videoPlayerRef.current.getCurrentTime();
-        setCurrentTime(time);
-        return time;
-      }
-      return 0;
-    },
+    getCurrentTime: getCurrentTimeForSync,
     onSentenceEnd: handleSentenceEnd,
   });
 

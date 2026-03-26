@@ -169,6 +169,7 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
     const playbackSpeedRef = useRef<number>(1);
     const isPlayingRef = useRef<boolean>(false);
     const isSeeking = useRef(false);
+    const lastSeekTimestampRef = useRef<number>(0); // Track when last seek happened
 
     // Keep speed ref in sync
     useEffect(() => {
@@ -271,7 +272,11 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
             currentPositionRef.current = t;
 
             // Also try to sync with native player time if available
-            if (playerRef.current) {
+            // IMPORTANT: Skip recalibration for 2s after a seek - native player
+            // lags behind on remote URLs and would overwrite the correct seek position,
+            // causing auto-stop to re-trigger immediately.
+            const timeSinceLastSeek = Date.now() - lastSeekTimestampRef.current;
+            if (playerRef.current && timeSinceLastSeek > 2000) {
               const nativeTime = playerRef.current.currentTime;
               if (nativeTime > 0) {
                 const nativeSec = nativeTime / 1000;
@@ -352,6 +357,7 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
         if (playerRef.current && playerReady) {
           if (__DEV__) console.log('[AudioPlayer] seekTo:', seconds);
           isSeeking.current = true;
+          lastSeekTimestampRef.current = Date.now();
 
           // Update manual tracking immediately
           currentPositionRef.current = seconds;
