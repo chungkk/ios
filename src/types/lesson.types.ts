@@ -32,14 +32,15 @@ export interface Sentence {
 export interface Lesson {
   id: string;
   title: string;
-  youtubeUrl: string;
-  videoId: string;
+  audio: string; // Required - audio source (YouTube URL, local path /audio/..., or HTTP URL)
+  youtubeUrl?: string; // Optional - only for YouTube-sourced lessons
+  videoId?: string; // Optional - extracted YouTube video ID
   thumbnail?: string;
   videoDuration: number; // seconds
   level: DifficultyLevel;
   category: Category;
   transcript: Sentence[];
-  source: string; // 'youtube'
+  source: string; // 'youtube' or other sources
   viewCount: number;
   featured?: boolean;
   isActive: boolean;

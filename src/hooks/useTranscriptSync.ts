@@ -81,14 +81,15 @@ export const useTranscriptSync = ({
       if (resetDelayRef.current) {
         clearTimeout(resetDelayRef.current);
       }
-      // Delay reset by 300ms to allow video seek to complete
+      // Delay reset by 500ms to allow video/audio seek to complete
+      // (AudioPlayer seek can take longer than YouTube)
       resetDelayRef.current = setTimeout(() => {
         if (__DEV__) {
           console.log('[useTranscriptSync] Resetting sentenceEndCalledRef after delay');
         }
         sentenceEndCalledRef.current = -1;
         resetDelayRef.current = null;
-      }, 300);
+      }, 500);
     }
     wasPlayingRef.current = isPlaying;
 
@@ -105,6 +106,12 @@ export const useTranscriptSync = ({
       const currentTime = await getCurrentTime();
 
       if (currentTime === null || currentTime === undefined) {
+        return;
+      }
+
+      // Guard: if playback was stopped while we were awaiting getCurrentTime,
+      // don't process the result (prevents false sentence-end triggers)
+      if (!wasPlayingRef.current) {
         return;
       }
 

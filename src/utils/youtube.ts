@@ -33,6 +33,7 @@ export const extractVideoId = (url: string): string | null => {
  * Fallback to hqdefault if maxres not available
  */
 export const getThumbnailUrl = (videoIdOrUrl: string): string | null => {
+  if (!videoIdOrUrl) return null;
   const videoId = videoIdOrUrl.includes('http') 
     ? extractVideoId(videoIdOrUrl) 
     : videoIdOrUrl;

@@ -13,6 +13,8 @@ import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { useTranscriptSync } from '../hooks/useTranscriptSync';
 import { useVoiceRecording } from '../hooks/useVoiceRecording';
 import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
+import AudioPlayer, { AudioPlayerRef } from '../components/player/AudioPlayer';
+import { BASE_URL } from '../services/api';
 import TranscriptView from '../components/player/TranscriptView';
 import PlaybackControls from '../components/player/PlaybackControls';
 import { Loading } from '../components/common/Loading';
@@ -70,7 +72,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
   const { lesson, loading, error } = useLessonData(lessonId);
 
-  const videoPlayerRef = useRef<VideoPlayerRef>(null);
+  const videoPlayerRef = useRef<VideoPlayerRef & AudioPlayerRef>(null);
   const [completedReported, setCompletedReported] = useState(false);
   const [recordedSentences, setRecordedSentences] = useState<Set<number>>(new Set()); // Track sentences user has recorded
   const [rewardedSentences, setRewardedSentences] = useState<Set<number>>(new Set()); // Track sentences that got 80%+ reward
@@ -204,16 +206,21 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     const transcript = lesson?.transcript || [];
     const currentSentence = transcript[sentenceIndex];
 
+    // 1. Set state to paused FIRST - this triggers the player effect to pause
+    setIsPlaying(false);
+
+    // 2. Also call pause() directly for immediate audio stop
     if (videoPlayerRef.current) {
       videoPlayerRef.current.pause();
-      // Seek back to start of sentence so it stays on current sentence
-      if (currentSentence) {
-        setTimeout(() => {
-          videoPlayerRef.current?.seekTo(currentSentence.startTime);
-        }, 100);
-      }
     }
-    setIsPlaying(false);
+
+    // 3. Seek back to start of sentence AFTER pause has been processed
+    //    Use longer delay to ensure pause + seek don't race
+    if (currentSentence && videoPlayerRef.current) {
+      setTimeout(() => {
+        videoPlayerRef.current?.seekTo(currentSentence.startTime);
+      }, 150);
+    }
   }, [settings.autoStop, setIsPlaying, lesson]);
 
   // Transcript sync
@@ -652,19 +659,31 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     );
   }
 
-  const videoId = extractVideoId(lesson.youtubeUrl);
+  const videoId = lesson.youtubeUrl ? extractVideoId(lesson.youtubeUrl) : null;
+  const isAudioLesson = !videoId;
 
-  if (!videoId) {
+  // Check if lesson has neither a valid video ID nor an audio source
+  if (!videoId && !lesson.audio) {
     return (
       <EmptyState
         icon="alert-circle"
-        title="Invalid Video"
-        message="This lesson's video URL is invalid."
+        title="Invalid Lesson"
+        message="This lesson has no valid audio or video source."
         actionLabel="Go Back"
         onAction={() => navigation.goBack()}
       />
     );
   }
+
+  // Build audio URL for audio lessons
+  const audioUrl = lesson.audio
+    ? (lesson.audio.startsWith('http') ? lesson.audio : `${BASE_URL}${lesson.audio}`)
+    : '';
+
+  // Build thumbnail URL for audio player
+  const audioThumbnail = lesson.thumbnail
+    ? (lesson.thumbnail.startsWith('http') ? lesson.thumbnail : `${BASE_URL}${lesson.thumbnail}`)
+    : undefined;
 
   const transcript = lesson.transcript || [];
   const shadowingProgress = transcript.length > 0 ? (recordedSentences.size / transcript.length) * 100 : 0;
@@ -691,23 +710,34 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
 
       {/* Main Content - Side by Side on iPad Landscape */}
       <View style={dynamicStyles.mainContent}>
-        {/* Video Player - Left Column on iPad Landscape */}
-        {videoId && (
-          <Pressable
-            style={dynamicStyles.videoColumn}
-            onPress={() => setIsPlaying(!isPlaying)}
-          >
-            <VideoPlayer
+        {/* Player - Left Column on iPad Landscape */}
+        <Pressable
+          style={dynamicStyles.videoColumn}
+          onPress={() => setIsPlaying(!isPlaying)}
+        >
+          {isAudioLesson ? (
+            <AudioPlayer
               ref={videoPlayerRef}
-              videoId={videoId}
+              audioUrl={audioUrl}
+              thumbnailUrl={audioThumbnail}
               isPlaying={isPlaying}
               playbackSpeed={playbackSpeed}
               onReady={handleReady}
               onStateChange={handleStateChange}
               onError={handleError}
             />
-          </Pressable>
-        )}
+          ) : (
+            <VideoPlayer
+              ref={videoPlayerRef}
+              videoId={videoId!}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              onReady={handleReady}
+              onStateChange={handleStateChange}
+              onError={handleError}
+            />
+          )}
+        </Pressable>
 
         {/* Settings Menu */}
         <SettingsMenu

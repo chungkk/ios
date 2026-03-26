@@ -27,8 +27,8 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
       // Already full URL
       return lesson.thumbnail;
     }
-    // Fallback to YouTube thumbnail
-    return getThumbnailUrl(lesson.youtubeUrl) || '';
+    // Fallback to YouTube thumbnail (only if youtubeUrl exists)
+    return (lesson.youtubeUrl ? getThumbnailUrl(lesson.youtubeUrl) : null) || '';
   };
 
   const thumbnail = getThumbnail();
@@ -92,6 +92,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
 };
 
 const getDifficultyColor = (level: string): string => {
+  if (!level) return colors.retroCyan;
   const levelMap: Record<string, string> = {
     a1: colors.retroCyan,
     a2: '#7FDBDA',

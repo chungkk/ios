@@ -23,6 +23,8 @@ import { useTranslation } from 'react-i18next';
 import { useLessonData } from '../hooks/useLessonData';
 import { useStudyTimer } from '../hooks/useStudyTimer';
 import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
+import AudioPlayer, { AudioPlayerRef } from '../components/player/AudioPlayer';
+import { BASE_URL } from '../services/api';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { progressService } from '../services/progress.service';
@@ -48,7 +50,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
 
-  const videoPlayerRef = useRef<VideoPlayerRef>(null);
+  const videoPlayerRef = useRef<VideoPlayerRef & AudioPlayerRef>(null);
   const inputRef = useRef<TextInput>(null);
 
   // State
@@ -515,7 +517,14 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
     );
   }
 
-  const videoId = extractVideoId(lesson.youtubeUrl);
+  const videoId = lesson.youtubeUrl ? extractVideoId(lesson.youtubeUrl) : null;
+  const isAudioLesson = !videoId;
+  const audioUrl = lesson.audio
+    ? (lesson.audio.startsWith('http') ? lesson.audio : `${BASE_URL}${lesson.audio}`)
+    : '';
+  const audioThumbnail = lesson.thumbnail
+    ? (lesson.thumbnail.startsWith('http') ? lesson.thumbnail : `${BASE_URL}${lesson.thumbnail}`)
+    : undefined;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -541,30 +550,40 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
         </TouchableOpacity>
       </View>
 
-      {/* Video Player */}
-      {videoId && (
-        <TouchableOpacity
-          style={styles.videoContainer}
-          activeOpacity={0.9}
-          onPress={() => {
-            if (currentSentence && videoPlayerRef.current) {
-              const startTime = currentSentence.startTime || currentSentence.start;
-              videoPlayerRef.current.seekTo(startTime);
-              videoPlayerRef.current.play();
-              setIsPlaying(true);
-            }
-          }}
-        >
-          <VideoPlayer
+      {/* Player */}
+      <TouchableOpacity
+        style={styles.videoContainer}
+        activeOpacity={0.9}
+        onPress={() => {
+          if (currentSentence && videoPlayerRef.current) {
+            const startTime = currentSentence.startTime || currentSentence.start;
+            videoPlayerRef.current.seekTo(startTime);
+            videoPlayerRef.current.play();
+            setIsPlaying(true);
+          }
+        }}
+      >
+        {isAudioLesson ? (
+          <AudioPlayer
             ref={videoPlayerRef}
-            videoId={videoId}
+            audioUrl={audioUrl}
+            thumbnailUrl={audioThumbnail}
             isPlaying={isPlaying}
             playbackSpeed={playbackSpeed}
             onStateChange={handleStateChange}
             onError={() => { }}
           />
-        </TouchableOpacity>
-      )}
+        ) : (
+          <VideoPlayer
+            ref={videoPlayerRef}
+            videoId={videoId!}
+            isPlaying={isPlaying}
+            playbackSpeed={playbackSpeed}
+            onStateChange={handleStateChange}
+            onError={() => { }}
+          />
+        )}
+      </TouchableOpacity>
 
       {/* Diktat Header - outside KeyboardAvoidingView */}
       <View style={styles.diktatSection}>
