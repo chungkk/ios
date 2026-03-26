@@ -16,6 +16,16 @@ export interface VocabularyItem {
   reviewCount: number;
   lastReviewAt?: string;
   createdAt: string;
+  // Extended fields (from website)
+  gender?: string;
+  plural?: string;
+  pronunciation?: string;
+  partOfSpeech?: string;
+  grammar?: string;
+  baseForm?: string;
+  // Leitner box system
+  leitnerBox?: number;
+  nextReviewAt?: string;
   // SRS fields for Anki-like spaced repetition
   srsState?: 'new' | 'learning' | 'review' | 'relearning';
   srsEase?: number;
@@ -36,6 +46,12 @@ export interface SaveVocabularyRequest {
   example?: string;
   notes?: string;
   status?: 'new' | 'learning' | 'mastered';
+  gender?: string;
+  plural?: string;
+  pronunciation?: string;
+  partOfSpeech?: string;
+  grammar?: string;
+  baseForm?: string;
 }
 
 export interface UpdateVocabularyRequest {
@@ -43,6 +59,17 @@ export interface UpdateVocabularyRequest {
   status?: 'new' | 'learning' | 'mastered';
   notes?: string;
   reviewCount?: number;
+  // Extended fields
+  translation?: string;
+  gender?: string;
+  plural?: string;
+  pronunciation?: string;
+  partOfSpeech?: string;
+  grammar?: string;
+  baseForm?: string;
+  example?: string;
+  leitnerBox?: number;
+  nextReviewAt?: string;
   // SRS fields
   srsState?: 'new' | 'learning' | 'review' | 'relearning';
   srsEase?: number;
@@ -52,6 +79,37 @@ export interface UpdateVocabularyRequest {
   srsReviews?: number;
   srsLapses?: number;
   srsLastReview?: string | null;
+}
+
+// Dictionary lookup result
+export interface DictionaryResult {
+  word: string;
+  translation?: string;
+  gender?: string;
+  plural?: string;
+  pronunciation?: string;
+  partOfSpeech?: string;
+  grammar?: string;
+  baseForm?: string;
+  explanation?: string;
+  examples?: Array<string | { de: string; translation?: string }>;
+}
+
+// Sentence exercise
+export interface SentenceExercise {
+  word: string;
+  vietnameseSentence: string;
+  expectedGerman: string;
+}
+
+// Check result
+export interface CheckResult {
+  isCorrect: boolean;
+  grammarScore?: number;
+  meaningScore?: number;
+  corrections?: string;
+  suggestion?: string;
+  explanation?: string;
 }
 
 /**
@@ -150,6 +208,137 @@ export const deleteVocabularyByWord = async (word: string): Promise<void> => {
   }
 };
 
+/**
+ * Dictionary lookup - AI-powered word information
+ * POST /api/dictionary
+ */
+export const lookupDictionary = async (word: string, targetLang: string = 'vi'): Promise<DictionaryResult> => {
+  try {
+    const response = await api.post<DictionaryResult | { data: DictionaryResult }>(
+      '/api/dictionary',
+      { word: word.trim(), targetLang }
+    );
+    const data = response.data;
+    // Handle both { data: {...} } and direct format
+    return (data as any).data || data;
+  } catch (error) {
+    console.error('[VocabularyService] Dictionary lookup error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Check typed German word against expected
+ * POST /api/vocab-translate-exercise (action: 'check-word')
+ */
+export const checkTypedWord = async (
+  input: string,
+  expectedWord: string,
+  translation: string,
+  partOfSpeech?: string,
+  baseForm?: string,
+): Promise<{ isCorrect: boolean; explanation?: string }> => {
+  try {
+    const response = await api.post('/api/vocab-translate-exercise', {
+      action: 'check-word',
+      input: input.trim(),
+      expectedWord,
+      translation,
+      partOfSpeech: partOfSpeech || '',
+      baseForm: baseForm || '',
+    });
+    return response.data;
+  } catch (error) {
+    console.error('[VocabularyService] Check word error:', error);
+    // Fallback to simple normalize check
+    const normalize = (s: string) =>
+      s.toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').trim();
+    const correct = normalize(input) === normalize(expectedWord) ||
+      (!!baseForm && normalize(input) === normalize(baseForm));
+    return { isCorrect: correct };
+  }
+};
+
+/**
+ * Check German sentence written by user
+ * POST /api/check-sentence
+ */
+export const checkSentence = async (
+  sentence: string,
+  vocabulary: string,
+  targetLang: string = 'vi',
+): Promise<CheckResult> => {
+  try {
+    const response = await api.post('/api/check-sentence', {
+      sentence: sentence.trim(),
+      vocabulary,
+      targetLang,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('[VocabularyService] Check sentence error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate sentence translation exercises
+ * POST /api/vocab-translate-exercise (action: 'generate')
+ */
+export const generateSentenceExercises = async (
+  words: Array<{ word: string; translation: string }>,
+): Promise<SentenceExercise[]> => {
+  try {
+    const response = await api.post('/api/vocab-translate-exercise', {
+      action: 'generate',
+      words,
+    });
+    return response.data.exercises || [];
+  } catch (error) {
+    console.error('[VocabularyService] Generate exercises error:', error);
+    return [];
+  }
+};
+
+/**
+ * Check sentence translation (Vietnamese → German)
+ * POST /api/vocab-translate-exercise (action: 'check')
+ */
+export const checkSentenceTranslation = async (
+  vietnameseSentence: string,
+  germanTranslation: string,
+  expectedGerman: string,
+  vocabulary: string,
+): Promise<CheckResult> => {
+  try {
+    const response = await api.post('/api/vocab-translate-exercise', {
+      action: 'check',
+      vietnameseSentence,
+      germanTranslation: germanTranslation.trim(),
+      expectedGerman,
+      vocabulary,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('[VocabularyService] Check sentence translation error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch vocabulary stats for chart
+ * GET /api/vocabulary-stats?period=week|month
+ */
+export const fetchVocabStats = async (period: 'week' | 'month' = 'week') => {
+  try {
+    const response = await api.get('/api/vocabulary-stats', { params: { period } });
+    return response.data;
+  } catch (error) {
+    console.error('[VocabularyService] Fetch stats error:', error);
+    return null;
+  }
+};
+
 export const vocabularyService = {
   fetchVocabulary,
   checkWordExists,
@@ -157,6 +346,12 @@ export const vocabularyService = {
   updateVocabulary,
   deleteVocabulary,
   deleteVocabularyByWord,
+  lookupDictionary,
+  checkTypedWord,
+  checkSentence,
+  generateSentenceExercises,
+  checkSentenceTranslation,
+  fetchVocabStats,
 };
 
 export default vocabularyService;

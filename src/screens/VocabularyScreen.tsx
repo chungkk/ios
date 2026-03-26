@@ -1,5 +1,5 @@
 // VocabularyScreen - Smart Vocabulary Learning
-// Neo-Retro Design with SRS Integration
+// Neo-Retro Design with SRS Integration + Full Website Features
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -14,6 +14,7 @@ import {
   Modal,
   TextInput,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,7 +24,11 @@ import { vocabularyService, VocabularyItem } from '../services/vocabulary.servic
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
+import AddWordModal from '../components/vocabulary/AddWordModal';
+import LearnMode from '../components/vocabulary/LearnMode';
+import VocabChart from '../components/vocabulary/VocabChart';
 import { SRSCard } from '../utils/srs';
+import { getWordsForReview } from '../utils/vocabExerciseEngine';
 import { colors, spacing } from '../styles/theme';
 
 const ITEMS_PER_PAGE = 15;
@@ -33,30 +38,25 @@ type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
 
 // Helper function to classify word status based on SRS state
 const getWordStatusFromSRS = (item: VocabularyItem): WordStatus => {
-  // Use actual SRS state if available
-  if (item.srsState) {
-    switch (item.srsState) {
-      case 'new':
-        return 'new';
-      case 'learning':
-      case 'relearning':
-        return 'learning';
-      case 'review':
-        return 'mastered';
-      default:
-        return 'new';
+  // Use actual status field if available
+  if (item.status) {
+    switch (item.status) {
+      case 'new': return 'new';
+      case 'learning': return 'learning';
+      case 'mastered': return 'mastered';
     }
   }
-  // Fallback: classify based on creation time if no SRS state
-  const now = new Date();
-  const created = new Date(item.createdAt || Date.now());
-  const age = now.getTime() - created.getTime();
-  const oneDay = 24 * 60 * 60 * 1000;
-  const oneWeek = 7 * oneDay;
-
-  if (age < oneDay) return 'new';
-  if (age < oneWeek) return 'learning';
-  return 'mastered';
+  // Fallback to SRS state
+  if (item.srsState) {
+    switch (item.srsState) {
+      case 'new': return 'new';
+      case 'learning':
+      case 'relearning': return 'learning';
+      case 'review': return 'mastered';
+      default: return 'new';
+    }
+  }
+  return 'new';
 };
 
 const VocabularyScreen: React.FC = () => {
@@ -70,55 +70,18 @@ const VocabularyScreen: React.FC = () => {
 
   // Dynamic styles for iPad optimization
   const dynamicStyles = useMemo(() => ({
-    // Not Logged In Card - scale up for iPad
-    notLoggedInCard: {
-      maxWidth: isIPad ? 520 : 320,
-    },
-    notLoggedInEmoji: {
-      fontSize: isIPad ? 72 : 48,
-      marginBottom: isIPad ? 16 : 8,
-    },
-    notLoggedInTitle: {
-      fontSize: isIPad ? 32 : 22,
-      marginBottom: isIPad ? 24 : 16,
-    },
-    notLoggedInDivider: {
-      width: isIPad ? 80 : 60,
-      height: isIPad ? 4 : 3,
-      marginBottom: isIPad ? 28 : 20,
-    },
-    notLoggedInIcon: {
-      size: isIPad ? 56 : 40,
-      marginBottom: isIPad ? 16 : 12,
-    },
-    notLoggedInMessage: {
-      fontSize: isIPad ? 22 : 16,
-      marginBottom: isIPad ? 12 : 8,
-    },
-    notLoggedInHint: {
-      fontSize: isIPad ? 18 : 14,
-      lineHeight: isIPad ? 28 : 20,
-    },
-    notLoggedInContent: {
-      padding: isIPad ? 40 : 24, // spacing.xl = 24
-    },
-    // Feature items - scale up for iPad
-    notLoggedInFeatures: {
-      gap: isIPad ? 28 : 16,
-      marginTop: isIPad ? 36 : 24,
-    },
-    featureItem: {
-      paddingVertical: isIPad ? 20 : 12,
-      paddingHorizontal: isIPad ? 28 : 16,
-      borderRadius: isIPad ? 16 : 12,
-    },
-    featureIcon: {
-      fontSize: isIPad ? 36 : 24,
-      marginBottom: isIPad ? 8 : 4,
-    },
-    featureText: {
-      fontSize: isIPad ? 15 : 11,
-    },
+    notLoggedInCard: { maxWidth: isIPad ? 520 : 320 },
+    notLoggedInEmoji: { fontSize: isIPad ? 72 : 48, marginBottom: isIPad ? 16 : 8 },
+    notLoggedInTitle: { fontSize: isIPad ? 32 : 22, marginBottom: isIPad ? 24 : 16 },
+    notLoggedInDivider: { width: isIPad ? 80 : 60, height: isIPad ? 4 : 3, marginBottom: isIPad ? 28 : 20 },
+    notLoggedInIcon: { size: isIPad ? 56 : 40, marginBottom: isIPad ? 16 : 12 },
+    notLoggedInMessage: { fontSize: isIPad ? 22 : 16, marginBottom: isIPad ? 12 : 8 },
+    notLoggedInHint: { fontSize: isIPad ? 18 : 14, lineHeight: isIPad ? 28 : 20 },
+    notLoggedInContent: { padding: isIPad ? 40 : 24 },
+    notLoggedInFeatures: { gap: isIPad ? 28 : 16, marginTop: isIPad ? 36 : 24 },
+    featureItem: { paddingVertical: isIPad ? 20 : 12, paddingHorizontal: isIPad ? 28 : 16, borderRadius: isIPad ? 16 : 12 },
+    featureIcon: { fontSize: isIPad ? 36 : 24, marginBottom: isIPad ? 8 : 4 },
+    featureText: { fontSize: isIPad ? 15 : 11 },
   }), [isIPad]);
 
   // State
@@ -126,11 +89,14 @@ const VocabularyScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFlashcard, setShowFlashcard] = useState(false);
-  const [activeFilter] = useState<WordStatus>('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showLearn, setShowLearn] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<WordStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
 
-  // Initialize TTS on mount - ignore silent switch so TTS works in silent mode
+  // Initialize TTS on mount
   useEffect(() => {
     const initTTS = async () => {
       try {
@@ -159,7 +125,6 @@ const VocabularyScreen: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch vocabulary when screen is focused (fixes issue where new words don't appear)
   useFocusEffect(
     useCallback(() => {
       fetchVocabulary();
@@ -172,7 +137,7 @@ const VocabularyScreen: React.FC = () => {
     setRefreshing(false);
   }, [fetchVocabulary]);
 
-  // Calculate stats using SRS-based classification
+  // Calculate stats
   const stats = useMemo(() => {
     const counts = { new: 0, learning: 0, mastered: 0 };
     vocabulary.forEach(v => {
@@ -181,27 +146,36 @@ const VocabularyScreen: React.FC = () => {
         counts[status]++;
       }
     });
-    return {
-      total: vocabulary.length,
-      ...counts,
-    };
+    return { total: vocabulary.length, ...counts };
   }, [vocabulary]);
 
-  // Filter and search using SRS-based classification
+  // Pending review words
+  const pendingReview = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return vocabulary.filter(v => {
+      if (v.status === 'mastered') return false;
+      const created = new Date(v.createdAt);
+      const isToday = created >= todayStart;
+      const isDue = !v.nextReviewAt || new Date(v.nextReviewAt) <= new Date();
+      return isToday || isDue;
+    });
+  }, [vocabulary]);
+
+  // Filter and search
   const filteredVocabulary = useMemo(() => {
     let filtered = vocabulary;
 
-    // Filter by status using SRS state
     if (activeFilter !== 'all') {
       filtered = filtered.filter(v => getWordStatusFromSRS(v) === activeFilter);
     }
 
-    // Search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(v =>
         v.word.toLowerCase().includes(query) ||
-        v.translation.toLowerCase().includes(query)
+        v.translation.toLowerCase().includes(query) ||
+        (v.example && v.example.toLowerCase().includes(query))
       );
     }
 
@@ -215,7 +189,6 @@ const VocabularyScreen: React.FC = () => {
     return filteredVocabulary.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredVocabulary, currentPage]);
 
-  // Reset page when filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [activeFilter, searchQuery]);
@@ -243,10 +216,61 @@ const VocabularyScreen: React.FC = () => {
     );
   }, [t]);
 
+  // Update word status
+  const handleUpdateStatus = useCallback(async (vocab: VocabularyItem) => {
+    const newStatus = vocab.status === 'new' ? 'learning' :
+      vocab.status === 'learning' ? 'mastered' : 'learning';
+    try {
+      await vocabularyService.updateVocabulary({
+        id: vocab.id,
+        status: newStatus,
+        reviewCount: (vocab.reviewCount || 0) + 1,
+      });
+      setVocabulary(prev => prev.map(v =>
+        v.id === vocab.id ? { ...v, status: newStatus, reviewCount: (v.reviewCount || 0) + 1 } : v
+      ));
+    } catch {
+      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái');
+    }
+  }, []);
+
+  // AI Enrich word
+  const handleEnrichWord = useCallback(async (vocab: VocabularyItem) => {
+    setEnrichingIds(prev => new Set(prev).add(vocab.id));
+    try {
+      const data = await vocabularyService.lookupDictionary(vocab.word);
+      const updateFields: any = {};
+      if (data.translation) updateFields.translation = data.translation;
+      if (data.gender) updateFields.gender = data.gender;
+      if (data.plural) updateFields.plural = data.plural;
+      if (data.pronunciation) updateFields.pronunciation = data.pronunciation;
+      if (data.partOfSpeech) updateFields.partOfSpeech = data.partOfSpeech;
+      if (data.grammar) updateFields.grammar = data.grammar;
+      if (data.baseForm) updateFields.baseForm = data.baseForm;
+      if (data.explanation) updateFields.notes = data.explanation;
+      if (data.examples?.[0]) {
+        const ex = data.examples[0];
+        updateFields.example = typeof ex === 'string' ? ex : (ex as any).de || '';
+      }
+
+      await vocabularyService.updateVocabulary({ id: vocab.id, ...updateFields });
+      setVocabulary(prev => prev.map(v =>
+        v.id === vocab.id ? { ...v, ...updateFields } : v
+      ));
+    } catch {
+      Alert.alert('Lỗi', 'Không thể cập nhật bằng AI');
+    } finally {
+      setEnrichingIds(prev => {
+        const next = new Set(prev);
+        next.delete(vocab.id);
+        return next;
+      });
+    }
+  }, []);
+
   // Handle SRS card update from flashcard mode
   const handleUpdateCard = useCallback(async (card: SRSCard) => {
     try {
-      // Update vocabulary with SRS state via API
       await vocabularyService.updateVocabulary({
         id: card.id,
         srsState: card.state,
@@ -258,26 +282,32 @@ const VocabularyScreen: React.FC = () => {
         srsLapses: card.lapses,
         srsLastReview: card.lastReview?.toISOString() ?? null,
       });
-
-      // Update local state
       setVocabulary(prev => prev.map(v =>
-        v.id === card.id
-          ? {
-            ...v,
-            srsState: card.state,
-            srsEase: card.ease,
-            srsInterval: card.interval,
-            srsStepIndex: card.stepIndex,
-            srsDue: card.due.toISOString(),
-            srsReviews: card.reviews,
-            srsLapses: card.lapses,
-            srsLastReview: card.lastReview?.toISOString() ?? null,
-          }
-          : v
+        v.id === card.id ? {
+          ...v,
+          srsState: card.state,
+          srsEase: card.ease,
+          srsInterval: card.interval,
+          srsStepIndex: card.stepIndex,
+          srsDue: card.due.toISOString(),
+          srsReviews: card.reviews,
+          srsLapses: card.lapses,
+          srsLastReview: card.lastReview?.toISOString() ?? null,
+        } : v
       ));
     } catch (error) {
       console.error('Failed to update SRS card:', error);
     }
+  }, []);
+
+  // Handle word added from AddWordModal
+  const handleWordAdded = useCallback((word: VocabularyItem) => {
+    setVocabulary(prev => [word, ...prev]);
+  }, []);
+
+  // Handle vocab update from Learn Mode
+  const handleLearnUpdate = useCallback((updated: VocabularyItem) => {
+    setVocabulary(prev => prev.map(v => v.id === updated.id ? updated : v));
   }, []);
 
   // Speak word using TTS
@@ -285,18 +315,8 @@ const VocabularyScreen: React.FC = () => {
     try {
       const cleanW = word.replace(/[.,!?;:"""''„-]/g, '').trim();
       if (!cleanW) return;
-
-      // Ensure TTS is initialized
       await Tts.getInitStatus();
-
-      // Stop any ongoing speech first (wrapped for iOS compatibility)
-      try {
-        Tts.stop();
-      } catch {
-        // Ignore stop() errors on iOS
-      }
-
-      // Set German language and speak
+      try { Tts.stop(); } catch {}
       await Tts.setDefaultLanguage('de-DE');
       await Tts.speak(cleanW);
     } catch (ttsError: any) {
@@ -304,24 +324,27 @@ const VocabularyScreen: React.FC = () => {
     }
   }, []);
 
-  // Render word card
-  const renderItem = ({ item }: { item: VocabularyItem }) => {
+  // Render word card (enhanced with website features)
+  const renderItem = ({ item, index }: { item: VocabularyItem; index: number }) => {
     const status = getWordStatusFromSRS(item);
     const statusConfig: Record<WordStatus, { icon: string; color: string; label: string }> = {
-      all: { icon: '📚', color: colors.retroPurple, label: t('vocabulary.filterAll') },
-      new: { icon: '🆕', color: colors.retroCoral, label: t('vocabulary.filterNew') },
-      learning: { icon: '📖', color: colors.retroYellow, label: t('vocabulary.filterLearning') },
-      mastered: { icon: '✅', color: colors.retroCyan, label: t('vocabulary.filterMastered') },
+      all: { icon: '📚', color: colors.retroPurple, label: 'Tất cả' },
+      new: { icon: '🆕', color: colors.retroCoral, label: 'Mới' },
+      learning: { icon: '📖', color: colors.retroYellow, label: 'Đang học' },
+      mastered: { icon: '✅', color: colors.retroCyan, label: 'Thuộc' },
     };
     const config = statusConfig[status] || statusConfig.new;
+    const isEnriching = enrichingIds.has(item.id);
+    const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
 
     return (
       <View style={styles.wordCard}>
         <View style={[styles.cardAccent, { backgroundColor: config.color }]} />
         <View style={styles.cardBody}>
+          {/* Header row: word + speaker + status + actions */}
           <View style={styles.cardHeader}>
             <View style={styles.wordInfo}>
-              <Text style={styles.word}>{item.word}</Text>
+              <Text style={styles.wordIndex}>{globalIndex}</Text>
               <TouchableOpacity
                 style={styles.speakBtn}
                 onPress={() => handleSpeak(item.word)}
@@ -329,22 +352,46 @@ const VocabularyScreen: React.FC = () => {
               >
                 <Icon name="volume-high" size={16} color={colors.retroCyan} />
               </TouchableOpacity>
-              <View style={[styles.statusBadge, { backgroundColor: config.color + '20' }]}>
-                <Text style={styles.statusIcon}>{config.icon}</Text>
-              </View>
+              {item.gender && <Text style={styles.wordGender}>{item.gender}</Text>}
+              <Text style={styles.word}>{item.word}</Text>
+              <Text style={styles.wordSeparator}>—</Text>
+              <Text style={styles.translation} numberOfLines={1}>{item.translation}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => handleDelete(item.id)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Icon name="trash-outline" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
+            <View style={[styles.statusBadge, { backgroundColor: config.color + '20' }]}>
+              <Text style={styles.statusIcon}>{config.icon}</Text>
+            </View>
           </View>
 
-          <Text style={styles.translation}>{item.translation}</Text>
+          {/* Extended details */}
+          <View style={styles.detailsRow}>
+            {item.pronunciation && (
+              <Text style={styles.detailIPA}>{item.pronunciation}</Text>
+            )}
+            {item.plural && (
+              <Text style={styles.detailTag}>Pl: {item.plural}</Text>
+            )}
+            {item.partOfSpeech && (
+              <View style={styles.posBadge}>
+                <Text style={styles.posText}>{item.partOfSpeech}</Text>
+              </View>
+            )}
+          </View>
 
-          {item.context && (
+          {item.baseForm && item.baseForm.toLowerCase() !== item.word.toLowerCase() && (
+            <Text style={styles.detailBaseForm}>Grundform: {item.baseForm}</Text>
+          )}
+
+          {item.grammar && (
+            <Text style={styles.detailGrammar}>{item.grammar}</Text>
+          )}
+
+          {item.example && (
+            <Text style={styles.context} numberOfLines={2}>
+              „{item.example}"
+            </Text>
+          )}
+
+          {item.context && !item.example && (
             <Text style={styles.context} numberOfLines={2}>
               „{item.context}"
             </Text>
@@ -356,6 +403,41 @@ const VocabularyScreen: React.FC = () => {
               <Text style={styles.sourceText} numberOfLines={1}>{item.lessonTitle}</Text>
             </View>
           )}
+
+          {/* Actions row */}
+          <View style={styles.actionsRow}>
+            {/* Status toggle */}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => handleUpdateStatus(item)}
+            >
+              <Text style={styles.actionBtnText}>
+                {item.status === 'mastered' ? '🔄' : item.status === 'new' ? '📝' : '✅'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* AI Enrich */}
+            <TouchableOpacity
+              style={[styles.actionBtn, isEnriching && styles.actionBtnDisabled]}
+              onPress={() => handleEnrichWord(item)}
+              disabled={isEnriching}
+            >
+              {isEnriching ? (
+                <ActivityIndicator size="small" color={colors.retroPurple} />
+              ) : (
+                <Text style={styles.actionBtnText}>✨</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Delete */}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => handleDelete(item.id)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon name="trash-outline" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -363,7 +445,7 @@ const VocabularyScreen: React.FC = () => {
 
   if (loading) return <Loading />;
 
-  // Not logged in state - Neo Retro Style
+  // Not logged in state
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -409,19 +491,36 @@ const VocabularyScreen: React.FC = () => {
       {/* Header Card */}
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
             <Text style={styles.headerSubtitle}>{t('vocabulary.wordsSaved', { count: stats.total })}</Text>
           </View>
-          {vocabulary.length > 0 && (
+          <View style={styles.headerActions}>
+            {vocabulary.length >= 2 && (
+              <TouchableOpacity
+                style={[styles.learnBtn, pendingReview.length > 0 && styles.learnBtnUrgent]}
+                onPress={() => setShowLearn(true)}
+              >
+                <Text style={styles.learnBtnText}>
+                  📝 {pendingReview.length > 0 ? `Ôn ${pendingReview.length}` : 'Ôn tập'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {vocabulary.length > 0 && (
+              <TouchableOpacity
+                style={styles.flashcardBtn}
+                onPress={() => setShowFlashcard(true)}
+              >
+                <Icon name="albums" size={16} color="#fff" />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              style={styles.flashcardBtn}
-              onPress={() => setShowFlashcard(true)}
+              style={styles.addBtn}
+              onPress={() => setShowAddModal(true)}
             >
-              <Icon name="albums" size={18} color="#fff" />
-              <Text style={styles.flashcardBtnText}>{t('vocabulary.study')}</Text>
+              <Icon name="add" size={20} color="#fff" />
             </TouchableOpacity>
-          )}
+          </View>
         </View>
 
         {/* Search Bar */}
@@ -441,7 +540,45 @@ const VocabularyScreen: React.FC = () => {
           )}
         </View>
 
+        {/* Filter Tabs */}
+        <View style={styles.filterRow}>
+          {([
+            { key: 'all' as WordStatus, label: 'Tất cả', count: stats.total },
+            { key: 'new' as WordStatus, label: 'Mới', count: stats.new },
+            { key: 'learning' as WordStatus, label: 'Đang học', count: stats.learning },
+            { key: 'mastered' as WordStatus, label: 'Thuộc', count: stats.mastered },
+          ]).map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
+              onPress={() => setActiveFilter(tab.key)}
+            >
+              <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
+                {tab.label}
+              </Text>
+              <View style={[styles.filterCount, activeFilter === tab.key && styles.filterCountActive]}>
+                <Text style={[styles.filterCountText, activeFilter === tab.key && styles.filterCountTextActive]}>
+                  {tab.count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
+
+      {/* VocabChart */}
+      <VocabChart />
+
+      {/* Review Reminder */}
+      {pendingReview.length > 0 && (
+        <TouchableOpacity style={styles.reviewReminder} onPress={() => setShowLearn(true)}>
+          <Text style={styles.reviewReminderIcon}>⏰</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reviewReminderTitle}>{pendingReview.length} từ cần ôn hôm nay</Text>
+          </View>
+          <Text style={styles.reviewReminderBtn}>Ôn ngay →</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Word List */}
       {filteredVocabulary.length === 0 ? (
@@ -457,6 +594,11 @@ const VocabularyScreen: React.FC = () => {
               ? t('vocabulary.tryOtherKeyword')
               : t('vocabulary.noWordsMessage')}
           </Text>
+          {!searchQuery && (
+            <TouchableOpacity style={styles.addFirstBtn} onPress={() => setShowAddModal(true)}>
+              <Text style={styles.addFirstBtnText}>+ Thêm từ đầu tiên</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <>
@@ -514,6 +656,22 @@ const VocabularyScreen: React.FC = () => {
           onUpdateCard={handleUpdateCard}
         />
       </Modal>
+
+      {/* Add Word Modal */}
+      <AddWordModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onWordAdded={handleWordAdded}
+        pendingReviewCount={pendingReview.length}
+      />
+
+      {/* Learn Mode Modal */}
+      <LearnMode
+        visible={showLearn}
+        vocabulary={vocabulary}
+        onClose={() => setShowLearn(false)}
+        onUpdateVocabulary={handleLearnUpdate}
+      />
     </SafeAreaView>
   );
 };
@@ -542,7 +700,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   headerTitle: {
     fontSize: 22,
@@ -554,26 +712,46 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
-  flashcardBtn: {
+  headerActions: {
     flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
-    backgroundColor: colors.retroPurple,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  },
+  learnBtn: {
+    backgroundColor: colors.retroYellow,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    gap: 6,
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 0,
-    elevation: 2,
   },
-  flashcardBtnText: {
-    fontSize: 14,
+  learnBtnUrgent: {
+    backgroundColor: colors.retroCoral,
+  },
+  learnBtnText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.retroDark,
+  },
+  flashcardBtn: {
+    backgroundColor: colors.retroPurple,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addBtn: {
+    backgroundColor: colors.retroCyan,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Search
   searchBox: {
@@ -594,19 +772,22 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     padding: 0,
   },
-  // Filter Chips
+  // Filter Tabs
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   filterChip: {
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: colors.retroBorder,
+    gap: 4,
   },
   filterChipActive: {
     backgroundColor: colors.retroCyan,
@@ -619,6 +800,51 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: '#fff',
+  },
+  filterCount: {
+    backgroundColor: colors.retroBorder + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  filterCountActive: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  filterCountText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  filterCountTextActive: {
+    color: '#fff',
+  },
+  // Review Reminder
+  reviewReminder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FFB74D',
+    gap: 8,
+  },
+  reviewReminderIcon: {
+    fontSize: 20,
+  },
+  reviewReminderTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E65100',
+  },
+  reviewReminderBtn: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.retroCyan,
   },
   // Word List
   list: {
@@ -651,38 +877,97 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 8,
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  wordIndex: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.textMuted,
+    minWidth: 18,
   },
   word: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.retroDark,
   },
-  statusBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
+  wordGender: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.retroPurple,
   },
-  statusIcon: {
-    fontSize: 10,
-  },
-  deleteBtn: {
-    padding: 4,
-  },
-  speakBtn: {
-    padding: 4,
+  wordSeparator: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginHorizontal: 2,
   },
   translation: {
     fontSize: 14,
     color: colors.retroPurple,
     fontWeight: '500',
-    marginBottom: 4,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 4,
+  },
+  statusIcon: {
+    fontSize: 10,
+  },
+  speakBtn: {
+    padding: 2,
+  },
+  // Extended details
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+    flexWrap: 'wrap',
+  },
+  detailIPA: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  detailTag: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    backgroundColor: colors.retroCream,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  posBadge: {
+    backgroundColor: colors.retroPurple + '15',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  posText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.retroPurple,
+  },
+  detailBaseForm: {
+    fontSize: 11,
+    color: colors.retroCyan,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  detailGrammar: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginBottom: 2,
+    lineHeight: 15,
   },
   context: {
     fontSize: 12,
     color: colors.textSecondary,
     fontStyle: 'italic',
-    marginBottom: 6,
+    marginBottom: 4,
     lineHeight: 16,
   },
   sourceTag: {
@@ -690,12 +975,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     alignSelf: 'flex-start',
+    marginBottom: 6,
   },
   sourceText: {
     fontSize: 10,
     color: colors.retroPurple,
     fontWeight: '500',
     maxWidth: '50%',
+  },
+  // Actions row
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.retroBorder + '30',
+    paddingTop: 6,
+    marginTop: 2,
+  },
+  actionBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: colors.retroCream,
+  },
+  actionBtnDisabled: {
+    opacity: 0.5,
+  },
+  actionBtnText: {
+    fontSize: 14,
   },
   // Empty State
   emptyContainer: {
@@ -719,6 +1026,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 16,
+  },
+  addFirstBtn: {
+    backgroundColor: colors.retroCyan,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+  },
+  addFirstBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
   // Pagination
   pagination: {
@@ -758,7 +1079,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.retroDark,
   },
-  // Not Logged In State - Neo Retro
+  // Not Logged In State
   notLoggedInContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -804,9 +1125,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginBottom: 20,
   },
-  notLoggedInIcon: {
-    marginBottom: 12,
-  },
   notLoggedInMessage: {
     fontSize: 16,
     fontWeight: '700',
@@ -843,6 +1161,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.retroDark,
+  },
+  deleteBtn: {
+    padding: 4,
   },
 });
 
