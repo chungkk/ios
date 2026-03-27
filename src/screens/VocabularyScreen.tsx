@@ -36,7 +36,6 @@ import { getWordsForReview } from '../utils/vocabExerciseEngine';
 import { colors, spacing } from '../styles/theme';
 
 const ITEMS_PER_PAGE = 20;
-const LOAD_MORE_THRESHOLD = 0.5;
 
 // Word status types
 type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
@@ -106,12 +105,14 @@ const VocabularyScreen: React.FC = () => {
   // Daily Progress & Streak
   const [dailyProgress, setDailyProgress] = useState<DailyProgress | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
-  // Infinite scroll
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
   // Expanded word card
   const [expandedWordId, setExpandedWordId] = useState<string | null>(null);
   // Session timer
   const sessionStartRef = useRef<number>(0);
+  // FlatList ref for scroll-to-top on page change
+  const flatListRef = useRef<FlatList>(null);
   // Analytics + Grouping
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [groupByLesson, setGroupByLesson] = useState<string | null>(null);
@@ -286,20 +287,23 @@ const VocabularyScreen: React.FC = () => {
     return filteredVocabulary.filter(v => (v.lessonTitle || 'Khác') === groupByLesson);
   }, [filteredVocabulary, groupByLesson]);
 
-  // Pagination → Infinite scroll
-  const visibleVocabulary = useMemo(() => {
-    return displayVocabulary.slice(0, visibleCount);
-  }, [displayVocabulary, visibleCount]);
+  // Pagination
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(displayVocabulary.length / ITEMS_PER_PAGE)), [displayVocabulary.length]);
 
-  const handleLoadMore = useCallback(() => {
-    if (visibleCount < displayVocabulary.length) {
-      setVisibleCount(prev => Math.min(prev + ITEMS_PER_PAGE, displayVocabulary.length));
-    }
-  }, [visibleCount, displayVocabulary.length]);
+  const paginatedVocabulary = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return displayVocabulary.slice(start, start + ITEMS_PER_PAGE);
+  }, [displayVocabulary, currentPage]);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    setVisibleCount(ITEMS_PER_PAGE);
+    setCurrentPage(1);
   }, [activeFilter, searchQuery, groupByLesson]);
+
+  // Clamp currentPage if total pages shrink (e.g. after deletion)
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   // Delete word
   const handleDelete = useCallback(async (id: string) => {
@@ -490,7 +494,7 @@ const VocabularyScreen: React.FC = () => {
     };
     const config = statusConfig[status] || statusConfig.new;
     const isEnriching = enrichingIds.has(item.id);
-    const globalIndex = index + 1;
+    const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
     const isExpanded = expandedWordId === item.id;
 
     return (
@@ -848,13 +852,12 @@ const VocabularyScreen: React.FC = () => {
             </View>
           ) : (
             <FlatList
-              data={visibleVocabulary}
+              ref={flatListRef}
+              data={paginatedVocabulary}
               renderItem={renderItem}
               keyExtractor={item => item.id}
               contentContainerStyle={styles.list}
               showsVerticalScrollIndicator={false}
-              onEndReached={handleLoadMore}
-              onEndReachedThreshold={LOAD_MORE_THRESHOLD}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -862,14 +865,32 @@ const VocabularyScreen: React.FC = () => {
                   tintColor={colors.retroCyan}
                 />
               }
-              ListFooterComponent={
-                visibleCount < filteredVocabulary.length ? (
-                  <View style={styles.loadingMore}>
-                    <ActivityIndicator size="small" color={colors.retroCyan} />
-                  </View>
-                ) : null
-              }
             />
+          )}
+
+          {/* Pagination Controls */}
+          {displayVocabulary.length > ITEMS_PER_PAGE && (
+            <View style={styles.pagination}>
+              <TouchableOpacity
+                style={[styles.pageBtn, currentPage <= 1 && styles.pageBtnDisabled]}
+                onPress={() => { setCurrentPage(p => Math.max(1, p - 1)); setExpandedWordId(null); flatListRef.current?.scrollToOffset({ offset: 0, animated: true }); }}
+                disabled={currentPage <= 1}
+              >
+                <Icon name="chevron-back" size={18} color={currentPage <= 1 ? colors.textMuted : colors.retroDark} />
+              </TouchableOpacity>
+
+              <View style={styles.pageInfo}>
+                <Text style={styles.pageText}>{currentPage} / {totalPages}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.pageBtn, currentPage >= totalPages && styles.pageBtnDisabled]}
+                onPress={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); setExpandedWordId(null); flatListRef.current?.scrollToOffset({ offset: 0, animated: true }); }}
+                disabled={currentPage >= totalPages}
+              >
+                <Icon name="chevron-forward" size={18} color={currentPage >= totalPages ? colors.textMuted : colors.retroDark} />
+              </TouchableOpacity>
+            </View>
           )}
         </>
       )}
