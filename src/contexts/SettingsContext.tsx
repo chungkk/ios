@@ -9,6 +9,7 @@ interface AppSettings {
   nativeLanguage: string;
   autoStop: boolean;
   showTranslation: boolean;
+  dailyVocabGoal: number;
 }
 
 interface SettingsContextType {
@@ -18,6 +19,7 @@ interface SettingsContextType {
   setNativeLanguage: (lang: string) => Promise<void>;
   toggleAutoStop: () => Promise<void>;
   toggleShowTranslation: () => Promise<void>;
+  setDailyVocabGoal: (goal: number) => Promise<void>;
 }
 
 const defaultSettings: AppSettings = {
@@ -25,6 +27,7 @@ const defaultSettings: AppSettings = {
   nativeLanguage: 'de',
   autoStop: false,
   showTranslation: false, // Default to hidden - user can toggle to see translations
+  dailyVocabGoal: 10, // Default 10 words per day
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -103,8 +106,15 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     await saveSettings(updated);
   }, [settings, saveSettings]);
 
+  // Set daily vocabulary goal
+  const setDailyVocabGoal = useCallback(async (goal: number) => {
+    const updated = { ...settings, dailyVocabGoal: goal };
+    setSettings(updated);
+    await saveSettings(updated);
+  }, [settings, saveSettings]);
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage, toggleAutoStop, toggleShowTranslation }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage, toggleAutoStop, toggleShowTranslation, setDailyVocabGoal }}>
       {children}
     </SettingsContext.Provider>
   );

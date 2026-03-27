@@ -50,13 +50,14 @@ const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { user, loading, userPoints, logout, deleteAccount, updateUser } = useAuth();
-  const { settings, toggleHaptic, setNativeLanguage } = useSettings();
+  const { settings, toggleHaptic, setNativeLanguage, setDailyVocabGoal } = useSettings();
   const [showAGBModal, setShowAGBModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
   const [showChangeNameModal, setShowChangeNameModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showVocabGoalModal, setShowVocabGoalModal] = useState(false);
 
   // Form state for account management
   const [newName, setNewName] = useState('');
@@ -353,9 +354,6 @@ const SettingsScreen: React.FC = () => {
           <Icon name="chevron-forward" size={24} color={colors.retroCyan} />
         </TouchableOpacity>
 
-        {/* Vocabulary Progress */}
-        {user && <VocabChart />}
-
         {/* Settings Options */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
@@ -394,6 +392,19 @@ const SettingsScreen: React.FC = () => {
               <View style={[styles.toggleSwitch, settings.hapticEnabled && styles.toggleSwitchOn]}>
                 <View style={[styles.toggleKnob, settings.hapticEnabled && styles.toggleKnobOn]} />
               </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowVocabGoalModal(true)} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <Icon name="book" size={22} color={colors.retroYellow} />
+              <Text style={styles.settingText}>{t('settings.dailyVocabGoal')}</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <Text style={styles.settingValue}>
+                {settings.dailyVocabGoal} {t('settings.wordsPerDay')}
+              </Text>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
             </View>
           </TouchableOpacity>
         </View>
@@ -628,6 +639,77 @@ const SettingsScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.languageModalCancelBtn}
               onPress={() => setShowLanguageModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.languageModalCancelText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Vocab Goal Selection Modal */}
+      <Modal
+        visible={showVocabGoalModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowVocabGoalModal(false)}
+        supportedOrientations={['portrait', 'landscape']}
+      >
+        <View style={styles.languageModalOverlay}>
+          <View style={styles.languageModalContainer}>
+            <View style={styles.languageModalHeader}>
+              <Icon name="book" size={28} color={colors.retroYellow} />
+              <Text style={styles.languageModalTitle}>{t('settings.dailyVocabGoal')}</Text>
+            </View>
+
+            <Text style={styles.languageModalSubtitle}>{t('settings.selectVocabGoal')}</Text>
+
+            <View style={styles.languageOptionsContainer}>
+              {[5, 10, 20].map((goal) => {
+                const isSelected = settings.dailyVocabGoal === goal;
+                const labels: Record<number, string> = {
+                  5: t('settings.vocabGoalCasual'),
+                  10: t('settings.vocabGoalRegular'),
+                  20: t('settings.vocabGoalIntensive'),
+                };
+                return (
+                  <TouchableOpacity
+                    key={goal}
+                    style={[
+                      styles.languageOption,
+                      isSelected && styles.languageOptionSelected,
+                    ]}
+                    onPress={() => {
+                      setDailyVocabGoal(goal);
+                      setShowVocabGoalModal(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.languageOptionFlag}>
+                      {goal === 5 ? '🌱' : goal === 10 ? '📚' : '🔥'}
+                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[
+                        styles.languageOptionText,
+                        isSelected && styles.languageOptionTextSelected,
+                      ]}>
+                        {goal} {t('settings.wordsPerDay')}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>
+                        {labels[goal]}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Icon name="checkmark-circle" size={22} color={colors.retroCyan} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={styles.languageModalCancelBtn}
+              onPress={() => setShowVocabGoalModal(false)}
               activeOpacity={0.7}
             >
               <Text style={styles.languageModalCancelText}>{t('common.cancel')}</Text>
