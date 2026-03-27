@@ -23,11 +23,17 @@ import {
 } from '../../services/vocabulary.service';
 import {
   evaluateResults,
-  calculateNextReviewLeitner,
   getWordsForReview,
   WordResult,
   EvaluationResult,
 } from '../../utils/vocabExerciseEngine';
+import {
+  SRSCard,
+  CardState,
+  Rating,
+  SRS_CONFIG,
+  calculateNextReview,
+} from '../../utils/srs';
 
 interface LearnModeProps {
   visible: boolean;
@@ -47,6 +53,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
   const [finished, setFinished] = useState(false);
   const [wordResults, setWordResults] = useState<Record<string, WordResult>>({});
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
+  const [retryCount, setRetryCount] = useState<Record<string, number>>({});
 
   // Vocab set for this session
   const [vocabSet, setVocabSet] = useState<VocabularyItem[]>([]);
@@ -94,17 +101,26 @@ const LearnMode: React.FC<LearnModeProps> = ({
     if (vocabulary.length < 2) return;
     const wordsForReview = getWordsForReview(vocabulary);
     const pool = pendingReview.length >= 2
-      ? pendingReview.slice(0, 20)
+      ? pendingReview.slice(0, 30)
       : wordsForReview.length >= 2
-        ? wordsForReview.slice(0, 20)
-        : vocabulary.slice(0, 20);
+        ? wordsForReview.slice(0, 30)
+        : vocabulary.slice(0, 30);
 
-    const transPool = pool.filter(v => v.word && v.translation).slice(0, 5);
-    const typePool = [...pool.filter(v => v.word && v.translation)]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 10);
+    // Sort by SRS priority: new > learning > mastered, then by nextReviewAt
+    const sorted = [...pool].sort((a, b) => {
+      const order: Record<string, number> = { new: 0, learning: 1, mastered: 2 };
+      const diff = (order[a.status || 'new'] ?? 1) - (order[b.status || 'new'] ?? 1);
+      if (diff !== 0) return diff;
+      const da = a.nextReviewAt ? new Date(a.nextReviewAt).getTime() : 0;
+      const db = b.nextReviewAt ? new Date(b.nextReviewAt).getTime() : 0;
+      return da - db;
+    });
 
-    setVocabSet(pool);
+    const transPool = sorted.filter(v => v.word && v.translation).slice(0, 3);
+    // Full pool for typing instead of 10
+    const typePool = [...sorted.filter(v => v.word && v.translation)];
+
+    setVocabSet(sorted);
     setTransWords(transPool);
     setTransIdx(0);
     setTransInput('');
@@ -122,6 +138,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
     setFinished(false);
     setWordResults({});
     setEvaluation(null);
+    setRetryCount({});
   }, [vocabulary, pendingReview]);
 
   // Start when modal opens
@@ -156,6 +173,25 @@ const LearnMode: React.FC<LearnModeProps> = ({
     const word = typeWords[typeIdx];
     if (!typeInput.trim() || !word) return;
     setTypeChecking(true);
+
+    const normalize = (s: string) =>
+      s.toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').trim();
+
+    // Local check: accept exact match, baseForm, or stem/conjugation match
+    const isLocalMatch = (input: string, expected: string, baseForm?: string | null): boolean => {
+      const ni = normalize(input);
+      const ne = normalize(expected);
+      // Exact match
+      if (ni === ne) return true;
+      // BaseForm match (e.g. "belasten" for "belastende")
+      if (baseForm && normalize(baseForm) === ni) return true;
+      // Input is the base/stem of expected (e.g. "belasten" → "belastende")
+      if (ne.startsWith(ni) && ni.length >= 3 && (ne.length - ni.length) <= 4) return true;
+      // Expected is the base/stem of input
+      if (ni.startsWith(ne) && ne.length >= 3 && (ni.length - ne.length) <= 4) return true;
+      return false;
+    };
+
     try {
       const data = await vocabularyService.checkTypedWord(
         typeInput,
@@ -164,12 +200,13 @@ const LearnMode: React.FC<LearnModeProps> = ({
         word.partOfSpeech,
         word.baseForm,
       );
-      setTypeResult({ correct: data.isCorrect, answer: word.word, explanation: data.explanation });
-      trackWordResult(word.word, data.isCorrect);
+      // Override AI if local stem match but AI says wrong
+      const localMatch = isLocalMatch(typeInput, word.word, word.baseForm);
+      const isCorrect = data.isCorrect || localMatch;
+      setTypeResult({ correct: isCorrect, answer: word.word, explanation: data.explanation });
+      trackWordResult(word.word, isCorrect);
     } catch {
-      const normalize = (s: string) =>
-        s.toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').trim();
-      const correct = normalize(typeInput) === normalize(word.word);
+      const correct = isLocalMatch(typeInput, word.word, word.baseForm);
       setTypeResult({ correct, answer: word.word });
       trackWordResult(word.word, correct);
     } finally {
@@ -178,6 +215,17 @@ const LearnMode: React.FC<LearnModeProps> = ({
   };
 
   const nextTypeWord = () => {
+    // Retry loop: if wrong and retried < 2 times, re-queue this word
+    if (typeResult && !typeResult.correct) {
+      const word = typeWords[typeIdx];
+      const currentRetries = retryCount[word.word] || 0;
+      if (currentRetries < 2) {
+        setRetryCount(prev => ({ ...prev, [word.word]: currentRetries + 1 }));
+        // Append this word to end of typeWords
+        setTypeWords(prev => [...prev, word]);
+      }
+    }
+
     if (typeIdx + 1 >= typeWords.length) {
       if (transWords.length > 0) {
         setStep(2);
@@ -283,33 +331,70 @@ const LearnMode: React.FC<LearnModeProps> = ({
     const eval_ = evaluateResults(wordResults, vocabSet);
     setEvaluation(eval_);
 
-    // Update Leitner boxes
+    // Update SRS (unified SM-2) for each word
     for (const vocab of vocabSet) {
       const r = wordResults[vocab.word];
       if (!r || (r.correct === 0 && r.wrong === 0)) continue;
       const total = r.correct + r.wrong;
       const ratio = r.correct / total;
-      const correct = ratio >= 0.7;
-      const { newBox, nextReview } = calculateNextReviewLeitner(vocab.leitnerBox || 0, correct);
 
+      // Build SRS card from vocab state
+      const card: SRSCard = {
+        id: vocab.id,
+        word: vocab.word,
+        translation: vocab.translation,
+        state: (vocab.srsState as CardState) || CardState.NEW,
+        ease: vocab.srsEase ?? SRS_CONFIG.STARTING_EASE,
+        interval: vocab.srsInterval ?? 0,
+        stepIndex: vocab.srsStepIndex ?? 0,
+        due: vocab.srsDue ? new Date(vocab.srsDue) : new Date(),
+        reviews: vocab.srsReviews ?? 0,
+        lapses: vocab.srsLapses ?? 0,
+        lastReview: vocab.srsLastReview ? new Date(vocab.srsLastReview) : null,
+      };
+
+      // Map score to SRS rating
+      const rating = ratio >= 0.85 ? Rating.EASY
+        : ratio >= 0.7 ? Rating.GOOD
+        : ratio >= 0.4 ? Rating.HARD
+        : Rating.AGAIN;
+
+      const updated = calculateNextReview(card, rating);
+
+      // Derive status from SRS state
       let newStatus = vocab.status;
-      if (correct && newBox >= 3) newStatus = 'mastered';
-      else if (total > 0 && vocab.status === 'new') newStatus = 'learning';
+      if (updated.state === CardState.REVIEW && updated.interval >= 7) newStatus = 'mastered';
+      else if (updated.state === CardState.NEW && total > 0) newStatus = 'learning';
+      else if (updated.state === CardState.LEARNING || updated.state === CardState.RELEARNING) newStatus = 'learning';
 
       try {
         await vocabularyService.updateVocabulary({
           id: vocab.id,
           status: newStatus,
           reviewCount: (vocab.reviewCount || 0) + 1,
-          leitnerBox: newBox,
-          nextReviewAt: nextReview.toISOString(),
+          srsState: updated.state,
+          srsEase: updated.ease,
+          srsInterval: updated.interval,
+          srsStepIndex: updated.stepIndex,
+          srsDue: updated.due.toISOString(),
+          srsReviews: updated.reviews,
+          srsLapses: updated.lapses,
+          srsLastReview: updated.lastReview?.toISOString() ?? null,
+          nextReviewAt: updated.due.toISOString(),
         });
         onUpdateVocabulary({
           ...vocab,
           status: newStatus,
           reviewCount: (vocab.reviewCount || 0) + 1,
-          leitnerBox: newBox,
-          nextReviewAt: nextReview.toISOString(),
+          srsState: updated.state,
+          srsEase: updated.ease,
+          srsInterval: updated.interval,
+          srsStepIndex: updated.stepIndex,
+          srsDue: updated.due.toISOString(),
+          srsReviews: updated.reviews,
+          srsLapses: updated.lapses,
+          srsLastReview: updated.lastReview?.toISOString() ?? null,
+          nextReviewAt: updated.due.toISOString(),
         });
       } catch {}
     }
@@ -414,7 +499,10 @@ const LearnMode: React.FC<LearnModeProps> = ({
               {step === 1 && typeWords.length > 0 && (
                 <>
                   <Text style={styles.stepLabel}>✏️ Bước 2: Điền từ tiếng Đức</Text>
-                  <Text style={styles.progressText}>{typeIdx + 1} / {typeWords.length}</Text>
+                  <Text style={styles.progressText}>
+                    {typeIdx + 1} / {typeWords.length}
+                    {(retryCount[typeWords[typeIdx]?.word] || 0) > 0 ? ' 🔄 Ôn lại' : ''}
+                  </Text>
 
                   <View style={styles.exerciseCard}>
                     <Text style={styles.exercisePrompt}>{typeWords[typeIdx].translation}</Text>
@@ -717,7 +805,11 @@ const LearnMode: React.FC<LearnModeProps> = ({
 
                 <View style={styles.evalLeitnerNote}>
                   <Text style={styles.evalLeitnerText}>
-                    📌 <Text style={{ fontWeight: '700' }}>Leitner:</Text> Từ đúng sẽ được ôn ít hơn. Từ sai sẽ quay lại ôn sớm hơn.
+                    📊 <Text style={{ fontWeight: '700' }}>Đã kiểm tra:</Text>{' '}
+                    {evaluation ? (evaluation.strong.length + evaluation.weak.length) : 0}/{vocabSet.length} từ
+                  </Text>
+                  <Text style={[styles.evalLeitnerText, { marginTop: 4 }]}>
+                    📌 <Text style={{ fontWeight: '700' }}>SRS:</Text> Từ đúng sẽ được ôn ít hơn. Từ sai sẽ quay lại ôn sớm hơn.
                     {evaluation && evaluation.weak.length > 0 ? ` Hãy ôn lại ${evaluation.weak.length} từ yếu sớm nhé!` : ''}
                   </Text>
                 </View>

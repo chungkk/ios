@@ -26,7 +26,7 @@ import { Loading } from '../components/common/Loading';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
 import AddWordModal from '../components/vocabulary/AddWordModal';
 import LearnMode from '../components/vocabulary/LearnMode';
-import VocabChart from '../components/vocabulary/VocabChart';
+// VocabChart moved to SettingsScreen
 import { SRSCard } from '../utils/srs';
 import { getWordsForReview } from '../utils/vocabExerciseEngine';
 import { colors, spacing } from '../styles/theme';
@@ -488,13 +488,11 @@ const VocabularyScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Card */}
+      {/* Header Card - Compact */}
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
-            <Text style={styles.headerSubtitle}>{t('vocabulary.wordsSaved', { count: stats.total })}</Text>
-          </View>
+          <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
+          <Text style={styles.headerSubtitle}>{stats.total} từ</Text>
           <View style={styles.headerActions}>
             {vocabulary.length >= 2 && (
               <TouchableOpacity
@@ -502,7 +500,7 @@ const VocabularyScreen: React.FC = () => {
                 onPress={() => setShowLearn(true)}
               >
                 <Text style={styles.learnBtnText}>
-                  📝 {pendingReview.length > 0 ? `Ôn ${pendingReview.length}` : 'Ôn tập'}
+                  📝 {pendingReview.length > 0 ? `Ôn ${pendingReview.length}` : 'Ôn'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -511,21 +509,21 @@ const VocabularyScreen: React.FC = () => {
                 style={styles.flashcardBtn}
                 onPress={() => setShowFlashcard(true)}
               >
-                <Icon name="albums" size={16} color="#fff" />
+                <Icon name="albums" size={14} color="#fff" />
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() => setShowAddModal(true)}
             >
-              <Icon name="add" size={20} color="#fff" />
+              <Icon name="add" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Search Bar */}
+        {/* Search + Filter row */}
         <View style={styles.searchBox}>
-          <Icon name="search" size={16} color={colors.textMuted} />
+          <Icon name="search" size={14} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder={t('vocabulary.searchPlaceholder')}
@@ -535,17 +533,16 @@ const VocabularyScreen: React.FC = () => {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Icon name="close-circle" size={16} color={colors.textMuted} />
+              <Icon name="close-circle" size={14} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Filter Tabs */}
         <View style={styles.filterRow}>
           {([
             { key: 'all' as WordStatus, label: 'Tất cả', count: stats.total },
             { key: 'new' as WordStatus, label: 'Mới', count: stats.new },
-            { key: 'learning' as WordStatus, label: 'Đang học', count: stats.learning },
+            { key: 'learning' as WordStatus, label: 'Học', count: stats.learning },
             { key: 'mastered' as WordStatus, label: 'Thuộc', count: stats.mastered },
           ]).map(tab => (
             <TouchableOpacity
@@ -554,20 +551,13 @@ const VocabularyScreen: React.FC = () => {
               onPress={() => setActiveFilter(tab.key)}
             >
               <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
-                {tab.label}
+                {tab.label} {tab.count}
               </Text>
-              <View style={[styles.filterCount, activeFilter === tab.key && styles.filterCountActive]}>
-                <Text style={[styles.filterCountText, activeFilter === tab.key && styles.filterCountTextActive]}>
-                  {tab.count}
-                </Text>
-              </View>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      {/* VocabChart */}
-      <VocabChart />
 
       {/* Review Reminder */}
       {pendingReview.length > 0 && (
@@ -681,74 +671,70 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgPrimary,
   },
-  // Header Card
+  // Header Card - Compact
   headerCard: {
     marginHorizontal: spacing.md,
-    marginVertical: spacing.md,
-    padding: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    padding: 10,
     backgroundColor: colors.retroCream,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: colors.retroBorder,
-    shadowColor: '#1a1a2e',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 0,
-    elevation: 3,
   },
   headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 8,
+    gap: 6,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '800',
     color: colors.retroDark,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginRight: 'auto',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 5,
     alignItems: 'center',
   },
   learnBtn: {
     backgroundColor: colors.retroYellow,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
   learnBtnUrgent: {
     backgroundColor: colors.retroCoral,
   },
   learnBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.retroDark,
   },
   flashcardBtn: {
     backgroundColor: colors.retroPurple,
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addBtn: {
     backgroundColor: colors.retroCyan,
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
     justifyContent: 'center',
     alignItems: 'center',
@@ -758,66 +744,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 8,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: colors.retroBorder,
-    height: 40,
-    gap: 8,
-    marginBottom: spacing.sm,
+    height: 32,
+    gap: 6,
+    marginBottom: 6,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.retroDark,
     padding: 0,
   },
   // Filter Tabs
   filterRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 5,
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: colors.retroBorder,
-    gap: 4,
   },
   filterChipActive: {
     backgroundColor: colors.retroCyan,
     borderColor: colors.retroCyan,
   },
   filterChipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textSecondary,
   },
   filterChipTextActive: {
-    color: '#fff',
-  },
-  filterCount: {
-    backgroundColor: colors.retroBorder + '20',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 8,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  filterCountActive: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  filterCountText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  filterCountTextActive: {
     color: '#fff',
   },
   // Review Reminder

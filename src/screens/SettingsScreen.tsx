@@ -28,6 +28,7 @@ import Toast from '../components/common/Toast';
 import { colors, spacing } from '../styles/theme';
 import { BASE_URL } from '../services/api';
 import { changePassword } from '../services/auth.service';
+import VocabChart from '../components/vocabulary/VocabChart';
 
 const LANGUAGES = [
   { value: 'de', label: 'Deutsch' },
@@ -351,6 +352,9 @@ const SettingsScreen: React.FC = () => {
           </View>
           <Icon name="chevron-forward" size={24} color={colors.retroCyan} />
         </TouchableOpacity>
+
+        {/* Vocabulary Progress */}
+        {user && <VocabChart />}
 
         {/* Settings Options */}
         <View style={styles.section}>

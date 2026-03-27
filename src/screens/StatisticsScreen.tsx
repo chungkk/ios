@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
+import VocabChart from '../components/vocabulary/VocabChart';
 import { colors, spacing } from '../styles/theme';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -389,6 +390,9 @@ const StatisticsScreen: React.FC = () => {
             </View>
           </View>
         )}
+
+        {/* Vocabulary Progress */}
+        <VocabChart />
 
         {/* Tips */}
         <View style={styles.tipsCard}>

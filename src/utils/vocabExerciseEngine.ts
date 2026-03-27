@@ -126,33 +126,64 @@ function generateListenQuiz(vocab: VocabularyItem, allVocab: VocabularyItem[]): 
   };
 }
 
-// Main: generate a full exercise set from vocabulary
+// Main: generate a full exercise set from vocabulary (coverage-first)
 export function generateExercises(vocabulary: VocabularyItem[]): { exercises: Exercise[] } {
   if (!vocabulary || vocabulary.length < 2) return { exercises: [] };
 
+  const SOFT_CAP = 30;
   const exercises: Exercise[] = [];
-  const words = shuffle([...vocabulary]);
+  const coveredWords = new Set<string>();
 
-  for (const vocab of words) {
+  // Sort: prioritize new > learning > mastered
+  const prioritized = [...vocabulary].sort((a, b) => {
+    const order = { new: 0, learning: 1, mastered: 2 };
+    const sa = (a.status as keyof typeof order) || 'new';
+    const sb = (b.status as keyof typeof order) || 'new';
+    return (order[sa] ?? 1) - (order[sb] ?? 1);
+  });
+
+  // Phase 1: Guarantee at least 1 exercise per word
+  for (const vocab of prioritized) {
+    if (coveredWords.has(vocab.word)) continue;
+
+    let added = false;
     if (vocabulary.length >= 4) {
       const meaning = generateMeaningQuiz(vocab, vocabulary);
-      if (meaning) exercises.push(meaning);
+      if (meaning) { exercises.push(meaning); added = true; }
+    }
+    if (!added) {
+      const reverse = generateReverseQuiz(vocab, vocabulary);
+      if (reverse) { exercises.push(reverse); added = true; }
+    }
+    if (!added) {
+      const listen = generateListenQuiz(vocab, vocabulary);
+      if (listen) { exercises.push(listen); added = true; }
+    }
+    if (added) coveredWords.add(vocab.word);
+  }
 
+  // Phase 2: Add extra exercises for variety (up to soft cap)
+  const shuffledVocab = shuffle([...prioritized]);
+  for (const vocab of shuffledVocab) {
+    if (exercises.length >= SOFT_CAP) break;
+
+    if (vocabulary.length >= 4) {
       const reverse = generateReverseQuiz(vocab, vocabulary);
       if (reverse) exercises.push(reverse);
     }
 
-    const fill = generateFillBlank(vocab, vocabulary);
-    if (fill) exercises.push(fill);
+    if (exercises.length < SOFT_CAP) {
+      const fill = generateFillBlank(vocab, vocabulary);
+      if (fill) exercises.push(fill);
+    }
 
-    const listen = generateListenQuiz(vocab, vocabulary);
-    if (listen) exercises.push(listen);
+    if (exercises.length < SOFT_CAP) {
+      const listen = generateListenQuiz(vocab, vocabulary);
+      if (listen) exercises.push(listen);
+    }
   }
 
-  const shuffled = shuffle(exercises);
-  const limited = shuffled.slice(0, Math.min(shuffled.length, 15));
-
-  return { exercises: limited };
+  return { exercises: shuffle(exercises) };
 }
 
 export interface WordResult {
