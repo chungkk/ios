@@ -25,6 +25,7 @@ import { progressService } from '../services/progress.service';
 import { unlockService } from '../services/unlock.service';
 import { homepageService } from '../services/homepage.service';
 import { recordShadowingAttempt, recordShadowingStudyTime } from '../services/statistics.service';
+import { savedSentencesService, SavedSentence } from '../services/savedSentences.service';
 import { extractVideoId } from '../utils/youtube';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks/useAuth';
@@ -37,7 +38,7 @@ import type { UserUnlockInfo } from '../types/unlock.types';
 type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
 
 export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
-  const { lessonId } = route.params;
+  const { lessonId, initialSentenceIndex } = route.params;
   const { settings } = useSettings();
   const { updateUserPoints } = useAuth();
   const { t } = useTranslation();
@@ -117,6 +118,9 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [toastTitle, setToastTitle] = useState('');
   const [toastMessage, setToastMessage] = useState('');
 
+  // Saved sentences state
+  const [savedSentenceIds, setSavedSentenceIds] = useState<Set<string>>(new Set());
+
   // Fetch user unlock info on mount
   useEffect(() => {
     const fetchUnlockInfo = async () => {
@@ -129,6 +133,26 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     };
     fetchUnlockInfo();
   }, []);
+
+  // Load saved sentence IDs on mount
+  useEffect(() => {
+    const loadSavedIds = async () => {
+      try {
+        const ids = await savedSentencesService.getSavedSentenceIds();
+        // Filter to only IDs for this lesson
+        const lessonIds = new Set<string>();
+        ids.forEach(id => {
+          if (id.startsWith(`${lessonId}_`)) {
+            lessonIds.add(id);
+          }
+        });
+        setSavedSentenceIds(lessonIds);
+      } catch (err) {
+        console.error('[LessonScreen] Error loading saved sentence IDs:', err);
+      }
+    };
+    loadSavedIds();
+  }, [lessonId]);
 
   const {
     isPlaying,
@@ -324,6 +348,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
             rewardedSentences: Array.from(rewardedSentences),
             recordingResults: recordingResults,
             bonusAwarded,
+            totalSentences: transcript.length,
           },
           studyTime,
           'shadowing' // Use correct mode so it can be retrieved later
@@ -335,12 +360,28 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     }, 1000);
   }, [recordedSentences, rewardedSentences, recordingResults, lessonId, studyTime, progressLoaded, bonusAwarded]);
 
+  // Track if initial seek has been performed
+  const initialSeekDoneRef = useRef(false);
+
   const handleReady = useCallback(async () => {
     if (videoPlayerRef.current) {
       const dur = await videoPlayerRef.current.getDuration();
       setDuration(dur);
     }
-  }, [setDuration]);
+
+    // Auto-seek to initial sentence (e.g. when navigating from saved sentences)
+    if (
+      initialSentenceIndex != null &&
+      !initialSeekDoneRef.current &&
+      lesson?.transcript?.[initialSentenceIndex]
+    ) {
+      initialSeekDoneRef.current = true;
+      const sentence = lesson.transcript[initialSentenceIndex];
+      setTimeout(() => {
+        videoPlayerRef.current?.seekTo(sentence.startTime);
+      }, 300);
+    }
+  }, [setDuration, initialSentenceIndex, lesson]);
 
   const handleLessonComplete = useCallback(async () => {
     if (completedReported) return;
@@ -416,6 +457,55 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
       }, 500);
     }
   }, [lesson, setIsPlaying]);
+
+  // Handle long-press to save/unsave sentence
+  const handleSentenceLongPress = useCallback(async (index: number) => {
+    const transcript = lesson?.transcript || [];
+    const sentence = transcript[index];
+    if (!sentence) return;
+
+    const sentenceId = `${lessonId}_${index}`;
+    const alreadySaved = savedSentenceIds.has(sentenceId);
+
+    // Haptic feedback
+    if (settings.hapticEnabled) {
+      Vibration.vibrate(30);
+    }
+
+    try {
+      if (alreadySaved) {
+        await savedSentencesService.removeSentence(sentenceId);
+        setSavedSentenceIds(prev => {
+          const next = new Set(prev);
+          next.delete(sentenceId);
+          return next;
+        });
+        setToastType('info');
+        setToastTitle('Đã bỏ lưu');
+        setToastMessage('');
+      } else {
+        const savedSentence: SavedSentence = {
+          id: sentenceId,
+          text: sentence.text,
+          translation: sentence.translation,
+          lessonId,
+          lessonTitle: lesson?.title || '',
+          savedAt: new Date().toISOString(),
+        };
+        await savedSentencesService.saveSentence(savedSentence);
+        setSavedSentenceIds(prev => new Set(prev).add(sentenceId));
+        setToastType('success');
+        setToastTitle('Đã lưu câu! 🔖');
+        setToastMessage('');
+      }
+      setToastVisible(true);
+    } catch {
+      setToastType('error');
+      setToastTitle('Lỗi');
+      setToastMessage('Không thể lưu câu');
+      setToastVisible(true);
+    }
+  }, [lesson, lessonId, savedSentenceIds, settings.hapticEnabled]);
 
   const handlePrevious = useCallback(() => {
     const transcript = lesson?.transcript || [];
@@ -787,8 +877,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
               activeSentenceIndex={activeSentenceIndex}
               activeWordIndex={activeWordIndex}
               onSentencePress={handleSentencePress}
+              onSentenceLongPress={handleSentenceLongPress}
               onWordPress={handleWordPress}
               showTranslation={settings.showTranslation}
+              savedSentenceIds={savedSentenceIds}
+              lessonId={lessonId}
               recordingResults={recordingResults}
             />
           </View>

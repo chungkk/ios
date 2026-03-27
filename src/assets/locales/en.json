@@ -102,7 +102,8 @@
     "student": "Student",
     "noLessons": "No lessons found",
     "noLessonsMessage": "Try changing the difficulty filter or check back later.",
-    "resetFilter": "Reset Filter"
+    "resetFilter": "Reset Filter",
+    "continueLearning": "Continue Learning"
   },
   "category": {
     "noLessons": "No lessons yet",

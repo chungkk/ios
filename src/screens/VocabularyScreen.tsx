@@ -17,10 +17,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Tts from 'react-native-tts';
 import { vocabularyService, VocabularyItem } from '../services/vocabulary.service';
+import { savedSentencesService, SavedSentence } from '../services/savedSentences.service';
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
@@ -35,6 +36,7 @@ const ITEMS_PER_PAGE = 15;
 
 // Word status types
 type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
+type ViewMode = 'words' | 'sentences';
 
 // Helper function to classify word status based on SRS state
 const getWordStatusFromSRS = (item: VocabularyItem): WordStatus => {
@@ -95,6 +97,8 @@ const VocabularyScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>('words');
+  const [savedSentences, setSavedSentences] = useState<SavedSentence[]>([]);
 
   // Initialize TTS on mount
   useEffect(() => {
@@ -128,14 +132,69 @@ const VocabularyScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchVocabulary();
+      // Also load saved sentences
+      savedSentencesService.getSavedSentences().then(setSavedSentences).catch(() => {});
     }, [fetchVocabulary])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchVocabulary();
+    const sentences = await savedSentencesService.getSavedSentences().catch(() => [] as SavedSentence[]);
+    setSavedSentences(sentences);
     setRefreshing(false);
   }, [fetchVocabulary]);
+
+  // Navigation for saved sentences
+  const navigation = useNavigation<any>();
+
+  const handleSentenceNavigate = useCallback((sentence: SavedSentence) => {
+    // Parse sentence index from id format: `${lessonId}_${index}`
+    const parts = sentence.id.split('_');
+    const sentenceIndex = parseInt(parts[parts.length - 1], 10);
+    navigation.navigate('Home', {
+      screen: 'Lesson',
+      params: {
+        lessonId: sentence.lessonId,
+        initialSentenceIndex: isNaN(sentenceIndex) ? undefined : sentenceIndex,
+      },
+    });
+  }, [navigation]);
+
+  // Delete saved sentence
+  const handleDeleteSentence = useCallback(async (id: string) => {
+    Alert.alert(
+      'Xóa câu đã lưu?',
+      'Bạn có chắc muốn xóa câu này?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await savedSentencesService.removeSentence(id);
+              setSavedSentences(prev => prev.filter(s => s.id !== id));
+            } catch {
+              Alert.alert('Lỗi', 'Không thể xóa câu');
+            }
+          },
+        },
+      ]
+    );
+  }, []);
+
+  // Speak sentence using TTS
+  const handleSpeakSentence = useCallback(async (text: string) => {
+    try {
+      await Tts.getInitStatus();
+      try { Tts.stop(); } catch {}
+      await Tts.setDefaultLanguage('de-DE');
+      await Tts.speak(text);
+    } catch (err: any) {
+      console.error('[VocabularyScreen] TTS Error:', err?.message || err);
+    }
+  }, []);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -521,46 +580,70 @@ const VocabularyScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Search + Filter row */}
-        <View style={styles.searchBox}>
-          <Icon name="search" size={14} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('vocabulary.searchPlaceholder')}
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Icon name="close-circle" size={14} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
+        {/* Mode Toggle: Words vs Sentences */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[styles.modeBtn, viewMode === 'words' && styles.modeBtnActive]}
+            onPress={() => setViewMode('words')}
+          >
+            <Text style={[styles.modeBtnText, viewMode === 'words' && styles.modeBtnTextActive]}>
+              📚 Từ vựng
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, viewMode === 'sentences' && styles.modeBtnActive]}
+            onPress={() => setViewMode('sentences')}
+          >
+            <Text style={[styles.modeBtnText, viewMode === 'sentences' && styles.modeBtnTextActive]}>
+              📌 Câu ({savedSentences.length})
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.filterRow}>
-          {([
-            { key: 'all' as WordStatus, label: 'Tất cả', count: stats.total },
-            { key: 'new' as WordStatus, label: 'Mới', count: stats.new },
-            { key: 'learning' as WordStatus, label: 'Học', count: stats.learning },
-            { key: 'mastered' as WordStatus, label: 'Thuộc', count: stats.mastered },
-          ]).map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
-              onPress={() => setActiveFilter(tab.key)}
-            >
-              <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
-                {tab.label} {tab.count}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Only show search + filter for word mode */}
+        {viewMode === 'words' && (
+          <>
+            <View style={styles.searchBox}>
+              <Icon name="search" size={14} color={colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('vocabulary.searchPlaceholder')}
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Icon name="close-circle" size={14} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.filterRow}>
+              {([
+                { key: 'all' as WordStatus, label: 'Tất cả', count: stats.total },
+                { key: 'new' as WordStatus, label: 'Mới', count: stats.new },
+                { key: 'learning' as WordStatus, label: 'Học', count: stats.learning },
+                { key: 'mastered' as WordStatus, label: 'Thuộc', count: stats.mastered },
+              ]).map(tab => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
+                  onPress={() => setActiveFilter(tab.key)}
+                >
+                  <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
+                    {tab.label} {tab.count}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
       </View>
 
 
-      {/* Review Reminder */}
-      {pendingReview.length > 0 && (
+      {/* Review Reminder - only in words mode */}
+      {viewMode === 'words' && pendingReview.length > 0 && (
         <TouchableOpacity style={styles.reviewReminder} onPress={() => setShowLearn(true)}>
           <Text style={styles.reviewReminderIcon}>⏰</Text>
           <View style={{ flex: 1 }}>
@@ -570,31 +653,62 @@ const VocabularyScreen: React.FC = () => {
         </TouchableOpacity>
       )}
 
-      {/* Word List */}
-      {filteredVocabulary.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>
-            {searchQuery ? '🔍' : activeFilter === 'new' ? '🆕' : activeFilter === 'learning' ? '📖' : activeFilter === 'mastered' ? '✅' : '📚'}
-          </Text>
-          <Text style={styles.emptyTitle}>
-            {searchQuery ? t('vocabulary.notFound') : t('vocabulary.noWords')}
-          </Text>
-          <Text style={styles.emptyText}>
-            {searchQuery
-              ? t('vocabulary.tryOtherKeyword')
-              : t('vocabulary.noWordsMessage')}
-          </Text>
-          {!searchQuery && (
-            <TouchableOpacity style={styles.addFirstBtn} onPress={() => setShowAddModal(true)}>
-              <Text style={styles.addFirstBtnText}>+ Thêm từ đầu tiên</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <>
+      {/* Saved Sentences View */}
+      {viewMode === 'sentences' ? (
+        savedSentences.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>📌</Text>
+            <Text style={styles.emptyTitle}>Chưa có câu nào được lưu</Text>
+            <Text style={styles.emptyText}>
+              Giữ lâu vào câu trong bài học để lưu lại{"\n"}những câu tiếng Đức hay.
+            </Text>
+          </View>
+        ) : (
           <FlatList
-            data={paginatedVocabulary}
-            renderItem={renderItem}
+            data={savedSentences}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => handleSentenceNavigate(item)}
+                style={styles.sentenceCard}
+              >
+                <View style={styles.sentenceCardAccent} />
+                <View style={styles.sentenceCardBody}>
+                  <View style={styles.sentenceHeader}>
+                    <Text style={styles.sentenceIndex}>{index + 1}</Text>
+                    <TouchableOpacity
+                      style={styles.speakBtn}
+                      onPress={() => handleSpeakSentence(item.text)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Icon name="volume-high" size={16} color={colors.retroCyan} />
+                    </TouchableOpacity>
+                    <Text style={styles.sentenceText} numberOfLines={3}>{item.text}</Text>
+                  </View>
+                  {item.translation && (
+                    <Text style={styles.sentenceTranslation}>{item.translation}</Text>
+                  )}
+                  <View style={styles.sentenceFooter}>
+                    {item.lessonTitle ? (
+                      <TouchableOpacity
+                        style={styles.sourceTag}
+                        onPress={() => handleSentenceNavigate(item)}
+                      >
+                        <Icon name="musical-notes-outline" size={11} color={colors.retroPurple} />
+                        <Text style={[styles.sourceText, { textDecorationLine: 'underline' }]} numberOfLines={1}>{item.lessonTitle}</Text>
+                      </TouchableOpacity>
+                    ) : <View />}
+                    <TouchableOpacity
+                      style={styles.sentenceDeleteBtn}
+                      onPress={() => handleDeleteSentence(item.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Icon name="trash-outline" size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
@@ -606,30 +720,71 @@ const VocabularyScreen: React.FC = () => {
               />
             }
           />
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <View style={styles.pagination}>
-              <TouchableOpacity
-                style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-                onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <Icon name="chevron-back" size={18} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
-              </TouchableOpacity>
-
-              <View style={styles.pageInfo}>
-                <Text style={styles.pageText}>{currentPage} / {totalPages}</Text>
-              </View>
-
-              <TouchableOpacity
-                style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-                onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <Icon name="chevron-forward" size={18} color={currentPage === totalPages ? colors.textMuted : colors.retroDark} />
-              </TouchableOpacity>
+        )
+      ) : (
+        <>
+          {/* Word List */}
+          {filteredVocabulary.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>
+                {searchQuery ? '🔍' : activeFilter === 'new' ? '🆕' : activeFilter === 'learning' ? '📖' : activeFilter === 'mastered' ? '✅' : '📚'}
+              </Text>
+              <Text style={styles.emptyTitle}>
+                {searchQuery ? t('vocabulary.notFound') : t('vocabulary.noWords')}
+              </Text>
+              <Text style={styles.emptyText}>
+                {searchQuery
+                  ? t('vocabulary.tryOtherKeyword')
+                  : t('vocabulary.noWordsMessage')}
+              </Text>
+              {!searchQuery && (
+                <TouchableOpacity style={styles.addFirstBtn} onPress={() => setShowAddModal(true)}>
+                  <Text style={styles.addFirstBtnText}>+ Thêm từ đầu tiên</Text>
+                </TouchableOpacity>
+              )}
             </View>
+          ) : (
+            <>
+              <FlatList
+                data={paginatedVocabulary}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={colors.retroCyan}
+                  />
+                }
+              />
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <View style={styles.pagination}>
+                  <TouchableOpacity
+                    style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
+                    onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <Icon name="chevron-back" size={18} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
+                  </TouchableOpacity>
+
+                  <View style={styles.pageInfo}>
+                    <Text style={styles.pageText}>{currentPage} / {totalPages}</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
+                    onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <Icon name="chevron-forward" size={18} color={currentPage === totalPages ? colors.textMuted : colors.retroDark} />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
         </>
       )}
@@ -681,6 +836,33 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 2,
     borderColor: colors.retroBorder,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 6,
+  },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
+    alignItems: 'center',
+  },
+  modeBtnActive: {
+    backgroundColor: colors.retroYellow,
+    borderColor: colors.retroBorder,
+  },
+  modeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  modeBtnTextActive: {
+    color: colors.retroDark,
+    fontWeight: '700',
   },
   headerTop: {
     flexDirection: 'row',
@@ -1126,6 +1308,64 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
   },
   deleteBtn: {
+    padding: 4,
+  },
+  // Saved Sentence Cards
+  sentenceCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#FFB74D',
+    overflow: 'hidden',
+  },
+  sentenceCardAccent: {
+    width: 5,
+    backgroundColor: '#FFB74D',
+  },
+  sentenceCardBody: {
+    flex: 1,
+    padding: 12,
+  },
+  sentenceHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 4,
+  },
+  sentenceIndex: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.textMuted,
+    minWidth: 18,
+    marginTop: 4,
+  },
+  sentenceText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.retroDark,
+    lineHeight: 22,
+  },
+  sentenceTranslation: {
+    fontSize: 13,
+    color: colors.retroPurple,
+    fontStyle: 'italic',
+    marginTop: 4,
+    marginLeft: 24,
+    lineHeight: 18,
+  },
+  sentenceFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.retroBorder + '30',
+  },
+  sentenceDeleteBtn: {
     padding: 4,
   },
 });

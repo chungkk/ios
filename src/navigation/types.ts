@@ -29,7 +29,7 @@ export type MainTabParamList = {
 export type HomeStackParamList = {
   HomeScreen: undefined;
   Category: { categorySlug: string; categoryName: string };
-  Lesson: { lessonId: string };
+  Lesson: { lessonId: string; initialSentenceIndex?: number };
   Dictation: { lessonId: string };
   Statistics: undefined;
 };

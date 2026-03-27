@@ -29,10 +29,13 @@ export interface AudioPlayerRef {
 // Animated equalizer bar component
 const EqBar = ({ delay, isActive }: { delay: number; isActive: boolean }) => {
   const height = useRef(new Animated.Value(4)).current;
+  const activeRef = useRef(false);
 
   useEffect(() => {
     if (isActive) {
+      activeRef.current = true;
       const animate = () => {
+        if (!activeRef.current) return;
         Animated.sequence([
           Animated.timing(height, {
             toValue: 8 + Math.random() * 18,
@@ -44,11 +47,18 @@ const EqBar = ({ delay, isActive }: { delay: number; isActive: boolean }) => {
             duration: 200 + Math.random() * 200,
             useNativeDriver: false,
           }),
-        ]).start(() => animate());
+        ]).start(({ finished }) => {
+          if (finished && activeRef.current) animate();
+        });
       };
       const timeout = setTimeout(animate, delay);
-      return () => clearTimeout(timeout);
+      return () => {
+        activeRef.current = false;
+        clearTimeout(timeout);
+      };
     } else {
+      activeRef.current = false;
+      height.stopAnimation();
       Animated.timing(height, {
         toValue: 4,
         duration: 400,

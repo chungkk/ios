@@ -14,8 +14,10 @@ interface SentenceItemProps {
   isActive: boolean;
   activeWordIndex?: number; // For karaoke word highlighting
   onPress?: () => void;
+  onLongPress?: () => void;
   onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
+  isSaved?: boolean;
   voiceRecordingResult?: {
     transcribed: string;
     original: string;
@@ -30,8 +32,10 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
   isActive,
   activeWordIndex = -1,
   onPress,
+  onLongPress,
   onWordPress,
   showTranslation = true,
+  isSaved = false,
   voiceRecordingResult = null,
 }) => {
   // Handle word click for translation
@@ -94,11 +98,18 @@ export const SentenceItem: React.FC<SentenceItemProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.container, isActive && styles.containerActive]}
+      style={[styles.container, isActive && styles.containerActive, isSaved && styles.containerSaved]}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={400}
       activeOpacity={0.8}
-      disabled={!onPress}
+      disabled={!onPress && !onLongPress}
     >
+      {isSaved && (
+        <View style={styles.bookmarkBadge}>
+          <Text style={styles.bookmarkIcon}>🔖</Text>
+        </View>
+      )}
       <View style={[styles.playIconContainer, isActive && styles.playIconContainerActive]}>
         <Icon name="play" size={isTablet ? 20 : 12} color="rgba(59, 130, 246, 0.8)" style={styles.playIcon} />
       </View>
@@ -137,6 +148,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    position: 'relative',
     padding: isTablet ? 24 : 12,
     marginVertical: isTablet ? 8 : 4,
     marginHorizontal: isTablet ? 28 : 10,
@@ -251,6 +263,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textDecorationLine: 'underline',
     textDecorationColor: colors.retroCoral,
+  },
+  // Saved sentence styles
+  containerSaved: {
+    borderColor: '#FFB74D',
+    backgroundColor: 'rgba(255, 183, 77, 0.08)',
+  },
+  bookmarkBadge: {
+    position: 'absolute',
+    top: isTablet ? 6 : 4,
+    right: isTablet ? 8 : 6,
+    zIndex: 10,
+  },
+  bookmarkIcon: {
+    fontSize: isTablet ? 16 : 12,
   },
 });
 

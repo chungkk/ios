@@ -1,7 +1,7 @@
 // HomeScreen - Browse lessons by category with difficulty filter
 // Migrated from ppgeil/pages/index.js - uses optimized homepage-data API
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,15 @@ import {
   Image,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import { useHomepageData } from '../hooks/useHomepageData';
 import { useAuth } from '../hooks/useAuth';
 import { lessonService } from '../services/lesson.service';
 import { unlockService } from '../services/unlock.service';
 import LessonCard from '../components/lesson/LessonCard';
 import DifficultyFilter from '../components/lesson/DifficultyFilter';
+import ContinueLearningCard from '../components/lesson/ContinueLearningCard';
+import { useContinueLearning } from '../hooks/useContinueLearning';
 import ModeSelectionPopup, { LessonMode } from '../components/lesson/ModeSelectionPopup';
 import UnlockModal from '../components/lesson/UnlockModal';
 import { Loading, SkeletonCard } from '../components/common/Loading';
@@ -54,6 +57,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // Use optimized single API call instead of separate calls
   const { categories, categoriesWithLessons, userUnlockInfo, loading, refetch } = useHomepageData(difficultyFilter, 6);
+
+  // Continue Learning data
+  const { inProgressLessons, refetch: refetchContinueLearning } = useContinueLearning();
+
+  // Refetch continue learning data when screen comes into focus (after returning from lesson)
+  useFocusEffect(
+    useCallback(() => {
+      refetchContinueLearning();
+    }, [refetchContinueLearning]),
+  );
 
   // Handle filter change with smooth transition
   const handleFilterChange = useCallback((filter: 'all' | 'beginner' | 'experienced') => {
@@ -137,9 +150,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), refetchContinueLearning()]);
     setRefreshing(false);
-  }, [refetch]);
+  }, [refetch, refetchContinueLearning]);
 
   // Only show full loading on initial load (when no data yet)
   const isInitialLoading = loading && !refreshing && categories.length === 0;
@@ -207,6 +220,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           selected={difficultyFilter}
           onSelect={handleFilterChange}
         />
+
+        {/* Continue Learning Section */}
+        {inProgressLessons.length > 0 && (
+          <View style={styles.continueLearningSection}>
+            <View style={styles.continueLearningHeader}>
+              <Text style={styles.continueLearningTitle}>
+                📚 {t('home.continueLearning')} ({inProgressLessons.length})
+              </Text>
+            </View>
+            <FlatList
+              horizontal
+              data={inProgressLessons}
+              renderItem={({ item }) => (
+                <ContinueLearningCard
+                  lesson={item}
+                  onPress={() => {
+                    // Navigate directly to lesson based on mode
+                    if (item.mode === 'dictation') {
+                      navigation.navigate('Dictation', { lessonId: item.lessonId });
+                    } else {
+                      navigation.navigate('Lesson', { lessonId: item.lessonId });
+                    }
+                  }}
+                />
+              )}
+              keyExtractor={(item) => `${item.lessonId}-${item.mode}`}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            />
+          </View>
+        )}
 
         {/* Categories with Lessons */}
         {(loading || isFilterChanging) && categories.length > 0 ? (
@@ -398,6 +442,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.retroDark,
+  },
+  // Continue Learning Section
+  continueLearningSection: {
+    marginBottom: 16,
+    marginHorizontal: spacing.sm,
+    padding: 14,
+    backgroundColor: '#FFF0D4',
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    borderRadius: 16,
+    shadowColor: '#1a1a2e',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  continueLearningHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  continueLearningTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.retroCoral,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   // Neo-Retro Category Section - Compact
   categorySection: {

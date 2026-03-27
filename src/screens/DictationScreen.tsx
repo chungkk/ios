@@ -248,6 +248,7 @@ const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) 
             currentIndex: latestValuesRef.current.currentIndex,
             userInputs: mergedInputs,
             bonusAwarded: latestValuesRef.current.bonusAwarded,
+            totalSentences: transcript.length,
           },
           latestValuesRef.current.studyTime
         );

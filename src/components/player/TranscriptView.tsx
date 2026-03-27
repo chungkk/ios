@@ -12,8 +12,11 @@ interface TranscriptViewProps {
   activeSentenceIndex: number;
   activeWordIndex?: number; // For karaoke word highlighting
   onSentencePress?: (index: number) => void;
+  onSentenceLongPress?: (index: number) => void;
   onWordPress?: (word: string, context: string) => void;
   showTranslation?: boolean;
+  savedSentenceIds?: Set<string>;
+  lessonId?: string;
   recordingResults?: Record<number, {
     transcribed: string;
     original: string;
@@ -28,8 +31,11 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   activeSentenceIndex,
   activeWordIndex = -1,
   onSentencePress,
+  onSentenceLongPress,
   onWordPress,
   showTranslation = true,
+  savedSentenceIds,
+  lessonId,
   recordingResults = {},
 }) => {
   const flatListRef = useRef<FlatList>(null);
@@ -88,14 +94,19 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
           // Get recording result for this specific sentence
           const sentenceRecordingResult = recordingResults[index] || null;
 
+          const sentenceId = lessonId ? `${lessonId}_${index}` : undefined;
+          const isSaved = sentenceId ? (savedSentenceIds?.has(sentenceId) ?? false) : false;
+
           return (
             <SentenceItem
               sentence={item}
               isActive={isActive}
               activeWordIndex={isActive ? activeWordIndex : -1}
               onPress={() => handleSentencePress(index)}
+              onLongPress={onSentenceLongPress ? () => onSentenceLongPress(index) : undefined}
               onWordPress={onWordPress}
               showTranslation={showTranslation}
+              isSaved={isSaved}
               voiceRecordingResult={sentenceRecordingResult}
             />
           );

@@ -102,7 +102,8 @@
     "student": "Học viên",
     "noLessons": "Không tìm thấy bài học",
     "noLessonsMessage": "Thử đổi bộ lọc độ khó hoặc quay lại sau.",
-    "resetFilter": "Đặt lại bộ lọc"
+    "resetFilter": "Đặt lại bộ lọc",
+    "continueLearning": "Đang học dở"
   },
   "category": {
     "noLessons": "Chưa có bài học",
