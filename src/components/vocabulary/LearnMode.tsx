@@ -40,6 +40,8 @@ interface LearnModeProps {
   vocabulary: VocabularyItem[];
   onClose: () => void;
   onUpdateVocabulary: (updated: VocabularyItem) => void;
+  onSessionComplete?: (wordsReviewed: number, wordsCorrect: number) => void;
+  skipQuickReview?: boolean;
 }
 
 const LearnMode: React.FC<LearnModeProps> = ({
@@ -47,8 +49,10 @@ const LearnMode: React.FC<LearnModeProps> = ({
   vocabulary,
   onClose,
   onUpdateVocabulary,
+  onSessionComplete,
+  skipQuickReview = false,
 }) => {
-  // Steps: 0=meanings, 1=type word, 2=write sentence, 3=translate sentence
+  // Steps: 0=Quick Review (meanings), 1=Active Recall (type word), 2=Production (write sentence), 3=Production (translate)
   const [step, setStep] = useState(0);
   const [finished, setFinished] = useState(false);
   const [wordResults, setWordResults] = useState<Record<string, WordResult>>({});
@@ -106,10 +110,17 @@ const LearnMode: React.FC<LearnModeProps> = ({
         ? wordsForReview.slice(0, 30)
         : vocabulary.slice(0, 30);
 
-    // Sort by SRS priority: new > learning > mastered, then by nextReviewAt
+    // Sort by SRS priority: overdue-mastered > learning > new > non-overdue mastered
+    const now = new Date();
     const sorted = [...pool].sort((a, b) => {
-      const order: Record<string, number> = { new: 0, learning: 1, mastered: 2 };
-      const diff = (order[a.status || 'new'] ?? 1) - (order[b.status || 'new'] ?? 1);
+      const getUrgency = (v: VocabularyItem): number => {
+        const isDue = !v.nextReviewAt || new Date(v.nextReviewAt) <= now;
+        if (v.status === 'mastered' && isDue) return 0;  // overdue mastered — highest priority
+        if (v.status === 'learning') return 1;
+        if (v.status === 'new') return 2;
+        return 3; // non-overdue mastered
+      };
+      const diff = getUrgency(a) - getUrgency(b);
       if (diff !== 0) return diff;
       const da = a.nextReviewAt ? new Date(a.nextReviewAt).getTime() : 0;
       const db = b.nextReviewAt ? new Date(b.nextReviewAt).getTime() : 0;
@@ -117,8 +128,12 @@ const LearnMode: React.FC<LearnModeProps> = ({
     });
 
     const transPool = sorted.filter(v => v.word && v.translation).slice(0, 3);
-    // Full pool for typing instead of 10
+    // Full pool for typing — shuffle for random order
     const typePool = [...sorted.filter(v => v.word && v.translation)];
+    for (let i = typePool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [typePool[i], typePool[j]] = [typePool[j], typePool[i]];
+    }
 
     setVocabSet(sorted);
     setTransWords(transPool);
@@ -134,7 +149,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
     setSentenceInput('');
     setSentenceResult(null);
     setMeaningIdx(0);
-    setStep(0);
+    setStep(skipQuickReview ? 1 : 0);
     setFinished(false);
     setWordResults({});
     setEvaluation(null);
@@ -214,15 +229,29 @@ const LearnMode: React.FC<LearnModeProps> = ({
     }
   };
 
+  // Skip word — user doesn't know it
+  const skipTypeWord = () => {
+    const word = typeWords[typeIdx];
+    if (!word) return;
+    // Mark as wrong + show correct answer
+    setTypeResult({ correct: false, answer: word.word, explanation: 'Bạn đã bỏ qua từ này. Từ sẽ được lặp lại sau.' });
+    trackWordResult(word.word, false);
+  };
+
   const nextTypeWord = () => {
-    // Retry loop: if wrong and retried < 2 times, re-queue this word
+    // Retry: if wrong, interleave retry 3-5 positions ahead (not at end)
     if (typeResult && !typeResult.correct) {
       const word = typeWords[typeIdx];
       const currentRetries = retryCount[word.word] || 0;
-      if (currentRetries < 2) {
+      if (currentRetries < 3) {
         setRetryCount(prev => ({ ...prev, [word.word]: currentRetries + 1 }));
-        // Append this word to end of typeWords
-        setTypeWords(prev => [...prev, word]);
+        // Insert 3-5 positions ahead for spacing effect, not at end
+        const insertPos = Math.min(typeIdx + 3 + Math.floor(Math.random() * 3), typeWords.length);
+        setTypeWords(prev => {
+          const next = [...prev];
+          next.splice(insertPos, 0, word);
+          return next;
+        });
       }
     }
 
@@ -363,7 +392,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
 
       // Derive status from SRS state
       let newStatus = vocab.status;
-      if (updated.state === CardState.REVIEW && updated.interval >= 7) newStatus = 'mastered';
+      if (updated.state === CardState.REVIEW && updated.interval >= SRS_CONFIG.MASTERY_THRESHOLD) newStatus = 'mastered';
       else if (updated.state === CardState.NEW && total > 0) newStatus = 'learning';
       else if (updated.state === CardState.LEARNING || updated.state === CardState.RELEARNING) newStatus = 'learning';
 
@@ -398,6 +427,11 @@ const LearnMode: React.FC<LearnModeProps> = ({
         });
       } catch {}
     }
+
+    // Report session completion to parent
+    const totalWords = Object.keys(wordResults).length;
+    const correctWords = Object.values(wordResults).filter(r => r.correct > r.wrong).length;
+    onSessionComplete?.(totalWords, correctWords);
   };
 
   const resetLearn = () => {
@@ -413,22 +447,28 @@ const LearnMode: React.FC<LearnModeProps> = ({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
       <SafeAreaView style={styles.container}>
-        {/* Header */}
+        {/* Header — 3 Phases */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>📚 Ôn tập</Text>
-          <View style={styles.stepsRow}>
-            {[1, 2, 3, 4].map(s => (
-              <React.Fragment key={s}>
-                <View style={[styles.stepDot, step >= s - 1 && styles.stepDotActive]}>
-                  <Text style={[styles.stepDotText, step >= s - 1 && styles.stepDotTextActive]}>{s}</Text>
-                </View>
-                {s < 4 && <View style={[styles.stepLine, step >= s && styles.stepLineActive]} />}
-              </React.Fragment>
-            ))}
-          </View>
           <TouchableOpacity style={styles.closeBtn} onPress={resetLearn}>
             <Icon name="close" size={22} color={colors.retroDark} />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>🎯 Smart Study</Text>
+          <View style={styles.phaseRow}>
+            {[
+              { label: '📖 Quick Review', active: step >= 0 },
+              { label: '✍️ Active Recall', active: step >= 1 },
+              { label: '💬 Production', active: step >= 2 },
+            ].map((phase, i) => (
+              <React.Fragment key={i}>
+                <View style={[styles.phaseChip, phase.active && styles.phaseChipActive]}>
+                  <Text style={[styles.phaseChipText, phase.active && styles.phaseChipTextActive]}>
+                    {phase.label}
+                  </Text>
+                </View>
+                {i < 2 && <View style={[styles.stepLine, step > i && styles.stepLineActive]} />}
+              </React.Fragment>
+            ))}
+          </View>
         </View>
 
         <KeyboardAvoidingView
@@ -437,10 +477,10 @@ const LearnMode: React.FC<LearnModeProps> = ({
         >
           {!finished ? (
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-              {/* Step 0: Review Meanings */}
+              {/* Step 0: Quick Review */}
               {step === 0 && vocabSet.length > 0 && (
                 <>
-                  <Text style={styles.stepLabel}>📖 Bước 1: Ôn nghĩa từ vựng</Text>
+                  <Text style={styles.stepLabel}>📖 Quick Review — Ôn nghĩa từ</Text>
                   <Text style={styles.progressText}>{meaningIdx + 1} / {vocabSet.length}</Text>
 
                   <View style={styles.meaningCard}>
@@ -495,10 +535,10 @@ const LearnMode: React.FC<LearnModeProps> = ({
                 </>
               )}
 
-              {/* Step 1: Type German word */}
+              {/* Step 1: Active Recall — Type German word */}
               {step === 1 && typeWords.length > 0 && (
                 <>
-                  <Text style={styles.stepLabel}>✏️ Bước 2: Điền từ tiếng Đức</Text>
+                  <Text style={styles.stepLabel}>✍️ Active Recall — Gõ từ tiếng Đức</Text>
                   <Text style={styles.progressText}>
                     {typeIdx + 1} / {typeWords.length}
                     {(retryCount[typeWords[typeIdx]?.word] || 0) > 0 ? ' 🔄 Ôn lại' : ''}
@@ -544,6 +584,18 @@ const LearnMode: React.FC<LearnModeProps> = ({
                       )}
                     </View>
 
+                    {/* Skip buttons — visible when no result yet */}
+                    {!typeResult && !typeChecking && (
+                      <View style={styles.skipRow}>
+                        <TouchableOpacity style={styles.skipBtnForgot} onPress={skipTypeWord}>
+                          <Text style={styles.skipBtnText}>😵 Đã quên</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.skipBtnWeak} onPress={skipTypeWord}>
+                          <Text style={styles.skipBtnText}>🤔 Chưa thuộc</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
                     {typeResult && (
                       <View style={styles.resultBox}>
                         <View style={[styles.resultBadge, typeResult.correct ? styles.resultGood : styles.resultBad]}>
@@ -580,10 +632,13 @@ const LearnMode: React.FC<LearnModeProps> = ({
                 </>
               )}
 
-              {/* Step 2: Write German sentence */}
+              {/* Step 2: Production — Write German sentence */}
               {step === 2 && transWords.length > 0 && (
                 <>
-                  <Text style={styles.stepLabel}>🤖 Bước 3: Viết câu tiếng Đức</Text>
+                  <Text style={styles.stepLabel}>💬 Production — Viết câu tiếng Đức</Text>
+                  <TouchableOpacity style={styles.skipBtn} onPress={() => finishLearn()}>
+                    <Text style={styles.skipBtnText}>Bỏ qua → Kết quả</Text>
+                  </TouchableOpacity>
                   <Text style={styles.progressText}>{transIdx + 1} / {transWords.length}</Text>
 
                   <View style={styles.exerciseCard}>
@@ -656,10 +711,13 @@ const LearnMode: React.FC<LearnModeProps> = ({
                 </>
               )}
 
-              {/* Step 3: Translate Vietnamese → German */}
+              {/* Step 3: Production — Translate Vietnamese → German */}
               {step === 3 && (
                 <>
-                  <Text style={styles.stepLabel}>🌐 Bước 4: Dịch câu sang tiếng Đức</Text>
+                  <Text style={styles.stepLabel}>🌐 Production — Dịch câu sang tiếng Đức</Text>
+                  <TouchableOpacity style={styles.skipBtn} onPress={() => finishLearn()}>
+                    <Text style={styles.skipBtnText}>Bỏ qua → Kết quả</Text>
+                  </TouchableOpacity>
 
                   {sentenceLoading ? (
                     <View style={styles.loadingBox}>
@@ -839,8 +897,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: colors.retroCream,
     borderBottomWidth: 2,
     borderBottomColor: colors.retroBorder,
@@ -849,7 +908,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: colors.retroDark,
-    marginRight: 12,
+    flex: 1,
+  },
+  phaseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 2,
+  },
+  phaseChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#e0e0e0',
+  },
+  phaseChipActive: {
+    backgroundColor: colors.retroCyan,
+  },
+  phaseChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  phaseChipTextActive: {
+    color: '#fff',
   },
   stepsRow: {
     flex: 1,
@@ -1263,6 +1345,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.retroDark,
+  },
+  skipRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  skipBtnForgot: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1.5,
+    borderColor: '#EF9A9A',
+    alignItems: 'center',
+  },
+  skipBtnWeak: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#FFF3E0',
+    borderWidth: 1.5,
+    borderColor: '#FFB74D',
+    alignItems: 'center',
   },
 });
 

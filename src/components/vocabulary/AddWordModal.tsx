@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import {
   VocabularyItem,
   DictionaryResult,
 } from '../../services/vocabulary.service';
+import { dailyProgressService } from '../../services/dailyProgress.service';
 
 interface AddWordModalProps {
   visible: boolean;
@@ -51,6 +52,16 @@ const AddWordModal: React.FC<AddWordModalProps> = ({
   const [lookupResult, setLookupResult] = useState<DictionaryResult | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [wordLimit, setWordLimit] = useState<{ allowed: boolean; remaining: number; limit: number }>(
+    { allowed: true, remaining: 10, limit: 10 }
+  );
+
+  // Check limit on open
+  useEffect(() => {
+    if (visible) {
+      dailyProgressService.canAddNewWord().then(setWordLimit).catch(() => {});
+    }
+  }, [visible]);
 
   const updateField = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -136,6 +147,9 @@ const AddWordModal: React.FC<AddWordModalProps> = ({
       });
 
       onWordAdded({ ...saved, ...wordData, id: saved.id, createdAt: saved.createdAt } as VocabularyItem);
+      // Track word added
+      const updated = await dailyProgressService.recordWordAdded();
+      setWordLimit({ allowed: updated.wordsAdded < updated.limit, remaining: Math.max(0, updated.limit - updated.wordsAdded), limit: updated.limit });
       setForm(EMPTY_FORM);
       setLookupResult(null);
       onClose();
@@ -184,6 +198,15 @@ const AddWordModal: React.FC<AddWordModalProps> = ({
               </Text>
             </View>
           )}
+
+          {/* Word limit info */}
+          <View style={[styles.warningBanner, { backgroundColor: wordLimit.allowed ? '#E8F5E9' : '#FFEBEE', borderColor: wordLimit.allowed ? '#81C784' : '#EF9A9A' }]}>
+            <Text style={[styles.warningText, { color: wordLimit.allowed ? '#2E7D32' : '#C62828' }]}>
+              {wordLimit.allowed
+                ? `📝 Còn ${wordLimit.remaining}/${wordLimit.limit} từ mới hôm nay`
+                : `🚫 Đã đạt giới hạn ${wordLimit.limit} từ mới/ngày`}
+            </Text>
+          </View>
 
           {/* German word + Lookup */}
           <View style={styles.formGroup}>
@@ -329,9 +352,9 @@ const AddWordModal: React.FC<AddWordModalProps> = ({
             <Text style={styles.cancelBtnText}>Hủy</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.saveBtn, (!form.word.trim() || !form.translation.trim() || saving) && styles.btnDisabled]}
+            style={[styles.saveBtn, (!form.word.trim() || !form.translation.trim() || saving || !wordLimit.allowed) && styles.btnDisabled]}
             onPress={handleSave}
-            disabled={!form.word.trim() || !form.translation.trim() || saving}
+            disabled={!form.word.trim() || !form.translation.trim() || saving || !wordLimit.allowed}
           >
             {saving ? (
               <ActivityIndicator size="small" color="#fff" />

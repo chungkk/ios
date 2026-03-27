@@ -1,7 +1,7 @@
 // VocabularyScreen - Smart Vocabulary Learning
-// Neo-Retro Design with SRS Integration + Full Website Features
+// Dashboard-First Design with SRS Integration
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,26 +13,30 @@ import {
   Alert,
   Modal,
   TextInput,
+  ScrollView,
   useWindowDimensions,
   ActivityIndicator,
 } from 'react-native';
+
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Tts from 'react-native-tts';
 import { vocabularyService, VocabularyItem } from '../services/vocabulary.service';
 import { savedSentencesService, SavedSentence } from '../services/savedSentences.service';
+import { dailyProgressService, DailyProgress, StreakData } from '../services/dailyProgress.service';
 import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import FlashcardMode from '../components/vocabulary/FlashcardMode';
 import AddWordModal from '../components/vocabulary/AddWordModal';
 import LearnMode from '../components/vocabulary/LearnMode';
-// VocabChart moved to SettingsScreen
+import VocabAnalytics from '../components/vocabulary/VocabAnalytics';
 import { SRSCard } from '../utils/srs';
 import { getWordsForReview } from '../utils/vocabExerciseEngine';
 import { colors, spacing } from '../styles/theme';
 
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 20;
+const LOAD_MORE_THRESHOLD = 0.5;
 
 // Word status types
 type WordStatus = 'all' | 'new' | 'learning' | 'mastered';
@@ -95,10 +99,21 @@ const VocabularyScreen: React.FC = () => {
   const [showLearn, setShowLearn] = useState(false);
   const [activeFilter, setActiveFilter] = useState<WordStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('words');
   const [savedSentences, setSavedSentences] = useState<SavedSentence[]>([]);
+  // Daily Progress & Streak
+  const [dailyProgress, setDailyProgress] = useState<DailyProgress | null>(null);
+  const [streak, setStreak] = useState<StreakData | null>(null);
+  // Infinite scroll
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  // Expanded word card
+  const [expandedWordId, setExpandedWordId] = useState<string | null>(null);
+  // Session timer
+  const sessionStartRef = useRef<number>(0);
+  // Analytics + Grouping
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [groupByLesson, setGroupByLesson] = useState<string | null>(null);
 
   // Initialize TTS on mount
   useEffect(() => {
@@ -129,21 +144,37 @@ const VocabularyScreen: React.FC = () => {
     }
   }, [user]);
 
+  // Load daily progress & streak
+  const loadDailyData = useCallback(async () => {
+    try {
+      const [progress, streakData] = await Promise.all([
+        dailyProgressService.getTodayProgress(),
+        dailyProgressService.getStreak(),
+      ]);
+      setDailyProgress(progress);
+      setStreak(streakData);
+    } catch (e) {
+      console.error('[VocabularyScreen] Daily data error:', e);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchVocabulary();
-      // Also load saved sentences
+      loadDailyData();
       savedSentencesService.getSavedSentences().then(setSavedSentences).catch(() => {});
-    }, [fetchVocabulary])
+      dailyProgressService.cleanupOldProgress(); // Prune old entries
+    }, [fetchVocabulary, loadDailyData])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchVocabulary();
+    await loadDailyData();
     const sentences = await savedSentencesService.getSavedSentences().catch(() => [] as SavedSentence[]);
     setSavedSentences(sentences);
     setRefreshing(false);
-  }, [fetchVocabulary]);
+  }, [fetchVocabulary, loadDailyData]);
 
   // Navigation for saved sentences
   const navigation = useNavigation<any>();
@@ -209,15 +240,13 @@ const VocabularyScreen: React.FC = () => {
   }, [vocabulary]);
 
   // Pending review words
+  // Pending review: all words that are due for review (including mastered-overdue)
   const pendingReview = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const now = new Date();
     return vocabulary.filter(v => {
-      if (v.status === 'mastered') return false;
-      const created = new Date(v.createdAt);
-      const isToday = created >= todayStart;
-      const isDue = !v.nextReviewAt || new Date(v.nextReviewAt) <= new Date();
-      return isToday || isDue;
+      const isDue = !v.nextReviewAt || new Date(v.nextReviewAt) <= now;
+      if (v.status === 'new') return true;  // new words always pending
+      return isDue;  // learning + mastered overdue
     });
   }, [vocabulary]);
 
@@ -241,16 +270,35 @@ const VocabularyScreen: React.FC = () => {
     return filtered;
   }, [vocabulary, activeFilter, searchQuery]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredVocabulary.length / ITEMS_PER_PAGE);
-  const paginatedVocabulary = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredVocabulary.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredVocabulary, currentPage]);
+  // Group by lesson
+  const lessonGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+    vocabulary.forEach(v => {
+      const key = v.lessonTitle || 'Khác';
+      groups[key] = (groups[key] || 0) + 1;
+    });
+    return Object.entries(groups).sort((a, b) => b[1] - a[1]);
+  }, [vocabulary]);
+
+  const displayVocabulary = useMemo(() => {
+    if (!groupByLesson) return filteredVocabulary;
+    return filteredVocabulary.filter(v => (v.lessonTitle || 'Khác') === groupByLesson);
+  }, [filteredVocabulary, groupByLesson]);
+
+  // Pagination → Infinite scroll
+  const visibleVocabulary = useMemo(() => {
+    return displayVocabulary.slice(0, visibleCount);
+  }, [displayVocabulary, visibleCount]);
+
+  const handleLoadMore = useCallback(() => {
+    if (visibleCount < displayVocabulary.length) {
+      setVisibleCount(prev => Math.min(prev + ITEMS_PER_PAGE, displayVocabulary.length));
+    }
+  }, [visibleCount, displayVocabulary.length]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [activeFilter, searchQuery]);
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [activeFilter, searchQuery, groupByLesson]);
 
   // Delete word
   const handleDelete = useCallback(async (id: string) => {
@@ -364,10 +412,21 @@ const VocabularyScreen: React.FC = () => {
     setVocabulary(prev => [word, ...prev]);
   }, []);
 
-  // Handle vocab update from Learn Mode
+  // Handle vocab update from Learn Mode + record daily progress
   const handleLearnUpdate = useCallback((updated: VocabularyItem) => {
     setVocabulary(prev => prev.map(v => v.id === updated.id ? updated : v));
   }, []);
+
+  const handleLearnSessionComplete = useCallback(async (wordsReviewed: number, wordsCorrect: number) => {
+    // Record session in daily progress
+    const elapsed = sessionStartRef.current > 0 ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : 0;
+    await dailyProgressService.recordSession(wordsReviewed, wordsCorrect, elapsed);
+    sessionStartRef.current = 0;
+    // Reload daily data
+    await loadDailyData();
+    // Cloud sync (fire-and-forget)
+    dailyProgressService.syncToCloud().catch(() => {});
+  }, [loadDailyData]);
 
   // Speak word using TTS
   const handleSpeak = useCallback(async (word: string) => {
@@ -383,7 +442,40 @@ const VocabularyScreen: React.FC = () => {
     }
   }, []);
 
-  // Render word card (enhanced with website features)
+  // Dynamic daily goal: max(baseGoal, 60% of overdue count)
+  const effectiveDailyGoal = useMemo(() => {
+    const baseGoal = dailyProgress?.dailyGoal ?? 15;
+    const overdueGoal = Math.ceil(pendingReview.length * 0.6);
+    return Math.max(baseGoal, overdueGoal);
+  }, [dailyProgress, pendingReview]);
+
+  // Progress percentage for Dashboard (use effective goal)
+  const progressPct = useMemo(() => {
+    if (!dailyProgress || !effectiveDailyGoal) return 0;
+    return Math.min(1, dailyProgress.wordsReviewed / effectiveDailyGoal);
+  }, [dailyProgress, effectiveDailyGoal]);
+
+  const goalCompleted = dailyProgress ? dailyProgress.wordsReviewed >= effectiveDailyGoal : false;
+  const wordsRemaining = dailyProgress ? Math.max(0, effectiveDailyGoal - dailyProgress.wordsReviewed) : 0;
+
+  // Adaptive: skip Quick Review if user has strong recent performance
+  const shouldSkipQuickReview = useMemo(() => {
+    if (!dailyProgress) return false;
+    // Skip if already reviewed >70% of goal today (already warmed up)
+    return dailyProgress.wordsReviewed > 0 && dailyProgress.wordsCorrect / Math.max(1, dailyProgress.wordsReviewed) >= 0.8;
+  }, [dailyProgress]);
+
+  // Motivation message
+  const motivationMsg = useMemo(() => {
+    if (!dailyProgress) return '';
+    if (goalCompleted) return '🎉 Hoàn thành mục tiêu hôm nay!';
+    if (progressPct >= 0.7) return `💪 Gần xong! Chỉ cần ${wordsRemaining} từ nữa!`;
+    if (progressPct >= 0.3) return `📚 Tiếp tục! Còn ${wordsRemaining} từ nữa.`;
+    if (dailyProgress.wordsReviewed > 0) return `👏 Khởi đầu tốt! Còn ${wordsRemaining} từ.`;
+    return `🎯 Hôm nay: ${effectiveDailyGoal} từ${effectiveDailyGoal > (dailyProgress?.dailyGoal ?? 15) ? ' (có từ quá hạn)' : ''}. Bắt đầu thôi!`;
+  }, [dailyProgress, goalCompleted, progressPct, wordsRemaining, effectiveDailyGoal]);
+
+  // Render word card — compact by default, expandable on tap
   const renderItem = ({ item, index }: { item: VocabularyItem; index: number }) => {
     const status = getWordStatusFromSRS(item);
     const statusConfig: Record<WordStatus, { icon: string; color: string; label: string }> = {
@@ -394,13 +486,18 @@ const VocabularyScreen: React.FC = () => {
     };
     const config = statusConfig[status] || statusConfig.new;
     const isEnriching = enrichingIds.has(item.id);
-    const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+    const globalIndex = index + 1;
+    const isExpanded = expandedWordId === item.id;
 
     return (
-      <View style={styles.wordCard}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => setExpandedWordId(isExpanded ? null : item.id)}
+        style={styles.wordCard}
+      >
         <View style={[styles.cardAccent, { backgroundColor: config.color }]} />
         <View style={styles.cardBody}>
-          {/* Header row: word + speaker + status + actions */}
+          {/* Compact row: always visible */}
           <View style={styles.cardHeader}>
             <View style={styles.wordInfo}>
               <Text style={styles.wordIndex}>{globalIndex}</Text>
@@ -421,84 +518,85 @@ const VocabularyScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Extended details */}
-          <View style={styles.detailsRow}>
-            {item.pronunciation && (
-              <Text style={styles.detailIPA}>{item.pronunciation}</Text>
-            )}
-            {item.plural && (
-              <Text style={styles.detailTag}>Pl: {item.plural}</Text>
-            )}
-            {item.partOfSpeech && (
-              <View style={styles.posBadge}>
-                <Text style={styles.posText}>{item.partOfSpeech}</Text>
+          {/* Expanded details — only when tapped */}
+          {isExpanded && (
+            <>
+              <View style={styles.detailsRow}>
+                {item.pronunciation && (
+                  <Text style={styles.detailIPA}>{item.pronunciation}</Text>
+                )}
+                {item.plural && (
+                  <Text style={styles.detailTag}>Pl: {item.plural}</Text>
+                )}
+                {item.partOfSpeech && (
+                  <View style={styles.posBadge}>
+                    <Text style={styles.posText}>{item.partOfSpeech}</Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
 
-          {item.baseForm && item.baseForm.toLowerCase() !== item.word.toLowerCase() && (
-            <Text style={styles.detailBaseForm}>Grundform: {item.baseForm}</Text>
-          )}
-
-          {item.grammar && (
-            <Text style={styles.detailGrammar}>{item.grammar}</Text>
-          )}
-
-          {item.example && (
-            <Text style={styles.context} numberOfLines={2}>
-              „{item.example}"
-            </Text>
-          )}
-
-          {item.context && !item.example && (
-            <Text style={styles.context} numberOfLines={2}>
-              „{item.context}"
-            </Text>
-          )}
-
-          {item.lessonTitle && (
-            <View style={styles.sourceTag}>
-              <Icon name="videocam-outline" size={11} color={colors.retroPurple} />
-              <Text style={styles.sourceText} numberOfLines={1}>{item.lessonTitle}</Text>
-            </View>
-          )}
-
-          {/* Actions row */}
-          <View style={styles.actionsRow}>
-            {/* Status toggle */}
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => handleUpdateStatus(item)}
-            >
-              <Text style={styles.actionBtnText}>
-                {item.status === 'mastered' ? '🔄' : item.status === 'new' ? '📝' : '✅'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* AI Enrich */}
-            <TouchableOpacity
-              style={[styles.actionBtn, isEnriching && styles.actionBtnDisabled]}
-              onPress={() => handleEnrichWord(item)}
-              disabled={isEnriching}
-            >
-              {isEnriching ? (
-                <ActivityIndicator size="small" color={colors.retroPurple} />
-              ) : (
-                <Text style={styles.actionBtnText}>✨</Text>
+              {item.baseForm && item.baseForm.toLowerCase() !== item.word.toLowerCase() && (
+                <Text style={styles.detailBaseForm}>Grundform: {item.baseForm}</Text>
               )}
-            </TouchableOpacity>
 
-            {/* Delete */}
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => handleDelete(item.id)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Icon name="trash-outline" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
+              {item.grammar && (
+                <Text style={styles.detailGrammar}>{item.grammar}</Text>
+              )}
+
+              {item.example && (
+                <Text style={styles.context} numberOfLines={2}>
+                  „{item.example}"
+                </Text>
+              )}
+
+              {item.context && !item.example && (
+                <Text style={styles.context} numberOfLines={2}>
+                  „{item.context}"
+                </Text>
+              )}
+
+              {item.lessonTitle && (
+                <View style={styles.sourceTag}>
+                  <Icon name="videocam-outline" size={11} color={colors.retroPurple} />
+                  <Text style={styles.sourceText} numberOfLines={1}>{item.lessonTitle}</Text>
+                </View>
+              )}
+
+              {/* Actions row */}
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => handleUpdateStatus(item)}
+                >
+                  <Text style={styles.actionBtnText}>
+                    {item.status === 'mastered' ? '🔄' : item.status === 'new' ? '📝' : '✅'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, isEnriching && styles.actionBtnDisabled]}
+                  onPress={() => handleEnrichWord(item)}
+                  disabled={isEnriching}
+                >
+                  {isEnriching ? (
+                    <ActivityIndicator size="small" color={colors.retroPurple} />
+                  ) : (
+                    <Text style={styles.actionBtnText}>✨</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => handleDelete(item.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Icon name="trash-outline" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -547,22 +645,20 @@ const VocabularyScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Card - Compact */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>📚 {t('vocabulary.title')}</Text>
-          <Text style={styles.headerSubtitle}>{stats.total} từ</Text>
+      {/* ===== Dashboard Card ===== */}
+      <View style={styles.dashboardCard}>
+        {/* Top row: title + streak + actions */}
+        <View style={styles.dashboardTopRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.dashboardTitle}>📚 {t('vocabulary.title')}</Text>
+            <Text style={styles.dashboardSubtitle}>{stats.total} từ vựng</Text>
+          </View>
+          {(streak?.currentStreak ?? 0) > 0 && (
+            <View style={styles.streakBadge}>
+              <Text style={styles.streakText}>🔥 {streak!.currentStreak} ngày</Text>
+            </View>
+          )}
           <View style={styles.headerActions}>
-            {vocabulary.length >= 2 && (
-              <TouchableOpacity
-                style={[styles.learnBtn, pendingReview.length > 0 && styles.learnBtnUrgent]}
-                onPress={() => setShowLearn(true)}
-              >
-                <Text style={styles.learnBtnText}>
-                  📝 {pendingReview.length > 0 ? `Ôn ${pendingReview.length}` : 'Ôn'}
-                </Text>
-              </TouchableOpacity>
-            )}
             {vocabulary.length > 0 && (
               <TouchableOpacity
                 style={styles.flashcardBtn}
@@ -572,6 +668,12 @@ const VocabularyScreen: React.FC = () => {
               </TouchableOpacity>
             )}
             <TouchableOpacity
+              style={styles.analyticsBtn}
+              onPress={() => setShowAnalytics(true)}
+            >
+              <Icon name="stats-chart" size={14} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.addBtn}
               onPress={() => setShowAddModal(true)}
             >
@@ -579,6 +681,66 @@ const VocabularyScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Daily Progress Bar */}
+        {vocabulary.length > 0 && dailyProgress && (
+          <View style={styles.dailyProgressSection}>
+            <View style={styles.progressRow}>
+              <Text style={styles.progressLabel}>
+                {dailyProgress.wordsReviewed}/{effectiveDailyGoal}
+              </Text>
+              <Text style={styles.motivationText}>{motivationMsg}</Text>
+            </View>
+            <View style={styles.progressBarBg}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${Math.min(progressPct * 100, 100)}%`,
+                    backgroundColor: goalCompleted ? '#4CAF50' : colors.retroCyan,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Smart Study CTA */}
+        {vocabulary.length >= 2 && (
+          <TouchableOpacity
+            style={[
+              styles.smartStudyBtn,
+              goalCompleted && styles.smartStudyBtnCompleted,
+            ]}
+            onPress={() => {
+              sessionStartRef.current = Date.now();
+              setShowLearn(true);
+            }}
+          >
+            <Text style={styles.smartStudyBtnText}>
+              {goalCompleted
+                ? '✅ Hoàn thành! Ôn thêm?'
+                : pendingReview.length > 0
+                  ? `🎯 Bắt đầu ôn (${pendingReview.length} từ)`
+                  : '🎯 Luyện tập ngay'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Status Bar */}
+        {vocabulary.length > 0 && (
+          <View style={styles.statsBar}>
+            <View style={[styles.statsSegment, { flex: stats.new || 1, backgroundColor: colors.retroCoral + '40' }]}>
+              <Text style={styles.statsSegmentText}>🆕 {stats.new}</Text>
+            </View>
+            <View style={[styles.statsSegment, { flex: stats.learning || 1, backgroundColor: colors.retroYellow + '40' }]}>
+              <Text style={styles.statsSegmentText}>📖 {stats.learning}</Text>
+            </View>
+            <View style={[styles.statsSegment, { flex: stats.mastered || 1, backgroundColor: colors.retroCyan + '30' }]}>
+              <Text style={styles.statsSegmentText}>✅ {stats.mastered}</Text>
+            </View>
+          </View>
+        )}
 
         {/* Mode Toggle: Words vs Sentences */}
         <View style={styles.modeToggle}>
@@ -637,21 +799,35 @@ const VocabularyScreen: React.FC = () => {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Group by Lesson */}
+            {lessonGroups.length > 1 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupRow}>
+                <TouchableOpacity
+                  style={[styles.groupChip, !groupByLesson && styles.groupChipActive]}
+                  onPress={() => setGroupByLesson(null)}
+                >
+                  <Text style={[styles.groupChipText, !groupByLesson && styles.groupChipTextActive]}>Tất cả</Text>
+                </TouchableOpacity>
+                {lessonGroups.map(([lesson, count]) => (
+                  <TouchableOpacity
+                    key={lesson}
+                    style={[styles.groupChip, groupByLesson === lesson && styles.groupChipActive]}
+                    onPress={() => setGroupByLesson(groupByLesson === lesson ? null : lesson)}
+                  >
+                    <Text
+                      style={[styles.groupChipText, groupByLesson === lesson && styles.groupChipTextActive]}
+                      numberOfLines={1}
+                    >
+                      {lesson} ({count})
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </>
         )}
       </View>
-
-
-      {/* Review Reminder - only in words mode */}
-      {viewMode === 'words' && pendingReview.length > 0 && (
-        <TouchableOpacity style={styles.reviewReminder} onPress={() => setShowLearn(true)}>
-          <Text style={styles.reviewReminderIcon}>⏰</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.reviewReminderTitle}>{pendingReview.length} từ cần ôn hôm nay</Text>
-          </View>
-          <Text style={styles.reviewReminderBtn}>Ôn ngay →</Text>
-        </TouchableOpacity>
-      )}
 
       {/* Saved Sentences View */}
       {viewMode === 'sentences' ? (
@@ -744,47 +920,29 @@ const VocabularyScreen: React.FC = () => {
               )}
             </View>
           ) : (
-            <>
-              <FlatList
-                data={paginatedVocabulary}
-                renderItem={renderItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    tintColor={colors.retroCyan}
-                  />
-                }
-              />
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <View style={styles.pagination}>
-                  <TouchableOpacity
-                    style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-                    onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <Icon name="chevron-back" size={18} color={currentPage === 1 ? colors.textMuted : colors.retroDark} />
-                  </TouchableOpacity>
-
-                  <View style={styles.pageInfo}>
-                    <Text style={styles.pageText}>{currentPage} / {totalPages}</Text>
+            <FlatList
+              data={visibleVocabulary}
+              renderItem={renderItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={LOAD_MORE_THRESHOLD}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.retroCyan}
+                />
+              }
+              ListFooterComponent={
+                visibleCount < filteredVocabulary.length ? (
+                  <View style={styles.loadingMore}>
+                    <ActivityIndicator size="small" color={colors.retroCyan} />
                   </View>
-
-                  <TouchableOpacity
-                    style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-                    onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <Icon name="chevron-forward" size={18} color={currentPage === totalPages ? colors.textMuted : colors.retroDark} />
-                  </TouchableOpacity>
-                </View>
-              )}
-            </>
+                ) : null
+              }
+            />
           )}
         </>
       )}
@@ -816,6 +974,15 @@ const VocabularyScreen: React.FC = () => {
         vocabulary={vocabulary}
         onClose={() => setShowLearn(false)}
         onUpdateVocabulary={handleLearnUpdate}
+        onSessionComplete={handleLearnSessionComplete}
+        skipQuickReview={shouldSkipQuickReview}
+      />
+
+      {/* Analytics Modal */}
+      <VocabAnalytics
+        visible={showAnalytics}
+        onClose={() => setShowAnalytics(false)}
+        vocabulary={vocabulary}
       />
     </SafeAreaView>
   );
@@ -826,16 +993,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgPrimary,
   },
-  // Header Card - Compact
-  headerCard: {
+  // Dashboard Card
+  dashboardCard: {
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
-    padding: 10,
+    padding: 12,
     backgroundColor: colors.retroCream,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: colors.retroBorder,
+  },
+  dashboardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  dashboardTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  dashboardSubtitle: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  streakBadge: {
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#FFB74D',
+  },
+  streakText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#E65100',
   },
   modeToggle: {
     flexDirection: 'row',
@@ -864,45 +1060,98 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     fontWeight: '700',
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 6,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.retroDark,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginRight: 'auto',
-  },
   headerActions: {
     flexDirection: 'row',
     gap: 5,
     alignItems: 'center',
   },
-  learnBtn: {
-    backgroundColor: colors.retroYellow,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  // Daily Progress
+  dailyProgressSection: {
+    marginBottom: 10,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  motivationText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    flex: 1,
+    textAlign: 'right',
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+    minWidth: 2,
+  },
+  // Smart Study CTA
+  smartStudyBtn: {
+    backgroundColor: colors.retroCyan,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  smartStudyBtnCompleted: {
+    backgroundColor: '#4CAF50',
+  },
+  smartStudyBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  // Stats Bar
+  statsBar: {
+    flexDirection: 'row',
     borderRadius: 8,
-    borderWidth: 1.5,
+    overflow: 'hidden',
+    marginBottom: 8,
+    height: 24,
+    borderWidth: 1,
     borderColor: colors.retroBorder,
   },
-  learnBtnUrgent: {
-    backgroundColor: colors.retroCoral,
+  statsSegment: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 30,
   },
-  learnBtnText: {
-    fontSize: 11,
+  statsSegmentText: {
+    fontSize: 10,
     fontWeight: '700',
     color: colors.retroDark,
   },
+  loadingMore: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
   flashcardBtn: {
     backgroundColor: colors.retroPurple,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  analyticsBtn: {
+    backgroundColor: '#FF9800',
     width: 30,
     height: 30,
     borderRadius: 8,
@@ -963,6 +1212,33 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   filterChipTextActive: {
+    color: '#fff',
+  },
+  groupRow: {
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: spacing.md,
+  },
+  groupChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: colors.retroBorder,
+    marginRight: 6,
+  },
+  groupChipActive: {
+    backgroundColor: colors.retroPurple,
+    borderColor: colors.retroPurple,
+  },
+  groupChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    maxWidth: 120,
+  },
+  groupChipTextActive: {
     color: '#fff',
   },
   // Review Reminder

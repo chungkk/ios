@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Tts from 'react-native-tts';
 import { useSettings } from '../../contexts/SettingsContext';
 import { colors, spacing } from '../../styles/theme';
 import { VocabularyItem } from '../../services/vocabulary.service';
@@ -45,6 +46,9 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
   const [studyQueue, setStudyQueue] = useState<ReturnType<typeof buildStudyQueue> | null>(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [sessionStats, setSessionStats] = useState({ again: 0, hard: 0, good: 0, easy: 0 });
+  const [autoTtsEnabled, setAutoTtsEnabled] = useState(true);
+  const lastRatedRef = useRef<{ card: SRSCard; prevCards: SRSCard[]; prevIndex: number; prevStats: typeof sessionStats } | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
 
   // Initialize cards from vocabulary - restore SRS state if exists
   useEffect(() => {
@@ -56,6 +60,11 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
           word: v.word,
           translation: v.translation,
           context: v.context,
+          example: v.example ?? undefined,
+          grammar: v.grammar ?? undefined,
+          partOfSpeech: v.partOfSpeech ?? undefined,
+          baseForm: v.baseForm ?? undefined,
+          IPA: v.pronunciation ?? undefined,
           state: v.srsState as CardState,
           ease: v.srsEase ?? SRS_CONFIG.STARTING_EASE,
           interval: v.srsInterval ?? 0,
@@ -72,6 +81,11 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
         word: v.word,
         translation: v.translation,
         context: v.context,
+        example: v.example ?? undefined,
+        grammar: v.grammar ?? undefined,
+        partOfSpeech: v.partOfSpeech ?? undefined,
+        baseForm: v.baseForm ?? undefined,
+        IPA: v.pronunciation ?? undefined,
       });
     });
     setCards(srsCards);
@@ -94,19 +108,43 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
     }
   }, [settings.hapticEnabled]);
 
+  const handleSpeak = useCallback((text: string) => {
+    try {
+      const clean = text.replace(/[.,!?;:"""''\u201E-]/g, '').trim();
+      if (!clean) return;
+      Tts.stop().catch(() => {});
+      Tts.setDefaultLanguage('de-DE').then(() => Tts.speak(clean));
+    } catch {}
+  }, []);
+
   const flipCard = useCallback(() => {
     vibrate(20);
-    setIsFlipped(!isFlipped);
+    const willFlip = !isFlipped;
+    setIsFlipped(willFlip);
     Animated.spring(flipAnim, {
       toValue: isFlipped ? 0 : 1,
       friction: 8,
       tension: 10,
       useNativeDriver: true,
     }).start();
-  }, [isFlipped, flipAnim, vibrate]);
+    // Auto TTS when flipping to back
+    if (willFlip && currentCard && autoTtsEnabled) {
+      handleSpeak(currentCard.word);
+    }
+  }, [isFlipped, flipAnim, vibrate, currentCard, handleSpeak, autoTtsEnabled]);
 
   const handleRating = useCallback((rating: Rating) => {
     if (!currentCard) return;
+
+    // Save undo state
+    lastRatedRef.current = {
+      card: { ...currentCard },
+      prevCards: [...cards],
+      prevIndex: currentIndex,
+      prevStats: { ...sessionStats },
+    };
+    setShowUndo(true);
+    setTimeout(() => setShowUndo(false), 4000); // Hide undo after 4s
 
     // Vibrate based on rating
     switch (rating) {
@@ -160,7 +198,22 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
         }
       }
     });
-  }, [currentCard, currentIndex, totalCards, cards, flipAnim, slideAnim, onUpdateCard, vibrate]);
+  }, [currentCard, currentIndex, totalCards, cards, flipAnim, slideAnim, onUpdateCard, vibrate, sessionStats]);
+
+  const undoLastRating = useCallback(() => {
+    if (!lastRatedRef.current) return;
+    const { prevCards, prevIndex, prevStats, card } = lastRatedRef.current;
+    setCards(prevCards);
+    setCurrentIndex(prevIndex);
+    setSessionStats(prevStats);
+    setCompletedCount(prev => Math.max(0, prev - 1));
+    setIsFlipped(false);
+    flipAnim.setValue(0);
+    slideAnim.setValue(0);
+    onUpdateCard?.(card); // restore original card state
+    lastRatedRef.current = null;
+    setShowUndo(false);
+  }, [flipAnim, slideAnim, onUpdateCard]);
 
   const frontInterpolate = flipAnim.interpolate({
     inputRange: [0, 1],
@@ -243,6 +296,12 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
             <View style={[styles.progressFill, { width: `${((currentIndex + 1) / totalCards) * 100}%` }]} />
           </View>
         </View>
+        <TouchableOpacity
+          style={[styles.ttsToggle, !autoTtsEnabled && styles.ttsToggleOff]}
+          onPress={() => setAutoTtsEnabled(prev => !prev)}
+        >
+          <Icon name={autoTtsEnabled ? 'volume-high' : 'volume-mute'} size={18} color={autoTtsEnabled ? colors.retroCyan : colors.textMuted} />
+        </TouchableOpacity>
         <View style={styles.queueInfo}>
           <Text style={styles.queueText}>
             🆕{studyQueue?.counts.new} 📖{studyQueue?.counts.learning} 🔄{studyQueue?.counts.review}
@@ -273,9 +332,37 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
           <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
             <View style={[styles.cardTopBar, { backgroundColor: colors.retroCyan }]} />
             <View style={styles.cardContent}>
-              <Text style={styles.cardWord}>{currentCard?.word}</Text>
+              <View style={styles.cardBackHeader}>
+                <Text style={styles.cardWord}>{currentCard?.word}</Text>
+                <TouchableOpacity style={styles.speakButton} onPress={() => currentCard && handleSpeak(currentCard.word)}>
+                  <Icon name="volume-high" size={20} color={colors.retroCyan} />
+                </TouchableOpacity>
+              </View>
+              {currentCard?.IPA && (
+                <Text style={styles.cardIPA}>[{currentCard.IPA}]</Text>
+              )}
+              {currentCard?.partOfSpeech && (
+                <View style={styles.posBadgeBack}>
+                  <Text style={styles.posBadgeBackText}>{currentCard.partOfSpeech}</Text>
+                  {currentCard.baseForm && currentCard.baseForm !== currentCard.word && (
+                    <Text style={styles.baseFormText}> → {currentCard.baseForm}</Text>
+                  )}
+                </View>
+              )}
               <View style={styles.divider} />
               <Text style={styles.cardTranslation}>{currentCard?.translation}</Text>
+              {currentCard?.example && (
+                <TouchableOpacity style={styles.exampleRow} onPress={() => currentCard.example && handleSpeak(currentCard.example)}>
+                  <Icon name="chatbubble-ellipses-outline" size={14} color={colors.textSecondary} />
+                  <Text style={styles.cardExample}>{currentCard.example}</Text>
+                </TouchableOpacity>
+              )}
+              {currentCard?.grammar && (
+                <View style={styles.grammarRow}>
+                  <Icon name="book-outline" size={14} color={colors.retroPurple} />
+                  <Text style={styles.cardGrammar}>{currentCard.grammar}</Text>
+                </View>
+              )}
               {currentCard?.context && (
                 <Text style={styles.cardContext}>"{currentCard.context}"</Text>
               )}
@@ -327,6 +414,14 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
           <Text style={styles.tapHint}>👆 {t('vocabulary.tapToFlip')}</Text>
         </View>
       )}
+
+      {/* Undo button */}
+      {showUndo && lastRatedRef.current && (
+        <TouchableOpacity style={styles.undoBtn} onPress={undoLastRating}>
+          <Icon name="arrow-undo" size={16} color="#fff" />
+          <Text style={styles.undoBtnText}>Undo</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 };
@@ -354,6 +449,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.retroBorder,
+  },
+  ttsToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E0F7FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  ttsToggleOff: {
+    backgroundColor: '#f0f0f0',
   },
   progressInfo: {
     flex: 1,
@@ -460,6 +567,69 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     paddingHorizontal: 16,
+  },
+  cardBackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  speakButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E0F7FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardIPA: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  posBadgeBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EDE7F6',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  posBadgeBackText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.retroPurple,
+  },
+  baseFormText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  exampleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+  },
+  cardExample: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  grammarRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 12,
+  },
+  cardGrammar: {
+    fontSize: 12,
+    color: colors.retroPurple,
+    flex: 1,
   },
   cardStateTag: {
     position: 'absolute',
@@ -598,6 +768,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  undoBtn: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#555',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  undoBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 

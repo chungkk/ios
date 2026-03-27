@@ -3,10 +3,10 @@
  */
 
 export const SRS_CONFIG = {
-  LEARNING_STEPS: [1, 10], // minutes
-  GRADUATING_INTERVAL: 1, // days
+  LEARNING_STEPS: [1, 10, 60, 240], // minutes: 1m → 10m → 1h → 4h
+  GRADUATING_INTERVAL: 2, // days (after completing all learning steps)
   EASY_INTERVAL: 4, // days
-  RELEARNING_STEPS: [10], // minutes
+  RELEARNING_STEPS: [10, 60], // minutes: 10m → 1h
   STARTING_EASE: 2.5,
   MIN_EASE: 1.3,
   EASE_AGAIN: -0.2,
@@ -14,6 +14,7 @@ export const SRS_CONFIG = {
   EASE_EASY: 0.15,
   HARD_INTERVAL: 1.2,
   MAX_INTERVAL: 36500,
+  MASTERY_THRESHOLD: 21, // days — interval >= this = "mastered"
 };
 
 export enum CardState {
@@ -35,6 +36,12 @@ export interface SRSCard {
   word: string;
   translation: string;
   context?: string;
+  // Enrichment fields for flashcard back
+  example?: string;
+  grammar?: string;
+  partOfSpeech?: string;
+  baseForm?: string;
+  IPA?: string;
   state: CardState;
   ease: number;
   interval: number;
@@ -45,12 +52,17 @@ export interface SRSCard {
   lastReview: Date | null;
 }
 
-export function createNewCard(vocab: { id: string; word: string; translation: string; context?: string }): SRSCard {
+export function createNewCard(vocab: { id: string; word: string; translation: string; context?: string; example?: string; grammar?: string; partOfSpeech?: string; baseForm?: string; IPA?: string }): SRSCard {
   return {
     id: vocab.id,
     word: vocab.word,
     translation: vocab.translation,
     context: vocab.context,
+    example: vocab.example,
+    grammar: vocab.grammar,
+    partOfSpeech: vocab.partOfSpeech,
+    baseForm: vocab.baseForm,
+    IPA: vocab.IPA,
     state: CardState.NEW,
     ease: SRS_CONFIG.STARTING_EASE,
     interval: 0,

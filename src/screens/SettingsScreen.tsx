@@ -545,7 +545,7 @@ const SettingsScreen: React.FC = () => {
         )}
 
         {/* Version */}
-        <Text style={styles.version}>{t('settings.version')} 1.0.0</Text>
+        <Text style={styles.version}>{t('settings.version')} 1.8</Text>
       </ScrollView>
 
       {/* AGB Modal */}
