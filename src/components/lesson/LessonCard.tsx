@@ -1,7 +1,7 @@
 // LessonCard component - Neo-Retro Design
 // Migrated from ppgeil/components/LessonCard.js with retro styling
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Lesson } from '../../types/lesson.types';
 import { colors, spacing } from '../../styles/theme';
@@ -16,6 +16,8 @@ interface LessonCardProps {
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
+  const [imageError, setImageError] = useState(false);
+
   // Get thumbnail URL - handle local paths from API
   const getThumbnail = (): string => {
     // If lesson has local thumbnail path (e.g., /thumbnails/xxx.jpg)
@@ -32,6 +34,12 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
   };
 
   const thumbnail = getThumbnail();
+  const hasValidThumbnail = thumbnail.length > 0 && !imageError;
+  
+  // Debug: Log thumbnail URLs to help diagnose loading issues
+  if (!hasValidThumbnail) {
+    console.log(`[LessonCard] No valid thumbnail for "${lesson.title?.substring(0, 30)}": uri="${thumbnail}", error=${imageError}`);
+  }
   const difficultyLabel = getDifficultyLabel(lesson.level);
   const difficultyColor = getDifficultyColor(lesson.level);
   const needsWhiteText = ['b2', 'c2'].includes(lesson.level?.toLowerCase() || '');
@@ -45,11 +53,18 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
     >
       {/* Thumbnail */}
       <View style={styles.thumbnailContainer}>
-        <Image
-          source={{ uri: thumbnail }}
-          style={[styles.thumbnail, isLocked && styles.lockedThumbnail]}
-          resizeMode="cover"
-        />
+        {hasValidThumbnail ? (
+          <Image
+            source={{ uri: thumbnail }}
+            style={[styles.thumbnail, isLocked && styles.lockedThumbnail]}
+            resizeMode="cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <View style={[styles.thumbnail, styles.placeholderThumbnail]}>
+            <Text style={styles.placeholderIcon}>🎧</Text>
+          </View>
+        )}
 
         {/* Lock Icon Overlay */}
         {isLocked && (
@@ -137,6 +152,15 @@ const styles = StyleSheet.create({
   },
   lockedThumbnail: {
     opacity: 0.6,
+  },
+  placeholderThumbnail: {
+    backgroundColor: '#E8E0D4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderIcon: {
+    fontSize: 28,
+    opacity: 0.5,
   },
   lockOverlay: {
     ...StyleSheet.absoluteFillObject,
