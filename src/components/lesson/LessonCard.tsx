@@ -16,30 +16,45 @@ interface LessonCardProps {
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
-  const [imageError, setImageError] = useState(false);
+  const [primaryError, setPrimaryError] = useState(false);
+  const [fallbackError, setFallbackError] = useState(false);
 
-  // Get thumbnail URL - handle local paths from API
-  const getThumbnail = (): string => {
-    // If lesson has local thumbnail path (e.g., /thumbnails/xxx.jpg)
+  // Get primary thumbnail URL from backend
+  const getPrimaryThumbnail = (): string => {
     if (lesson.thumbnail) {
       if (lesson.thumbnail.startsWith('/')) {
-        // Local path - prepend API base URL
         return `${BASE_URL}${lesson.thumbnail}`;
       }
-      // Already full URL
       return lesson.thumbnail;
     }
-    // Fallback to YouTube thumbnail (only if youtubeUrl exists)
+    return '';
+  };
+
+  // Get fallback YouTube thumbnail URL (direct from img.youtube.com)
+  const getFallbackThumbnail = (): string => {
     return (lesson.youtubeUrl ? getThumbnailUrl(lesson.youtubeUrl) : null) || '';
   };
 
-  const thumbnail = getThumbnail();
-  const hasValidThumbnail = thumbnail.length > 0 && !imageError;
-  
-  // Debug: Log thumbnail URLs to help diagnose loading issues
-  if (!hasValidThumbnail) {
-    console.log(`[LessonCard] No valid thumbnail for "${lesson.title?.substring(0, 30)}": uri="${thumbnail}", error=${imageError}`);
-  }
+  const primaryThumbnail = getPrimaryThumbnail();
+  const fallbackThumbnail = getFallbackThumbnail();
+
+  // Use primary if available and not errored, then fallback, then placeholder
+  const thumbnail = (!primaryError && primaryThumbnail)
+    ? primaryThumbnail
+    : (!fallbackError && fallbackThumbnail)
+      ? fallbackThumbnail
+      : '';
+  const hasValidThumbnail = thumbnail.length > 0;
+
+  const handleImageError = () => {
+    if (!primaryError && primaryThumbnail) {
+      // Primary failed, try fallback
+      setPrimaryError(true);
+    } else {
+      // Fallback also failed
+      setFallbackError(true);
+    }
+  };
   const difficultyLabel = getDifficultyLabel(lesson.level);
   const difficultyColor = getDifficultyColor(lesson.level);
   const needsWhiteText = ['b2', 'c2'].includes(lesson.level?.toLowerCase() || '');
@@ -58,7 +73,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
             source={{ uri: thumbnail }}
             style={[styles.thumbnail, isLocked && styles.lockedThumbnail]}
             resizeMode="cover"
-            onError={() => setImageError(true)}
+            onError={handleImageError}
           />
         ) : (
           <View style={[styles.thumbnail, styles.placeholderThumbnail]}>
