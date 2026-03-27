@@ -157,6 +157,12 @@ export const useTranscriptSync = ({
           }
           sentenceEndCalledRef.current = activeSentenceIndex;
           onSentenceEnd?.(activeSentenceIndex);
+          // CRITICAL: Return immediately after triggering sentence end.
+          // This prevents the code below from updating activeSentenceIndex
+          // to the next sentence in the same polling cycle, which causes
+          // the "visual jump" bug where the transcript briefly highlights
+          // the next sentence before the player pauses and seeks back.
+          return;
         }
       } else if (__DEV__) {
         // Log when activeSentenceIndex is not valid (might explain why auto-stop never triggers)
