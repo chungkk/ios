@@ -42,6 +42,7 @@ interface LearnModeProps {
   onUpdateVocabulary: (updated: VocabularyItem) => void;
   onSessionComplete?: (wordsReviewed: number, wordsCorrect: number) => void;
   skipQuickReview?: boolean;
+  studyMode?: 'today' | 'all';
 }
 
 const LearnMode: React.FC<LearnModeProps> = ({
@@ -51,6 +52,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
   onUpdateVocabulary,
   onSessionComplete,
   skipQuickReview = false,
+  studyMode = 'today',
 }) => {
   // Steps: 0=Quick Review (meanings), 1=Active Recall (type word), 2=Production (write sentence), 3=Production (translate)
   const [step, setStep] = useState(0);
@@ -58,6 +60,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
   const [wordResults, setWordResults] = useState<Record<string, WordResult>>({});
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [retryCount, setRetryCount] = useState<Record<string, number>>({});
+  const [retryQueue, setRetryQueue] = useState<VocabularyItem[]>([]);
 
   // Vocab set for this session
   const [vocabSet, setVocabSet] = useState<VocabularyItem[]>([]);
@@ -87,15 +90,17 @@ const LearnMode: React.FC<LearnModeProps> = ({
   const [sentenceChecking, setSentenceChecking] = useState(false);
   const [sentenceLoading, setSentenceLoading] = useState(false);
 
-  // Pending review words
+  // Pending review words (includes mastered-overdue)
   const pendingReview = useMemo(() => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+    const now = new Date();
     return vocabulary.filter(v => {
-      if (v.status === 'mastered') return false;
+      // Only skip mastered words whose next review is still in the future
+      if (v.status === 'mastered' && v.nextReviewAt && new Date(v.nextReviewAt) > now) return false;
       const created = new Date(v.createdAt);
       const isToday = created >= todayStart;
-      const isDue = !v.nextReviewAt || new Date(v.nextReviewAt) <= new Date();
+      const isDue = !v.nextReviewAt || new Date(v.nextReviewAt) <= now;
       return isToday || isDue;
     });
   }, [vocabulary]);
@@ -103,12 +108,21 @@ const LearnMode: React.FC<LearnModeProps> = ({
   // Initialize learning session
   const startLearn = useCallback(() => {
     if (vocabulary.length < 2) return;
-    const wordsForReview = getWordsForReview(vocabulary);
-    const pool = pendingReview.length >= 2
-      ? pendingReview.slice(0, 30)
-      : wordsForReview.length >= 2
-        ? wordsForReview.slice(0, 30)
-        : vocabulary.slice(0, 30);
+
+    // Select pool based on studyMode
+    let pool: VocabularyItem[];
+    if (studyMode === 'all') {
+      // All vocabulary, capped at 30
+      pool = vocabulary.slice(0, 30);
+    } else {
+      // Today mode: prioritize pending review words
+      const wordsForReview = getWordsForReview(vocabulary);
+      pool = pendingReview.length >= 2
+        ? pendingReview.slice(0, 30)
+        : wordsForReview.length >= 2
+          ? wordsForReview.slice(0, 30)
+          : vocabulary.slice(0, 30);
+    }
 
     // Sort by SRS priority: overdue-mastered > learning > new > non-overdue mastered
     const now = new Date();
@@ -154,21 +168,26 @@ const LearnMode: React.FC<LearnModeProps> = ({
     setWordResults({});
     setEvaluation(null);
     setRetryCount({});
+    setRetryQueue([]);
   }, [vocabulary, pendingReview]);
 
-  // Start when modal opens
+  // Start when modal opens (only on false→true transition to avoid mid-session resets)
+  const prevVisibleRef = React.useRef(false);
   React.useEffect(() => {
-    if (visible) startLearn();
+    if (visible && !prevVisibleRef.current) {
+      startLearn();
+    }
+    prevVisibleRef.current = visible;
   }, [visible, startLearn]);
 
-  const trackWordResult = (word: string, correct: boolean) => {
+  const trackWordResult = (word: string, correct: boolean, weight: number = 1.0) => {
     setWordResults(prev => {
       const existing = prev[word] || { correct: 0, wrong: 0 };
       return {
         ...prev,
         [word]: {
-          correct: existing.correct + (correct ? 1 : 0),
-          wrong: existing.wrong + (correct ? 0 : 1),
+          correct: existing.correct + (correct ? weight : 0),
+          wrong: existing.wrong + (correct ? 0 : weight),
         },
       };
     });
@@ -219,11 +238,11 @@ const LearnMode: React.FC<LearnModeProps> = ({
       const localMatch = isLocalMatch(typeInput, word.word, word.baseForm);
       const isCorrect = data.isCorrect || localMatch;
       setTypeResult({ correct: isCorrect, answer: word.word, explanation: data.explanation });
-      trackWordResult(word.word, isCorrect);
+      trackWordResult(word.word, isCorrect, 1.0);
     } catch {
       const correct = isLocalMatch(typeInput, word.word, word.baseForm);
       setTypeResult({ correct, answer: word.word });
-      trackWordResult(word.word, correct);
+      trackWordResult(word.word, correct, 1.0);
     } finally {
       setTypeChecking(false);
     }
@@ -235,28 +254,29 @@ const LearnMode: React.FC<LearnModeProps> = ({
     if (!word) return;
     // Mark as wrong + show correct answer
     setTypeResult({ correct: false, answer: word.word, explanation: 'Bạn đã bỏ qua từ này. Từ sẽ được lặp lại sau.' });
-    trackWordResult(word.word, false);
+    trackWordResult(word.word, false, 1.0);
   };
 
   const nextTypeWord = () => {
-    // Retry: if wrong, interleave retry 3-5 positions ahead (not at end)
+    // Retry: if wrong, add to separate retryQueue instead of splicing into current array
     if (typeResult && !typeResult.correct) {
       const word = typeWords[typeIdx];
       const currentRetries = retryCount[word.word] || 0;
       if (currentRetries < 3) {
         setRetryCount(prev => ({ ...prev, [word.word]: currentRetries + 1 }));
-        // Insert 3-5 positions ahead for spacing effect, not at end
-        const insertPos = Math.min(typeIdx + 3 + Math.floor(Math.random() * 3), typeWords.length);
-        setTypeWords(prev => {
-          const next = [...prev];
-          next.splice(insertPos, 0, word);
-          return next;
-        });
+        setRetryQueue(prev => [...prev, word]);
       }
     }
 
     if (typeIdx + 1 >= typeWords.length) {
-      if (transWords.length > 0) {
+      // Check if retry queue has words to drain
+      if (retryQueue.length > 0) {
+        setTypeWords([...retryQueue]);
+        setRetryQueue([]);
+        setTypeIdx(0);
+        setTypeInput('');
+        setTypeResult(null);
+      } else if (transWords.length > 0) {
         setStep(2);
         setTransIdx(0);
         setTransInput('');
@@ -281,7 +301,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
       const data = await vocabularyService.checkSentence(transInput, word.word);
       const isGood = data.isCorrect || (data.grammarScore && data.grammarScore >= 7);
       setTransResult(data);
-      trackWordResult(word.word, !!isGood);
+      trackWordResult(word.word, !!isGood, 1.5);
     } catch (error) {
       console.error('Check sentence failed:', error);
     } finally {
@@ -336,7 +356,7 @@ const LearnMode: React.FC<LearnModeProps> = ({
       );
       const isGood = data.grammarScore && data.grammarScore >= 7;
       setSentenceResult(data);
-      trackWordResult(exercise.word, !!isGood);
+      trackWordResult(exercise.word, !!isGood, 1.5);
     } catch {
       // ignore
     } finally {
@@ -360,58 +380,47 @@ const LearnMode: React.FC<LearnModeProps> = ({
     const eval_ = evaluateResults(wordResults, vocabSet);
     setEvaluation(eval_);
 
-    // Update SRS (unified SM-2) for each word
-    for (const vocab of vocabSet) {
-      const r = wordResults[vocab.word];
-      if (!r || (r.correct === 0 && r.wrong === 0)) continue;
-      const total = r.correct + r.wrong;
-      const ratio = r.correct / total;
+    // Update SRS (unified SM-2) for each word — batch all API calls
+    const updatePromises = vocabSet
+      .filter(vocab => {
+        const r = wordResults[vocab.word];
+        return r && (r.correct > 0 || r.wrong > 0);
+      })
+      .map(vocab => {
+        const r = wordResults[vocab.word];
+        const total = r.correct + r.wrong;
+        const ratio = r.correct / total;
 
-      // Build SRS card from vocab state
-      const card: SRSCard = {
-        id: vocab.id,
-        word: vocab.word,
-        translation: vocab.translation,
-        state: (vocab.srsState as CardState) || CardState.NEW,
-        ease: vocab.srsEase ?? SRS_CONFIG.STARTING_EASE,
-        interval: vocab.srsInterval ?? 0,
-        stepIndex: vocab.srsStepIndex ?? 0,
-        due: vocab.srsDue ? new Date(vocab.srsDue) : new Date(),
-        reviews: vocab.srsReviews ?? 0,
-        lapses: vocab.srsLapses ?? 0,
-        lastReview: vocab.srsLastReview ? new Date(vocab.srsLastReview) : null,
-      };
-
-      // Map score to SRS rating
-      const rating = ratio >= 0.85 ? Rating.EASY
-        : ratio >= 0.7 ? Rating.GOOD
-        : ratio >= 0.4 ? Rating.HARD
-        : Rating.AGAIN;
-
-      const updated = calculateNextReview(card, rating);
-
-      // Derive status from SRS state
-      let newStatus = vocab.status;
-      if (updated.state === CardState.REVIEW && updated.interval >= SRS_CONFIG.MASTERY_THRESHOLD) newStatus = 'mastered';
-      else if (updated.state === CardState.NEW && total > 0) newStatus = 'learning';
-      else if (updated.state === CardState.LEARNING || updated.state === CardState.RELEARNING) newStatus = 'learning';
-
-      try {
-        await vocabularyService.updateVocabulary({
+        // Build SRS card from vocab state
+        const card: SRSCard = {
           id: vocab.id,
-          status: newStatus,
-          reviewCount: (vocab.reviewCount || 0) + 1,
-          srsState: updated.state,
-          srsEase: updated.ease,
-          srsInterval: updated.interval,
-          srsStepIndex: updated.stepIndex,
-          srsDue: updated.due.toISOString(),
-          srsReviews: updated.reviews,
-          srsLapses: updated.lapses,
-          srsLastReview: updated.lastReview?.toISOString() ?? null,
-          nextReviewAt: updated.due.toISOString(),
-        });
-        onUpdateVocabulary({
+          word: vocab.word,
+          translation: vocab.translation,
+          state: (vocab.srsState as CardState) || CardState.NEW,
+          ease: vocab.srsEase ?? SRS_CONFIG.STARTING_EASE,
+          interval: vocab.srsInterval ?? 0,
+          stepIndex: vocab.srsStepIndex ?? 0,
+          due: vocab.srsDue ? new Date(vocab.srsDue) : new Date(),
+          reviews: vocab.srsReviews ?? 0,
+          lapses: vocab.srsLapses ?? 0,
+          lastReview: vocab.srsLastReview ? new Date(vocab.srsLastReview) : null,
+        };
+
+        // Map score to SRS rating
+        const rating = ratio >= 0.85 ? Rating.EASY
+          : ratio >= 0.7 ? Rating.GOOD
+          : ratio >= 0.4 ? Rating.HARD
+          : Rating.AGAIN;
+
+        const updated = calculateNextReview(card, rating);
+
+        // Derive status from SRS state
+        let newStatus = vocab.status;
+        if (updated.state === CardState.REVIEW && updated.interval >= SRS_CONFIG.MASTERY_THRESHOLD) newStatus = 'mastered';
+        else if (updated.state === CardState.NEW && total > 0) newStatus = 'learning';
+        else if (updated.state === CardState.LEARNING || updated.state === CardState.RELEARNING) newStatus = 'learning';
+
+        const updatedVocab = {
           ...vocab,
           status: newStatus,
           reviewCount: (vocab.reviewCount || 0) + 1,
@@ -424,9 +433,27 @@ const LearnMode: React.FC<LearnModeProps> = ({
           srsLapses: updated.lapses,
           srsLastReview: updated.lastReview?.toISOString() ?? null,
           nextReviewAt: updated.due.toISOString(),
-        });
-      } catch {}
-    }
+        };
+
+        return vocabularyService.updateVocabulary({
+          id: vocab.id,
+          status: newStatus,
+          reviewCount: (vocab.reviewCount || 0) + 1,
+          srsState: updated.state,
+          srsEase: updated.ease,
+          srsInterval: updated.interval,
+          srsStepIndex: updated.stepIndex,
+          srsDue: updated.due.toISOString(),
+          srsReviews: updated.reviews,
+          srsLapses: updated.lapses,
+          srsLastReview: updated.lastReview?.toISOString() ?? null,
+          nextReviewAt: updated.due.toISOString(),
+        })
+          .then(() => onUpdateVocabulary(updatedVocab))
+          .catch(() => {});
+      });
+
+    await Promise.all(updatePromises);
 
     // Report session completion to parent
     const totalWords = Object.keys(wordResults).length;

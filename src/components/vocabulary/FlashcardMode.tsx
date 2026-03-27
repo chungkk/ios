@@ -49,6 +49,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
   const [autoTtsEnabled, setAutoTtsEnabled] = useState(true);
   const lastRatedRef = useRef<{ card: SRSCard; prevCards: SRSCard[]; prevIndex: number; prevStats: typeof sessionStats } | null>(null);
   const [showUndo, setShowUndo] = useState(false);
+  const pendingUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize cards from vocabulary - restore SRS state if exists
   useEffect(() => {
@@ -136,6 +137,12 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
   const handleRating = useCallback((rating: Rating) => {
     if (!currentCard) return;
 
+    // Cancel any pending API call from previous rating (undo window)
+    if (pendingUpdateTimerRef.current) {
+      clearTimeout(pendingUpdateTimerRef.current);
+      pendingUpdateTimerRef.current = null;
+    }
+
     // Save undo state
     lastRatedRef.current = {
       card: { ...currentCard },
@@ -170,10 +177,16 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
 
     // Calculate next review
     const updatedCard = calculateNextReview(currentCard, rating);
-    onUpdateCard?.(updatedCard);
 
-    // Update cards
-    setCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+    // Delay API call to allow undo within 4s window (#6)
+    pendingUpdateTimerRef.current = setTimeout(() => {
+      onUpdateCard?.(updatedCard);
+      pendingUpdateTimerRef.current = null;
+    }, 4000);
+
+    // Update cards locally (optimistic)
+    const updatedCards = cards.map(c => c.id === updatedCard.id ? updatedCard : c);
+    setCards(updatedCards);
 
     // Animate slide out
     Animated.timing(slideAnim, {
@@ -187,14 +200,16 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
       slideAnim.setValue(0);
       setCompletedCount(prev => prev + 1);
 
-      if (currentIndex < totalCards - 1) {
-        setCurrentIndex(prev => prev + 1);
-      } else {
-        // Session complete - rebuild queue
-        const newQueue = buildStudyQueue(cards);
-        if (newQueue.learningCards.length + newQueue.reviewCards.length + newQueue.newCards.length > 0) {
-          setStudyQueue(newQueue);
+      // Rebuild queue after every rating to re-insert "Again" cards (#5)
+      const newQueue = buildStudyQueue(updatedCards);
+      const newTotal = newQueue.learningCards.length + newQueue.reviewCards.length + newQueue.newCards.length;
+      if (newTotal > 0) {
+        setStudyQueue(newQueue);
+        // If we were at the end, restart; otherwise advance
+        if (currentIndex >= totalCards - 1) {
           setCurrentIndex(0);
+        } else {
+          setCurrentIndex(prev => prev + 1);
         }
       }
     });
@@ -202,7 +217,12 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
 
   const undoLastRating = useCallback(() => {
     if (!lastRatedRef.current) return;
-    const { prevCards, prevIndex, prevStats, card } = lastRatedRef.current;
+    // Cancel pending API call (#6)
+    if (pendingUpdateTimerRef.current) {
+      clearTimeout(pendingUpdateTimerRef.current);
+      pendingUpdateTimerRef.current = null;
+    }
+    const { prevCards, prevIndex, prevStats } = lastRatedRef.current;
     setCards(prevCards);
     setCurrentIndex(prevIndex);
     setSessionStats(prevStats);
@@ -210,7 +230,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ vocabulary, onClose, onUp
     setIsFlipped(false);
     flipAnim.setValue(0);
     slideAnim.setValue(0);
-    onUpdateCard?.(card); // restore original card state
+    // No API call needed — the pending one was cancelled
     lastRatedRef.current = null;
     setShowUndo(false);
   }, [flipAnim, slideAnim, onUpdateCard]);

@@ -25,11 +25,12 @@ function cleanTranslation(text: string): string {
 // Pick distractors that are similar in length, deduplicated
 function pickDistractors(correct: string, allOptions: string[], count: number): string[] {
   const correctLen = correct.length;
-  const seen = new Set([correct]);
+  const normalize = (s: string) => s.toLowerCase().trim();
+  const seen = new Set([normalize(correct)]);
   const candidates = allOptions
     .filter(x => {
-      if (!x || x.length === 0 || seen.has(x)) return false;
-      seen.add(x);
+      if (!x || x.length === 0 || seen.has(normalize(x))) return false;
+      seen.add(normalize(x));
       return true;
     })
     .map(x => ({ text: x, diff: Math.abs(x.length - correctLen) }))
@@ -237,16 +238,6 @@ export function evaluateResults(
   return { strong, weak, notTested, overallScore, totalCorrect, totalAll };
 }
 
-// Leitner box intervals (in days)
-const LEITNER_INTERVALS = [0, 1, 3, 7, 14];
-
-export function calculateNextReviewLeitner(box: number, correct: boolean) {
-  const newBox = correct ? Math.min(box + 1, 4) : Math.max(box - 1, 0);
-  const intervalDays = LEITNER_INTERVALS[newBox];
-  const nextReview = new Date();
-  nextReview.setDate(nextReview.getDate() + intervalDays);
-  return { newBox, nextReview };
-}
 
 export function getWordsForReview(vocabulary: VocabularyItem[]): VocabularyItem[] {
   const now = new Date();

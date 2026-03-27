@@ -97,6 +97,7 @@ const VocabularyScreen: React.FC = () => {
   const [showFlashcard, setShowFlashcard] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLearn, setShowLearn] = useState(false);
+  const [learnStudyMode, setLearnStudyMode] = useState<'today' | 'all'>('today');
   const [activeFilter, setActiveFilter] = useState<WordStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
@@ -468,21 +469,24 @@ const VocabularyScreen: React.FC = () => {
   // Motivation message
   const motivationMsg = useMemo(() => {
     if (!dailyProgress) return '';
-    if (goalCompleted) return '🎉 Hoàn thành mục tiêu hôm nay!';
-    if (progressPct >= 0.7) return `💪 Gần xong! Chỉ cần ${wordsRemaining} từ nữa!`;
-    if (progressPct >= 0.3) return `📚 Tiếp tục! Còn ${wordsRemaining} từ nữa.`;
-    if (dailyProgress.wordsReviewed > 0) return `👏 Khởi đầu tốt! Còn ${wordsRemaining} từ.`;
-    return `🎯 Hôm nay: ${effectiveDailyGoal} từ${effectiveDailyGoal > (dailyProgress?.dailyGoal ?? 15) ? ' (có từ quá hạn)' : ''}. Bắt đầu thôi!`;
-  }, [dailyProgress, goalCompleted, progressPct, wordsRemaining, effectiveDailyGoal]);
+    if (goalCompleted) return t('vocabulary.motivationDone');
+    if (progressPct >= 0.7) return t('vocabulary.motivationAlmost', { count: wordsRemaining });
+    if (progressPct >= 0.3) return t('vocabulary.motivationKeepGoing', { count: wordsRemaining });
+    if (dailyProgress.wordsReviewed > 0) return t('vocabulary.motivationGoodStart', { count: wordsRemaining });
+    const isOverdue = effectiveDailyGoal > (dailyProgress?.dailyGoal ?? 15);
+    return isOverdue
+      ? t('vocabulary.motivationStartOverdue', { count: effectiveDailyGoal })
+      : t('vocabulary.motivationStart', { count: effectiveDailyGoal });
+  }, [dailyProgress, goalCompleted, progressPct, wordsRemaining, effectiveDailyGoal, t]);
 
   // Render word card — compact by default, expandable on tap
   const renderItem = ({ item, index }: { item: VocabularyItem; index: number }) => {
     const status = getWordStatusFromSRS(item);
     const statusConfig: Record<WordStatus, { icon: string; color: string; label: string }> = {
-      all: { icon: '📚', color: colors.retroPurple, label: 'Tất cả' },
-      new: { icon: '🆕', color: colors.retroCoral, label: 'Mới' },
-      learning: { icon: '📖', color: colors.retroYellow, label: 'Đang học' },
-      mastered: { icon: '✅', color: colors.retroCyan, label: 'Thuộc' },
+      all: { icon: '📚', color: colors.retroPurple, label: t('vocabulary.statusAll') },
+      new: { icon: '🆕', color: colors.retroCoral, label: t('vocabulary.statusNew') },
+      learning: { icon: '📖', color: colors.retroYellow, label: t('vocabulary.statusLearning') },
+      mastered: { icon: '✅', color: colors.retroCyan, label: t('vocabulary.statusMastered') },
     };
     const config = statusConfig[status] || statusConfig.new;
     const isEnriching = enrichingIds.has(item.id);
@@ -651,11 +655,11 @@ const VocabularyScreen: React.FC = () => {
         <View style={styles.dashboardTopRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.dashboardTitle}>📚 {t('vocabulary.title')}</Text>
-            <Text style={styles.dashboardSubtitle}>{stats.total} từ vựng</Text>
+            <Text style={styles.dashboardSubtitle}>{t('vocabulary.wordCount', { count: stats.total })}</Text>
           </View>
           {(streak?.currentStreak ?? 0) > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakText}>🔥 {streak!.currentStreak} ngày</Text>
+              <Text style={styles.streakText}>🔥 {t('vocabulary.streakDays', { count: streak!.currentStreak })}</Text>
             </View>
           )}
           <View style={styles.headerActions}>
@@ -705,43 +709,6 @@ const VocabularyScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Smart Study CTA */}
-        {vocabulary.length >= 2 && (
-          <TouchableOpacity
-            style={[
-              styles.smartStudyBtn,
-              goalCompleted && styles.smartStudyBtnCompleted,
-            ]}
-            onPress={() => {
-              sessionStartRef.current = Date.now();
-              setShowLearn(true);
-            }}
-          >
-            <Text style={styles.smartStudyBtnText}>
-              {goalCompleted
-                ? '✅ Hoàn thành! Ôn thêm?'
-                : pendingReview.length > 0
-                  ? `🎯 Bắt đầu ôn (${pendingReview.length} từ)`
-                  : '🎯 Luyện tập ngay'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Status Bar */}
-        {vocabulary.length > 0 && (
-          <View style={styles.statsBar}>
-            <View style={[styles.statsSegment, { flex: stats.new || 1, backgroundColor: colors.retroCoral + '40' }]}>
-              <Text style={styles.statsSegmentText}>🆕 {stats.new}</Text>
-            </View>
-            <View style={[styles.statsSegment, { flex: stats.learning || 1, backgroundColor: colors.retroYellow + '40' }]}>
-              <Text style={styles.statsSegmentText}>📖 {stats.learning}</Text>
-            </View>
-            <View style={[styles.statsSegment, { flex: stats.mastered || 1, backgroundColor: colors.retroCyan + '30' }]}>
-              <Text style={styles.statsSegmentText}>✅ {stats.mastered}</Text>
-            </View>
-          </View>
-        )}
-
         {/* Mode Toggle: Words vs Sentences */}
         <View style={styles.modeToggle}>
           <TouchableOpacity
@@ -749,7 +716,7 @@ const VocabularyScreen: React.FC = () => {
             onPress={() => setViewMode('words')}
           >
             <Text style={[styles.modeBtnText, viewMode === 'words' && styles.modeBtnTextActive]}>
-              📚 Từ vựng
+              📚 {t('vocabulary.wordsTab')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -757,57 +724,19 @@ const VocabularyScreen: React.FC = () => {
             onPress={() => setViewMode('sentences')}
           >
             <Text style={[styles.modeBtnText, viewMode === 'sentences' && styles.modeBtnTextActive]}>
-              📌 Câu ({savedSentences.length})
+              📌 {t('vocabulary.sentencesTab')} ({savedSentences.length})
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Only show search + filter for word mode */}
-        {viewMode === 'words' && (
-          <>
-            <View style={styles.searchBox}>
-              <Icon name="search" size={14} color={colors.textMuted} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder={t('vocabulary.searchPlaceholder')}
-                placeholderTextColor={colors.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Icon name="close-circle" size={14} color={colors.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.filterRow}>
-              {([
-                { key: 'all' as WordStatus, label: 'Tất cả', count: stats.total },
-                { key: 'new' as WordStatus, label: 'Mới', count: stats.new },
-                { key: 'learning' as WordStatus, label: 'Học', count: stats.learning },
-                { key: 'mastered' as WordStatus, label: 'Thuộc', count: stats.mastered },
-              ]).map(tab => (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[styles.filterChip, activeFilter === tab.key && styles.filterChipActive]}
-                  onPress={() => setActiveFilter(tab.key)}
-                >
-                  <Text style={[styles.filterChipText, activeFilter === tab.key && styles.filterChipTextActive]}>
-                    {tab.label} {tab.count}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Group by Lesson */}
-            {lessonGroups.length > 1 && (
+        {/* Group by Lesson */}
+        {viewMode === 'words' && lessonGroups.length > 1 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupRow}>
                 <TouchableOpacity
                   style={[styles.groupChip, !groupByLesson && styles.groupChipActive]}
                   onPress={() => setGroupByLesson(null)}
                 >
-                  <Text style={[styles.groupChipText, !groupByLesson && styles.groupChipTextActive]}>Tất cả</Text>
+                  <Text style={[styles.groupChipText, !groupByLesson && styles.groupChipTextActive]}>{t('vocabulary.groupAll')}</Text>
                 </TouchableOpacity>
                 {lessonGroups.map(([lesson, count]) => (
                   <TouchableOpacity
@@ -824,8 +753,6 @@ const VocabularyScreen: React.FC = () => {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-            )}
-          </>
         )}
       </View>
 
@@ -834,9 +761,9 @@ const VocabularyScreen: React.FC = () => {
         savedSentences.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>📌</Text>
-            <Text style={styles.emptyTitle}>Chưa có câu nào được lưu</Text>
+            <Text style={styles.emptyTitle}>{t('vocabulary.noSentences')}</Text>
             <Text style={styles.emptyText}>
-              Giữ lâu vào câu trong bài học để lưu lại{"\n"}những câu tiếng Đức hay.
+              {t('vocabulary.noSentencesHint')}
             </Text>
           </View>
         ) : (
@@ -976,6 +903,7 @@ const VocabularyScreen: React.FC = () => {
         onUpdateVocabulary={handleLearnUpdate}
         onSessionComplete={handleLearnSessionComplete}
         skipQuickReview={shouldSkipQuickReview}
+        studyMode={learnStudyMode}
       />
 
       {/* Analytics Modal */}
@@ -1112,9 +1040,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
   smartStudyBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#fff',
+  },
+  studyModeBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  studyModeBtn: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  studyModeBtnAll: {
+    flex: 1,
+    backgroundColor: colors.retroPurple,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.retroBorder,
+    alignItems: 'center',
   },
   // Stats Bar
   statsBar: {

@@ -97,7 +97,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Icon name="close" size={24} color={colors.retroDark} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>📊 Thống kê học tập</Text>
+          <Text style={styles.headerTitle}><Icon name="bar-chart" size={18} color={colors.retroDark} /> Thống kê học tập</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -127,7 +127,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
           {/* Goal Completion Rate */}
           {weeklyStats && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🎯 Tỷ lệ hoàn thành mục tiêu</Text>
+              <Text style={styles.sectionTitle}><Icon name="flag" size={15} color="#4CAF50" /> Tỷ lệ hoàn thành mục tiêu</Text>
               <View style={styles.goalBar}>
                 <View style={[styles.goalFill, { width: `${weeklyStats.goalCompletionRate}%` }]} />
               </View>
@@ -138,7 +138,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
           {/* Bar Chart — Last 7 days */}
           {barChartData.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📈 7 ngày gần đây</Text>
+              <Text style={styles.sectionTitle}><Icon name="trending-up" size={15} color={colors.retroCyan} /> 7 ngày gần đây</Text>
               <View style={styles.barChart}>
                 {barChartData.map((d, i) => (
                   <View key={i} style={styles.barCol}>
@@ -170,7 +170,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
           {/* Heat Map */}
           {heatMap.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🗓 Lịch học tập (28 ngày)</Text>
+              <Text style={styles.sectionTitle}><Icon name="calendar" size={15} color={colors.retroPurple} /> Lịch học tập (28 ngày)</Text>
               <View style={styles.heatMap}>
                 {heatMap.slice().reverse().map((d, i) => (
                   <View
@@ -195,7 +195,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
           {/* Weakest Words */}
           {weakestWords.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>⚠️ Từ yếu nhất</Text>
+              <Text style={styles.sectionTitle}><Icon name="alert-circle" size={15} color="#FF9800" /> Từ yếu nhất</Text>
               {weakestWords.map((w, i) => (
                 <View key={w.id} style={styles.weakWordRow}>
                   <Text style={styles.weakWordRank}>{i + 1}</Text>
@@ -204,7 +204,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
                     <Text style={styles.weakWordTrans}>{w.translation}</Text>
                   </View>
                   <View style={styles.weakWordBadge}>
-                    <Text style={styles.weakWordBadgeText}>⟳ {w.srsLapses ?? 0}</Text>
+                    <Text style={styles.weakWordBadgeText}><Icon name="refresh" size={11} color="#D32F2F" /> {w.srsLapses ?? 0}</Text>
                   </View>
                 </View>
               ))}
@@ -214,7 +214,7 @@ const VocabAnalytics: React.FC<VocabAnalyticsProps> = ({ visible, onClose, vocab
           {/* Words by Lesson */}
           {wordsByLesson.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📚 Phân bố theo bài học</Text>
+              <Text style={styles.sectionTitle}><Icon name="library" size={15} color={colors.retroPurple} /> Phân bố theo bài học</Text>
               {wordsByLesson.map(([lesson, count], i) => (
                 <View key={i} style={styles.lessonRow}>
                   <Text style={styles.lessonTitle} numberOfLines={1}>{lesson}</Text>

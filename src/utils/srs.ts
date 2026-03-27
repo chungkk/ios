@@ -3,7 +3,7 @@
  */
 
 export const SRS_CONFIG = {
-  LEARNING_STEPS: [1, 10, 60, 240], // minutes: 1m → 10m → 1h → 4h
+  LEARNING_STEPS: [1, 10, 60], // minutes: 1m → 10m → 1h (3 steps for mobile)
   GRADUATING_INTERVAL: 2, // days (after completing all learning steps)
   EASY_INTERVAL: 4, // days
   RELEARNING_STEPS: [10, 60], // minutes: 10m → 1h
@@ -13,7 +13,7 @@ export const SRS_CONFIG = {
   EASE_HARD: -0.15,
   EASE_EASY: 0.15,
   HARD_INTERVAL: 1.2,
-  MAX_INTERVAL: 36500,
+  MAX_INTERVAL: 365, // days — cap at 1 year for practical mobile use
   MASTERY_THRESHOLD: 21, // days — interval >= this = "mastered"
 };
 

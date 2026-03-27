@@ -23,8 +23,6 @@ export interface VocabularyItem {
   partOfSpeech?: string;
   grammar?: string;
   baseForm?: string;
-  // Leitner box system
-  leitnerBox?: number;
   nextReviewAt?: string;
   // SRS fields for Anki-like spaced repetition
   srsState?: 'new' | 'learning' | 'review' | 'relearning';
@@ -68,7 +66,6 @@ export interface UpdateVocabularyRequest {
   grammar?: string;
   baseForm?: string;
   example?: string;
-  leitnerBox?: number;
   nextReviewAt?: string;
   // SRS fields
   srsState?: 'new' | 'learning' | 'review' | 'relearning';
