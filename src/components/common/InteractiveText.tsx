@@ -1,7 +1,7 @@
-// InteractiveText - Tap on words to translate & save vocabulary
+// InteractiveText - Double-tap on words to translate & save vocabulary
 // Long press on a word to highlight and save the entire sentence
 
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -35,8 +35,10 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
   const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null);
   const [highlightedSentenceIdx, setHighlightedSentenceIdx] = useState<number | null>(null);
   const [showSentenceMenu, setShowSentenceMenu] = useState(false);
-  const lastTapRef = useRef<number>(0);
-  const lastTapWordRef = useRef<string>('');
+
+  // Double-tap tracking
+  const lastTapRef = useRef<{ index: number; time: number } | null>(null);
+  const DOUBLE_TAP_DELAY = 300; // ms
 
   // Split text into words and map each to its sentence index
   const { words, wordSentenceMap, sentences } = useMemo(() => {
@@ -66,7 +68,7 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
   }, [text]);
 
   const handleWordPress = useCallback((word: string, wordIndex: number) => {
-    const cleanWord = word.replace(/[.,!?;:"""''„\-–—()[\]{}]/g, '').trim();
+    const cleanWord = word.replace(/[.,!?;:"""''„\-–—()\[\]{}]/g, '').trim();
     if (!cleanWord) return;
 
     // Tap dismisses sentence highlight
@@ -76,18 +78,19 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
     }
 
     const now = Date.now();
-    const isDoubleTap = (now - lastTapRef.current) < 400 && lastTapWordRef.current === cleanWord;
-    lastTapRef.current = now;
-    lastTapWordRef.current = cleanWord;
+    const lastTap = lastTapRef.current;
 
-    if (isDoubleTap) {
+    // Check if this is a double tap on the same word
+    if (lastTap && lastTap.index === wordIndex && (now - lastTap.time) < DOUBLE_TAP_DELAY) {
       // Double tap → open translate popup
+      lastTapRef.current = null;
       setSelectedWordIndex(wordIndex);
       onWordPress?.(cleanWord, text);
-      return;
+    } else {
+      // First tap → just highlight the word
+      lastTapRef.current = { index: wordIndex, time: now };
+      setSelectedWordIndex(wordIndex);
     }
-
-    // Single tap → do nothing (like a normal reading page)
   }, [text, onWordPress, highlightedSentenceIdx]);
 
   const handleWordLongPress = useCallback((sentenceIndex: number) => {
@@ -140,7 +143,7 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
           }
 
           const isSelected = selectedWordIndex === index;
-          const cleanWord = segment.replace(/[.,!?;:"""''„\-–—()[\]{}]/g, '').trim();
+          const cleanWord = segment.replace(/[.,!?;:"""''„\-–—()\[\]{}]/g, '').trim();
 
           if (!cleanWord) {
             return <Text key={index}>{segment}</Text>;

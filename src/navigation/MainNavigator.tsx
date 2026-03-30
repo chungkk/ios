@@ -16,6 +16,7 @@ import ListeningFlowScreen from '../screens/ListeningFlowScreen';
 import ReadingListScreen from '../screens/ReadingListScreen';
 import ReadingDetailScreen from '../screens/ReadingDetailScreen';
 import DictationScreen from '../screens/DictationScreen';
+import WriteHomeScreen from '../screens/WriteHomeScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 
@@ -66,7 +67,7 @@ const ReadStackNavigator = () => {
 const WriteStackNavigator = () => {
   return (
     <WriteStack.Navigator screenOptions={{ headerShown: false }}>
-      <WriteStack.Screen name="WriteHome" component={HomeScreen} />
+      <WriteStack.Screen name="WriteHome" component={WriteHomeScreen} />
       <WriteStack.Screen name="WriteCategory" component={CategoryScreen} />
       <WriteStack.Screen name="Dictation" component={DictationScreen} />
     </WriteStack.Navigator>
@@ -94,10 +95,11 @@ export const MainNavigator = () => {
         tabBarActiveTintColor: colors.retroPurple,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
-          fontSize: isTablet ? 15 : 11,
+          fontSize: isTablet ? 15 : 10,
           fontWeight: '700',
           marginTop: isTablet ? 6 : 4,
         },
+        tabBarAllowFontScaling: false,
       }}
     >
       <Tab.Screen

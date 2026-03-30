@@ -1,7 +1,7 @@
-// ReadingDetailScreen - Read a Nachricht article with vocabulary
-// Interactive text: tap word to translate, long press to save sentence
+// ReadingDetailScreen - Professional article reader with elevated content blocks
+// Interactive text: double-tap word to translate, long press to save sentence
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  Linking,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -27,6 +29,24 @@ import type { ReadStackScreenProps } from '../navigation/types';
 import type { Nachricht, NachrichtVocabWord } from '../types/lesson.types';
 
 type Props = ReadStackScreenProps<'ReadingDetail'>;
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const LEVEL_COLORS: Record<string, string> = {
+  A1: '#4ECDC4', A2: '#7FDBDA', B1: '#F4B942',
+  B2: '#FF6B6B', C1: '#FF8ED4', C2: '#A855F7',
+};
+
+const SOURCE_LABELS: Record<string, { label: string; emoji: string }> = {
+  dw: { label: 'Deutsche Welle', emoji: '🇩🇪' },
+  tagesschau: { label: 'Tagesschau', emoji: '📺' },
+  manual: { label: 'PapaGeil', emoji: '✍️' },
+};
+
+const estimateReadTime = (content: string): number => {
+  const words = content.split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 150));
+};
 
 const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { nachrichtId } = route.params;
@@ -58,14 +78,12 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [nachrichtId]);
 
   const handleWordPress = useCallback((word: string, context: string) => {
-    // Check if word matches any pre-defined vocabulary from the article
     if (nachricht?.vocabularyWords?.length) {
       const normalizeWord = (w: string) => w.toLowerCase().replace(/[.,!?;:"""''\u201E\-\u2013\u2014()\[\]{}]/g, '').trim();
       const normalizedInput = normalizeWord(word);
 
       const matched = nachricht.vocabularyWords.find(v => {
         const vocabWord = normalizeWord(v.word);
-        // Match the word itself, or match without article (der/die/das)
         const withoutArticle = vocabWord.replace(/^(der|die|das|ein|eine)\s+/i, '');
         return vocabWord === normalizedInput
           || withoutArticle === normalizedInput
@@ -88,13 +106,11 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       }
     }
 
-    // No match found → use API-based translate popup
     setSelectedWord(word);
     setSelectedContext(context);
     setShowTranslatePopup(true);
   }, [nachricht]);
 
-  // Save sentence as vocabulary (context)
   const handleSaveSentence = useCallback(async (sentence: string) => {
     if (!user) {
       Alert.alert('Đăng nhập', 'Bạn cần đăng nhập để lưu câu.');
@@ -122,7 +138,6 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       Alert.alert('Đăng nhập', 'Bạn cần đăng nhập để lưu từ vựng.');
       return;
     }
-
     try {
       await vocabularyService.saveVocabulary({
         word: vocabWord.word,
@@ -140,7 +155,6 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleSaveAllWords = useCallback(async () => {
     if (!user || !nachricht) return;
-
     const unsavedWords = nachricht.vocabularyWords.filter(w => !savedWords.has(w.word));
     for (const word of unsavedWords) {
       try {
@@ -153,112 +167,214 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           partOfSpeech: word.partOfSpeech,
         });
         setSavedWords(prev => new Set([...prev, word.word]));
-      } catch (error) {
-        // Word might already exist, ignore
-      }
+      } catch {}
     }
     Alert.alert('Thành công', 'Đã lưu tất cả từ vựng!');
   }, [user, nachricht, savedWords]);
 
   const handleSpeak = useCallback((text: string) => {
     Tts.stop();
-    Tts.speak(text, { language: 'de-DE' });
+    Tts.speak(text, { language: 'de-DE' } as any);
   }, []);
 
   if (loading) return <Loading />;
   if (!nachricht) return <EmptyState title="Lỗi" message="Không tìm thấy bài viết" />;
 
   const paragraphs = nachricht.content.split('\n\n').filter(p => p.trim());
+  const readTime = estimateReadTime(nachricht.content);
+  const vocabCount = nachricht.vocabularyWords?.length || 0;
+  const levelColor = LEVEL_COLORS[nachricht.level?.toUpperCase()] || colors.retroCyan;
+  const sourceInfo = SOURCE_LABELS[nachricht.source] || { label: nachricht.source, emoji: '📄' };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Minimal Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+          <Icon name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => handleSpeak(nachricht.title)} style={styles.headerIcon}>
-            <Icon name="volume-medium-outline" size={22} color={colors.textPrimary} />
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => handleSpeak(nachricht.title)} style={styles.headerBtn}>
+            <Icon name="volume-medium-outline" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowVocab(!showVocab)}
-            style={[styles.headerIcon, showVocab && styles.headerIconActive]}
+            style={[styles.headerBtn, showVocab && styles.headerBtnActive]}
           >
-            <Icon name="book-outline" size={22} color={showVocab ? '#fff' : colors.textPrimary} />
+            <Icon name="book-outline" size={20} color={showVocab ? '#fff' : colors.textPrimary} />
+            {vocabCount > 0 && (
+              <View style={[styles.vocabBadge, showVocab && { backgroundColor: '#fff' }]}>
+                <Text style={[styles.vocabBadgeText, showVocab && { color: colors.retroPurple }]}>{vocabCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-        {/* Article */}
-        <View style={styles.article}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ─── Hero Title Area ─── */}
+        <View style={styles.heroSection}>
+          {/* Meta chips */}
           <View style={styles.metaRow}>
-            <View style={[styles.levelBadge, { backgroundColor: colors.retroCyan }]}>
-              <Text style={styles.levelText}>{nachricht.level}</Text>
+            <View style={[styles.levelChip, { backgroundColor: levelColor }]}>
+              <Text style={styles.levelChipText}>{nachricht.level}</Text>
             </View>
-            <Text style={styles.sourceText}>
-              {nachricht.source === 'dw' ? 'Deutsche Welle' : nachricht.source === 'tagesschau' ? 'Tagesschau' : 'PapaGeil'}
-            </Text>
+            <View style={styles.sourceChip}>
+              <Text style={styles.sourceEmoji}>{sourceInfo.emoji}</Text>
+              <Text style={styles.sourceLabel}>{sourceInfo.label}</Text>
+            </View>
           </View>
 
-          <Text style={styles.title}>{nachricht.title}</Text>
+          {/* Title */}
+          <Text style={styles.heroTitle}>{nachricht.title}</Text>
 
+          {/* Summary */}
           {nachricht.summary ? (
-            <Text style={styles.summary}>{nachricht.summary}</Text>
+            <Text style={styles.heroSummary}>{nachricht.summary}</Text>
           ) : null}
 
-          {paragraphs.map((paragraph, index) => (
-            <InteractiveText
-              key={index}
-              text={paragraph}
-              style={styles.paragraph}
-              onWordPress={handleWordPress}
-              onSentenceSave={handleSaveSentence}
-            />
-          ))}
+          {/* Stats bar */}
+          <View style={styles.statsBar}>
+            <View style={styles.statItem}>
+              <Icon name="time-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.statText}>{readTime} min đọc</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Icon name="book-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.statText}>{vocabCount} từ vựng</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Icon name="eye-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.statText}>{nachricht.viewCount} lượt</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Vocabulary Section */}
-        {showVocab && nachricht.vocabularyWords.length > 0 && (
-          <View style={styles.vocabSection}>
-            <View style={styles.vocabHeader}>
-              <Text style={styles.vocabTitle}>Từ vựng ({nachricht.vocabularyWords.length})</Text>
+        {/* ─── Content Card (Elevated) ─── */}
+        <View style={styles.contentCard}>
+          {/* Article indicator */}
+          <View style={styles.contentHeader}>
+            <View style={[styles.contentAccent, { backgroundColor: levelColor }]} />
+            <Text style={styles.contentLabel}>Nội dung bài viết</Text>
+          </View>
+
+          {/* Paragraphs */}
+          <View style={styles.contentBody}>
+            {paragraphs.map((paragraph, index) => (
+              <View key={index} style={index < paragraphs.length - 1 ? styles.paragraphWrapper : undefined}>
+                <InteractiveText
+                  text={paragraph}
+                  style={styles.paragraph}
+                  onWordPress={handleWordPress}
+                  onSentenceSave={handleSaveSentence}
+                />
+              </View>
+            ))}
+          </View>
+
+          {/* Source link at bottom of content card */}
+          {nachricht.sourceUrl ? (
+            <TouchableOpacity
+              style={styles.sourceLink}
+              onPress={() => Linking.openURL(nachricht.sourceUrl)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sourceLinkIcon}>
+                <Icon name="link-outline" size={14} color={colors.retroPurple} />
+              </View>
+              <View style={styles.sourceLinkContent}>
+                <Text style={styles.sourceLinkLabel}>Quelle</Text>
+                <Text style={styles.sourceLinkUrl} numberOfLines={1}>
+                  {(() => {
+                    try { return new URL(nachricht.sourceUrl).hostname.replace('www.', ''); }
+                    catch { return nachricht.sourceUrl; }
+                  })()}
+                </Text>
+              </View>
+              <Icon name="open-outline" size={14} color={colors.textMuted} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* ─── Vocabulary Section (Elevated) ─── */}
+        {showVocab && vocabCount > 0 && (
+          <View style={styles.vocabCard}>
+            <View style={styles.vocabCardHeader}>
+              <View style={styles.vocabTitleRow}>
+                <Icon name="book" size={20} color={colors.retroPurple} />
+                <Text style={styles.vocabTitle}>Từ vựng</Text>
+                <View style={styles.vocabCountChip}>
+                  <Text style={styles.vocabCountText}>{vocabCount}</Text>
+                </View>
+              </View>
               <TouchableOpacity onPress={handleSaveAllWords} style={styles.saveAllButton}>
-                <Icon name="download-outline" size={16} color="#fff" />
+                <Icon name="download-outline" size={15} color="#fff" />
                 <Text style={styles.saveAllText}>Lưu tất cả</Text>
               </TouchableOpacity>
             </View>
 
             {nachricht.vocabularyWords.map((word, index) => (
-              <View key={index} style={styles.vocabCard}>
+              <View
+                key={index}
+                style={[
+                  styles.vocabItem,
+                  index < nachricht.vocabularyWords.length - 1 && styles.vocabItemBorder,
+                ]}
+              >
                 <View style={styles.vocabWordRow}>
-                  <TouchableOpacity onPress={() => handleSpeak(word.word)}>
-                    <Icon name="volume-medium-outline" size={18} color={colors.retroPurple} />
+                  <TouchableOpacity
+                    onPress={() => handleSpeak(word.word)}
+                    style={styles.speakBtn}
+                  >
+                    <Icon name="volume-medium-outline" size={16} color={colors.retroPurple} />
                   </TouchableOpacity>
-                  <Text style={styles.vocabWord}>{word.word}</Text>
-                  {word.gender ? <Text style={styles.vocabGender}>({word.gender})</Text> : null}
-                  {word.partOfSpeech ? <Text style={styles.vocabPos}>{word.partOfSpeech}</Text> : null}
+                  <View style={styles.vocabWordContent}>
+                    <View style={styles.vocabWordLine}>
+                      <Text style={styles.vocabWord}>{word.word}</Text>
+                      {word.gender ? (
+                        <Text style={styles.vocabGender}>{word.gender}</Text>
+                      ) : null}
+                      {word.partOfSpeech ? (
+                        <View style={styles.posBadge}>
+                          <Text style={styles.posText}>{word.partOfSpeech}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={styles.vocabTranslation}>{word.translation}</Text>
+                    {word.example ? (
+                      <Text style={styles.vocabExample}>„{word.example}"</Text>
+                    ) : null}
+                  </View>
                   <TouchableOpacity
                     onPress={() => handleSaveWord(word)}
-                    style={[styles.saveButton, savedWords.has(word.word) && styles.saveButtonDone]}
+                    style={[styles.saveWordBtn, savedWords.has(word.word) && styles.saveWordBtnDone]}
                   >
                     <Icon
                       name={savedWords.has(word.word) ? 'checkmark' : 'add'}
                       size={16}
-                      color={savedWords.has(word.word) ? colors.success : colors.retroPurple}
+                      color={savedWords.has(word.word) ? '#fff' : colors.retroPurple}
                     />
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.vocabTranslation}>{word.translation}</Text>
-                {word.example ? <Text style={styles.vocabExample}>"{word.example}"</Text> : null}
               </View>
             ))}
           </View>
         )}
+
+        {/* Tip at bottom */}
+        <View style={styles.tipRow}>
+          <Icon name="finger-print-outline" size={14} color={colors.textMuted} />
+          <Text style={styles.tipText}>Nhấn đúp vào từ để dịch · Nhấn giữ để lưu câu</Text>
+        </View>
       </ScrollView>
 
-      {/* Word Translate Popup (API-based, for non-vocab words) */}
+      {/* Popups */}
       {showTranslatePopup && (
         <WordTranslatePopup
           word={selectedWord}
@@ -268,7 +384,6 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         />
       )}
 
-      {/* Vocab Detail Popup (pre-defined vocab with translation + example) */}
       {showVocabDetailPopup && matchedVocab && (
         <VocabDetailPopup
           visible={showVocabDetailPopup}
@@ -284,100 +399,266 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.retroCream,
+    backgroundColor: '#F2EDE4', // Slightly warmer than retroCream for depth contrast
   },
+
+  // ─── Header ───
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.retroBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  headerBtn: {
+    width: 38,
+    height: 38,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.6)',
   },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  headerIcon: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 18,
-  },
-  headerIconActive: {
+  headerBtnActive: {
     backgroundColor: colors.retroPurple,
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  vocabBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: colors.retroPurple,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  vocabBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#fff',
+  },
+
   scrollView: {
     flex: 1,
   },
-  article: {
-    padding: spacing.md,
+
+  // ─── Hero Title Area ───
+  heroSection: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
-  levelBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  levelChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 8,
   },
-  levelText: {
+  levelChipText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  sourceText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  title: {
-    fontSize: 24,
     fontWeight: '800',
-    color: colors.textPrimary,
-    lineHeight: 32,
-    marginBottom: spacing.sm,
+    color: '#fff',
+    letterSpacing: 0.5,
   },
-  summary: {
-    fontSize: 16,
+  sourceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  sourceEmoji: {
+    fontSize: 12,
+  },
+  sourceLabel: {
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
-    lineHeight: 24,
-    marginBottom: spacing.md,
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    lineHeight: 34,
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  heroSummary: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    lineHeight: 22,
     fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+
+  // ─── Content Card ───
+  contentCard: {
+    marginHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+    marginBottom: spacing.md,
+  },
+  contentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 4,
+  },
+  contentAccent: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+  },
+  contentLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  contentBody: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+  paragraphWrapper: {
+    marginBottom: 16,
   },
   paragraph: {
     fontSize: 17,
     color: colors.textPrimary,
-    lineHeight: 28,
+    lineHeight: 30,
+  },
+
+  // Source link
+  sourceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(138, 92, 255, 0.06)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 92, 255, 0.12)',
+  },
+  sourceLinkIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(138, 92, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sourceLinkContent: {
+    flex: 1,
+  },
+  sourceLinkLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sourceLinkUrl: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.retroPurple,
+    marginTop: 1,
+  },
+
+  // ─── Vocabulary Card ───
+  vocabCard: {
+    marginHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
     marginBottom: spacing.md,
+    overflow: 'hidden',
   },
-  // Vocabulary Section
-  vocabSection: {
-    padding: spacing.md,
-    borderTopWidth: 3,
-    borderTopColor: colors.retroBorder,
-  },
-  vocabHeader: {
+  vocabCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(168, 85, 247, 0.04)',
+  },
+  vocabTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   vocabTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.textPrimary,
+  },
+  vocabCountChip: {
+    backgroundColor: colors.retroPurple,
+    borderRadius: 10,
+    minWidth: 24,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  vocabCountText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
   },
   saveAllButton: {
     flexDirection: 'row',
@@ -385,70 +666,111 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: colors.retroPurple,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 12,
   },
   saveAllText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#fff',
   },
-  vocabCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.retroBorder,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+
+  // Vocab items
+  vocabItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  vocabItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.04)',
   },
   vocabWordRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    gap: 10,
   },
-  vocabWord: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.textPrimary,
+  speakBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  vocabWordContent: {
     flex: 1,
   },
+  vocabWordLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginBottom: 2,
+  },
+  vocabWord: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
   vocabGender: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.retroPurple,
     fontWeight: '600',
   },
-  vocabPos: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    backgroundColor: '#f0f0f0',
+  posBadge: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
   },
-  saveButton: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: colors.retroPurple,
-  },
-  saveButtonDone: {
-    borderColor: colors.success,
-    backgroundColor: 'rgba(0, 184, 148, 0.1)',
+  posText: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   vocabTranslation: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 2,
+    lineHeight: 20,
   },
   vocabExample: {
     fontSize: 13,
     color: colors.textMuted,
     fontStyle: 'italic',
-    marginTop: 2,
+    marginTop: 3,
+    lineHeight: 18,
+  },
+  saveWordBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.retroPurple,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  saveWordBtnDone: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+
+  // ─── Tip Row ───
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginHorizontal: 12,
+  },
+  tipText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '500',
   },
 });
 
