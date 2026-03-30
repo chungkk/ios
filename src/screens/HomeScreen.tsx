@@ -61,7 +61,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     : user?.streak || 0;
 
   // Determine source filter based on which tab
-  // Nghe+Nói tab → only YouTube lessons, Viết tab → only local_audio lessons
+  // Nghe+Nói tab → only YouTube lessons, Viết tab → only local_audio (uploaded audio)
   const sourceFilter = isListenMode ? 'youtube' as const : isWriteMode ? 'local_audio' as const : undefined;
 
   // Use optimized single API call instead of separate calls

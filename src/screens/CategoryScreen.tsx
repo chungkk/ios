@@ -33,7 +33,8 @@ export const CategoryScreen: React.FC<any> = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { categorySlug = '', categoryName = '' } = route.params || {};
   const isWriteMode = route.name === 'WriteCategory';
-  const sourceFilter = isWriteMode ? 'local_audio' : 'youtube';
+  // Listen mode → youtube only, Write mode → local_audio only
+  const sourceFilter: 'youtube' | 'local_audio' = isWriteMode ? 'local_audio' : 'youtube';
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
