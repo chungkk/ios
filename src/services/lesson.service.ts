@@ -22,6 +22,7 @@ export const fetchLessons = async (filters: LessonFilters = {}): Promise<Lessons
       params: {
         category: filters.category,
         difficulty: filters.difficulty,
+        source: filters.source,
         limit: filters.limit || 10,
         skip: filters.skip || 0,
         activeOnly: filters.activeOnly !== false ? 'true' : 'false',

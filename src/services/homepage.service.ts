@@ -23,16 +23,22 @@ export interface HomepageDataResponse {
  */
 export const fetchHomepageData = async (
   difficulty: 'all' | 'beginner' | 'experienced' = 'all',
-  lessonsPerCategory: number = 6
+  lessonsPerCategory: number = 6,
+  source?: 'youtube' | 'local_audio'
 ): Promise<HomepageDataResponse> => {
   try {
-    console.log('[HomepageService] Fetching homepage data:', { difficulty, lessonsPerCategory });
+    console.log('[HomepageService] Fetching homepage data:', { difficulty, lessonsPerCategory, source });
+
+    const params: Record<string, any> = {
+      difficulty,
+      limit: lessonsPerCategory,
+    };
+    if (source) {
+      params.source = source;
+    }
 
     const response = await api.get<HomepageDataResponse>('/api/homepage-data', {
-      params: {
-        difficulty,
-        limit: lessonsPerCategory,
-      },
+      params,
     });
 
     console.log('[HomepageService] Received categories:', response.data.categories?.length);

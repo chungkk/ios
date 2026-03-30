@@ -19,7 +19,8 @@ interface UseHomepageDataResult {
 
 export const useHomepageData = (
   difficultyFilter: DifficultyFilter = 'all',
-  lessonsPerCategory: number = 6
+  lessonsPerCategory: number = 6,
+  source?: 'youtube' | 'local_audio'
 ): UseHomepageDataResult => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesWithLessons, setCategoriesWithLessons] = useState<Record<string, CategoryWithLessons>>({});
@@ -36,7 +37,7 @@ export const useHomepageData = (
       }
       setError(null);
 
-      const data = await homepageService.fetchHomepageData(difficultyFilter, lessonsPerCategory);
+      const data = await homepageService.fetchHomepageData(difficultyFilter, lessonsPerCategory, source);
 
       setCategories(data.categories || []);
       setCategoriesWithLessons(data.categoriesWithLessons || {});
@@ -51,11 +52,11 @@ export const useHomepageData = (
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [difficultyFilter, lessonsPerCategory]);
+  }, [difficultyFilter, lessonsPerCategory, source]);
 
   useEffect(() => {
     fetchData(initialLoad);
-  }, [difficultyFilter, lessonsPerCategory, fetchData, initialLoad]);
+  }, [difficultyFilter, lessonsPerCategory, source, fetchData, initialLoad]);
 
   const refetch = useCallback(async () => {
     await fetchData();

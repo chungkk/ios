@@ -69,6 +69,7 @@ export interface CategoriesResponse {
 export interface LessonFilters {
   category?: string; // category slug
   difficulty?: 'all' | 'beginner' | 'experienced';
+  source?: 'youtube' | 'local_audio';
   limit?: number;
   skip?: number;
   activeOnly?: boolean;

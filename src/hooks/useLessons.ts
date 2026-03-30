@@ -21,6 +21,7 @@ export const useLessons = (filters: LessonFilters = {}): UseLessonsResult => {
 
   const categoryFilter = filters.category;
   const difficultyFilter = filters.difficulty;
+  const sourceFilter = filters.source;
   const limitFilter = filters.limit;
   const skipFilter = filters.skip;
 
@@ -32,6 +33,7 @@ export const useLessons = (filters: LessonFilters = {}): UseLessonsResult => {
       const response = await lessonService.fetchLessons({
         category: categoryFilter,
         difficulty: difficultyFilter,
+        source: sourceFilter,
         limit: limitFilter,
         skip: skipFilter,
       });
@@ -46,7 +48,7 @@ export const useLessons = (filters: LessonFilters = {}): UseLessonsResult => {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, difficultyFilter, limitFilter, skipFilter]);
+  }, [categoryFilter, difficultyFilter, sourceFilter, limitFilter, skipFilter]);
 
   useEffect(() => {
     fetchData();
