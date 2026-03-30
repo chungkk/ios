@@ -1,7 +1,7 @@
 // InteractiveText - Tap on words to translate & save vocabulary
-// Supports: single tap on word, long press to save sentence
+// Long press on a word to highlight and save the entire sentence
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,11 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
-  Alert,
+  Vibration,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Tts from 'react-native-tts';
+import { useSettings } from '../../contexts/SettingsContext';
 import { colors, spacing } from '../../styles/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -30,17 +31,49 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
   onWordPress,
   onSentenceSave,
 }) => {
+  const { settings } = useSettings();
   const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null);
+  const [highlightedSentenceIdx, setHighlightedSentenceIdx] = useState<number | null>(null);
   const [showSentenceMenu, setShowSentenceMenu] = useState(false);
   const lastTapRef = useRef<number>(0);
   const lastTapWordRef = useRef<string>('');
 
-  // Split text into words while preserving whitespace
-  const words = text.split(/(\s+)/);
+  // Split text into words and map each to its sentence index
+  const { words, wordSentenceMap, sentences } = useMemo(() => {
+    const w = text.split(/(\s+)/);
+    const map: number[] = [];
+    const sentenceTexts: string[] = [];
+    let currentSentence = 0;
+    let currentSentenceText = '';
+
+    for (let i = 0; i < w.length; i++) {
+      map.push(currentSentence);
+      currentSentenceText += w[i];
+
+      const trimmed = w[i].trim();
+      if (trimmed && /[.!?]$/.test(trimmed) && i < w.length - 1) {
+        sentenceTexts.push(currentSentenceText.trim());
+        currentSentenceText = '';
+        currentSentence++;
+      }
+    }
+
+    if (currentSentenceText.trim()) {
+      sentenceTexts.push(currentSentenceText.trim());
+    }
+
+    return { words: w, wordSentenceMap: map, sentences: sentenceTexts };
+  }, [text]);
 
   const handleWordPress = useCallback((word: string, wordIndex: number) => {
     const cleanWord = word.replace(/[.,!?;:"""''„\-–—()[\]{}]/g, '').trim();
     if (!cleanWord) return;
+
+    // Tap dismisses sentence highlight
+    if (highlightedSentenceIdx !== null) {
+      setHighlightedSentenceIdx(null);
+      return;
+    }
 
     const now = Date.now();
     const isDoubleTap = (now - lastTapRef.current) < 400 && lastTapWordRef.current === cleanWord;
@@ -48,105 +81,128 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
     lastTapWordRef.current = cleanWord;
 
     if (isDoubleTap) {
-      // Double tap → open translate popup directly
+      // Double tap → open translate popup
       setSelectedWordIndex(wordIndex);
       onWordPress?.(cleanWord, text);
       return;
     }
 
-    // Single tap → highlight and open translate popup
-    setSelectedWordIndex(wordIndex);
-    onWordPress?.(cleanWord, text);
-  }, [text, onWordPress]);
+    // Single tap → do nothing (like a normal reading page)
+  }, [text, onWordPress, highlightedSentenceIdx]);
 
-  const handleLongPress = useCallback(() => {
-    // Long press → show sentence save option
+  const handleWordLongPress = useCallback((sentenceIndex: number) => {
+    if (settings.hapticEnabled) {
+      Vibration.vibrate(30);
+    }
+    setHighlightedSentenceIdx(sentenceIndex);
     setShowSentenceMenu(true);
+  }, [settings.hapticEnabled]);
+
+  const handleCloseSentenceMenu = useCallback(() => {
+    setShowSentenceMenu(false);
+    setHighlightedSentenceIdx(null);
   }, []);
 
   const handleSaveSentence = useCallback(() => {
-    setShowSentenceMenu(false);
-    onSentenceSave?.(text);
-  }, [text, onSentenceSave]);
+    if (highlightedSentenceIdx !== null && sentences[highlightedSentenceIdx]) {
+      onSentenceSave?.(sentences[highlightedSentenceIdx]);
+    }
+    handleCloseSentenceMenu();
+  }, [highlightedSentenceIdx, sentences, onSentenceSave, handleCloseSentenceMenu]);
 
   const handleSpeakSentence = useCallback(() => {
-    setShowSentenceMenu(false);
-    try {
-      Tts.stop();
-      Tts.speak(text, { language: 'de-DE' } as any);
-    } catch {
-      // TTS optional
+    if (highlightedSentenceIdx !== null && sentences[highlightedSentenceIdx]) {
+      try {
+        Tts.stop();
+        Tts.speak(sentences[highlightedSentenceIdx], { language: 'de-DE' } as any);
+      } catch {
+        // TTS optional
+      }
     }
-  }, [text]);
+    handleCloseSentenceMenu();
+  }, [highlightedSentenceIdx, sentences, handleCloseSentenceMenu]);
 
   return (
     <View>
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onLongPress={handleLongPress}
-        delayLongPress={600}
-      >
-        <Text style={[styles.paragraph, style]}>
-          {words.map((segment, index) => {
-            // If it's whitespace, render as-is
-            if (/^\s+$/.test(segment)) {
-              return <Text key={index}>{segment}</Text>;
-            }
+      <Text style={[styles.paragraph, style]}>
+        {words.map((segment, index) => {
+          const isSentenceHighlighted = highlightedSentenceIdx === wordSentenceMap[index];
 
-            // It's a word - make it tappable
-            const isSelected = selectedWordIndex === index;
-            const cleanWord = segment.replace(/[.,!?;:"""''„\-–—()[\]{}]/g, '').trim();
-
-            if (!cleanWord) {
-              return <Text key={index}>{segment}</Text>;
-            }
-
-            // Find punctuation before and after the word
-            const match = segment.match(/^([^a-zA-ZäöüÄÖÜß]*)(.*?)([^a-zA-ZäöüÄÖÜß]*)$/);
-            const prefix = match?.[1] || '';
-            const wordPart = match?.[2] || segment;
-            const suffix = match?.[3] || '';
-
+          if (/^\s+$/.test(segment)) {
             return (
-              <Text key={index}>
-                {prefix ? <Text>{prefix}</Text> : null}
-                <Text
-                  style={[
-                    styles.word,
-                    isSelected && styles.wordSelected,
-                  ]}
-                  onPress={() => handleWordPress(wordPart, index)}
-                >
-                  {wordPart}
-                </Text>
-                {suffix ? <Text>{suffix}</Text> : null}
+              <Text
+                key={index}
+                style={isSentenceHighlighted ? styles.sentenceHighlight : undefined}
+              >
+                {segment}
               </Text>
             );
-          })}
-        </Text>
-      </TouchableOpacity>
+          }
+
+          const isSelected = selectedWordIndex === index;
+          const cleanWord = segment.replace(/[.,!?;:"""''„\-–—()[\]{}]/g, '').trim();
+
+          if (!cleanWord) {
+            return <Text key={index}>{segment}</Text>;
+          }
+
+          const match = segment.match(/^([^a-zA-ZäöüÄÖÜß]*)(.*?)([^a-zA-ZäöüÄÖÜß]*)$/);
+          const prefix = match?.[1] || '';
+          const wordPart = match?.[2] || segment;
+          const suffix = match?.[3] || '';
+          const sentIdx = wordSentenceMap[index];
+
+          return (
+            <Text key={index}>
+              {prefix ? (
+                <Text style={isSentenceHighlighted ? styles.sentenceHighlight : undefined}>
+                  {prefix}
+                </Text>
+              ) : null}
+              <Text
+                style={[
+                  styles.word,
+                  isSelected && !isSentenceHighlighted && styles.wordSelected,
+                  isSentenceHighlighted && styles.sentenceHighlight,
+                ]}
+                onPress={() => handleWordPress(wordPart, index)}
+                onLongPress={() => handleWordLongPress(sentIdx)}
+              >
+                {wordPart}
+              </Text>
+              {suffix ? (
+                <Text style={isSentenceHighlighted ? styles.sentenceHighlight : undefined}>
+                  {suffix}
+                </Text>
+              ) : null}
+            </Text>
+          );
+        })}
+      </Text>
 
       {/* Sentence Context Menu */}
       <Modal
         visible={showSentenceMenu}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowSentenceMenu(false)}
+        onRequestClose={handleCloseSentenceMenu}
       >
         <TouchableOpacity
           style={styles.menuOverlay}
           activeOpacity={1}
-          onPress={() => setShowSentenceMenu(false)}
+          onPress={handleCloseSentenceMenu}
         >
           <View style={styles.menuContainer}>
             <View style={styles.menuHeader}>
               <Text style={styles.menuTitle}>📝 Câu văn</Text>
-              <TouchableOpacity onPress={() => setShowSentenceMenu(false)}>
+              <TouchableOpacity onPress={handleCloseSentenceMenu}>
                 <Icon name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.menuSentence} numberOfLines={4}>{text}</Text>
+            <Text style={styles.menuSentence} numberOfLines={4}>
+              {highlightedSentenceIdx !== null ? sentences[highlightedSentenceIdx] : ''}
+            </Text>
 
             <View style={styles.menuActions}>
               <TouchableOpacity style={styles.menuButton} onPress={handleSpeakSentence}>
@@ -185,6 +241,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     color: colors.retroDark,
     fontWeight: '600',
+  },
+  sentenceHighlight: {
+    backgroundColor: 'rgba(255, 230, 109, 0.45)',
+    borderRadius: 3,
   },
   // Sentence Menu
   menuOverlay: {
