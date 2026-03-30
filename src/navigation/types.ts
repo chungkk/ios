@@ -19,13 +19,34 @@ export type AuthStackParamList = {
 
 // Main Tab Navigator (Bottom Tabs)
 export type MainTabParamList = {
-  Home: undefined;
-  Vocabulary: undefined;
-  DailyPhrase: undefined;
+  ListenSpeak: undefined;
+  Read: undefined;
+  Write: undefined;
   Settings: undefined;
 };
 
-// Home Stack Navigator (nested in Home tab)
+// ListenSpeak Stack Navigator (nested in ListenSpeak tab)
+export type ListenSpeakStackParamList = {
+  ListenSpeakHome: undefined;
+  Category: { categorySlug: string; categoryName: string };
+  ListeningFlow: { lessonId: string };
+  Statistics: undefined;
+};
+
+// Read Stack Navigator (nested in Read tab)
+export type ReadStackParamList = {
+  ReadingList: undefined;
+  ReadingDetail: { nachrichtId: string };
+};
+
+// Write Stack Navigator (nested in Write tab)
+export type WriteStackParamList = {
+  WriteHome: undefined;
+  WriteCategory: { categorySlug: string; categoryName: string };
+  Dictation: { lessonId: string };
+};
+
+// Legacy Home Stack (kept for backward compatibility during migration)
 export type HomeStackParamList = {
   HomeScreen: undefined;
   Category: { categorySlug: string; categoryName: string };
@@ -50,6 +71,25 @@ export type MainTabScreenProps<T extends keyof MainTabParamList> =
     RootStackScreenProps<keyof RootStackParamList>
   >;
 
+export type ListenSpeakStackScreenProps<T extends keyof ListenSpeakStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<ListenSpeakStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+export type ReadStackScreenProps<T extends keyof ReadStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<ReadStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+export type WriteStackScreenProps<T extends keyof WriteStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<WriteStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+// Legacy - kept for backward compatibility
 export type HomeStackScreenProps<T extends keyof HomeStackParamList> =
   CompositeScreenProps<
     NativeStackScreenProps<HomeStackParamList, T>,

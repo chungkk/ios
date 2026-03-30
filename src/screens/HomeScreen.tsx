@@ -28,14 +28,19 @@ import UnlockModal from '../components/lesson/UnlockModal';
 import { Loading, SkeletonCard } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
+import { useRoute } from '@react-navigation/native';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { Lesson } from '../types/lesson.types';
 import { BASE_URL } from '../services/api';
 
 type HomeScreenProps = HomeStackScreenProps<'HomeScreen'>;
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+export const HomeScreen: React.FC<any> = ({ navigation }) => {
   const { t } = useTranslation();
+  const route = useRoute();
+  // Detect which stack we're in based on route name
+  const isWriteMode = route.name === 'WriteHome';
+  const isListenMode = route.name === 'ListenSpeakHome' || route.name === 'HomeScreen';
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'experienced'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -87,10 +92,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
     // Increment view count (non-blocking)
     lessonService.incrementViewCount(lesson.id).catch(() => { });
-    // Show mode selection popup
+
+    // In the new tab structure, skip mode popup and navigate directly
+    if (isWriteMode) {
+      navigation.navigate('Dictation', { lessonId: lesson.id });
+      return;
+    }
+    if (isListenMode) {
+      navigation.navigate('ListeningFlow', { lessonId: lesson.id });
+      return;
+    }
+
+    // Fallback: Show mode selection popup
     setSelectedLesson(lesson);
     setShowModePopup(true);
-  }, []);
+  }, [isWriteMode, isListenMode, navigation]);
 
   // Handle unlock confirmation
   const handleUnlockConfirm = useCallback(async (lessonId: string) => {
@@ -131,13 +147,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setShowModePopup(false);
     setSelectedLesson(null);
 
-    // Navigate based on mode
-    if (mode === 'dictation') {
+    // Navigate based on context (which tab we're in)
+    if (isWriteMode) {
+      navigation.navigate('Dictation', { lessonId: selectedLesson.id });
+    } else if (isListenMode) {
+      navigation.navigate('ListeningFlow', { lessonId: selectedLesson.id });
+    } else if (mode === 'dictation') {
       navigation.navigate('Dictation', { lessonId: selectedLesson.id });
     } else {
       navigation.navigate('Lesson', { lessonId: selectedLesson.id });
     }
-  }, [selectedLesson, navigation]);
+  }, [selectedLesson, navigation, isWriteMode, isListenMode]);
 
   const handleClosePopup = useCallback(() => {
     setShowModePopup(false);
@@ -145,8 +165,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }, []);
 
   const handleViewAll = useCallback((categorySlug: string, categoryName: string) => {
-    navigation.navigate('Category', { categorySlug, categoryName });
-  }, [navigation]);
+    const categoryRoute = isWriteMode ? 'WriteCategory' : 'Category';
+    navigation.navigate(categoryRoute, { categorySlug, categoryName });
+  }, [navigation, isWriteMode]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -165,7 +186,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Top Header Bar */}
       <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>{t('home.learning')}</Text>
+        <Text style={styles.topBarTitle}>{isWriteMode ? 'Viết chính tả' : 'Nghe + Nói'}</Text>
       </View>
 
       <ScrollView

@@ -33,6 +33,7 @@ export interface Lesson {
   id: string;
   title: string;
   audio: string; // Required - audio source (YouTube URL, local path /audio/..., or HTTP URL)
+  audioFileUrl?: string; // Optional - for local_audio source lessons
   youtubeUrl?: string; // Optional - only for YouTube-sourced lessons
   videoId?: string; // Optional - extracted YouTube video ID
   thumbnail?: string;
@@ -76,3 +77,38 @@ export interface LessonFilters {
 // Cache key types
 export type LessonCacheKey = `lessons_home_${string}`; // e.g., lessons_home_beginner
 export type LessonDetailCacheKey = `lesson_${string}`; // e.g., lesson_abc123
+
+// Nachricht (Reading) types
+export interface NachrichtVocabWord {
+  word: string;
+  translation: string;
+  context: string;
+  gender: string;
+  plural: string;
+  partOfSpeech: string;
+  example: string;
+}
+
+export interface Nachricht {
+  _id: string;
+  title: string;
+  content: string;
+  summary: string;
+  source: 'dw' | 'tagesschau' | 'manual';
+  sourceUrl: string;
+  level: string;
+  imageUrl: string;
+  vocabularyWords: NachrichtVocabWord[];
+  isPublished: boolean;
+  publishedAt: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NachrichtenResponse {
+  nachrichten: Nachricht[];
+  total: number;
+  page: number;
+  totalPages: number;
+}

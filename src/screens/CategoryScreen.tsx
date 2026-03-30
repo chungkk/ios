@@ -29,9 +29,10 @@ import type { UserUnlockInfo } from '../types/unlock.types';
 
 type CategoryScreenProps = HomeStackScreenProps<'Category'>;
 
-export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigation }) => {
+export const CategoryScreen: React.FC<any> = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { categorySlug = '', categoryName = '' } = route.params || {};
+  const isWriteMode = route.name === 'WriteCategory';
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
@@ -114,12 +115,14 @@ export const CategoryScreen: React.FC<CategoryScreenProps> = ({ route, navigatio
     setShowModePopup(false);
     setSelectedLesson(null);
 
-    if (mode === 'dictation') {
+    if (isWriteMode) {
+      navigation.navigate('Dictation', { lessonId: selectedLesson.id });
+    } else if (mode === 'dictation') {
       navigation.navigate('Dictation', { lessonId: selectedLesson.id });
     } else {
-      navigation.navigate('Lesson', { lessonId: selectedLesson.id });
+      navigation.navigate('ListeningFlow', { lessonId: selectedLesson.id });
     }
-  }, [selectedLesson, navigation]);
+  }, [selectedLesson, navigation, isWriteMode]);
 
   const handleClosePopup = useCallback(() => {
     setShowModePopup(false);

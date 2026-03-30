@@ -41,7 +41,7 @@ import type { Sentence } from '../types/lesson.types';
 
 type DictationScreenProps = HomeStackScreenProps<'Dictation'>;
 
-const DictationScreen: React.FC<DictationScreenProps> = ({ route, navigation }) => {
+const DictationScreen: React.FC<any> = ({ route, navigation }) => {
   const { lessonId } = route.params;
   const { lesson, loading, error } = useLessonData(lessonId);
   const { settings } = useSettings();

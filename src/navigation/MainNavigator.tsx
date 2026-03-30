@@ -3,20 +3,25 @@ import { Dimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
-import type { MainTabParamList, HomeStackParamList } from './types';
+import type {
+  MainTabParamList,
+  ListenSpeakStackParamList,
+  ReadStackParamList,
+  WriteStackParamList,
+} from './types';
 import { colors } from '../styles/theme';
 import HomeScreen from '../screens/HomeScreen';
 import CategoryScreen from '../screens/CategoryScreen';
-import LessonScreen from '../screens/LessonScreen';
+import ListeningFlowScreen from '../screens/ListeningFlowScreen';
+import ReadingListScreen from '../screens/ReadingListScreen';
+import ReadingDetailScreen from '../screens/ReadingDetailScreen';
 import DictationScreen from '../screens/DictationScreen';
-import VocabularyScreen from '../screens/VocabularyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH >= 768;
 
-// Tab Bar Icons - Professional Style (filled when active, outline when inactive)
 const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) => {
   const activeIcon = iconName;
   const inactiveIcon = `${iconName}-outline`;
@@ -30,24 +35,41 @@ const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) 
   );
 };
 
-
 const Tab = createBottomTabNavigator<MainTabParamList>();
-const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const ListenSpeakStack = createNativeStackNavigator<ListenSpeakStackParamList>();
+const ReadStack = createNativeStackNavigator<ReadStackParamList>();
+const WriteStack = createNativeStackNavigator<WriteStackParamList>();
 
-// Home Stack Navigator (nested in Home tab)
-const HomeStackNavigator = () => {
+// ListenSpeak Stack
+const ListenSpeakStackNavigator = () => {
   return (
-    <HomeStack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
-      <HomeStack.Screen name="Category" component={CategoryScreen} />
-      <HomeStack.Screen name="Lesson" component={LessonScreen} />
-      <HomeStack.Screen name="Dictation" component={DictationScreen} />
-      <HomeStack.Screen name="Statistics" component={StatisticsScreen} />
-    </HomeStack.Navigator>
+    <ListenSpeakStack.Navigator screenOptions={{ headerShown: false }}>
+      <ListenSpeakStack.Screen name="ListenSpeakHome" component={HomeScreen} />
+      <ListenSpeakStack.Screen name="Category" component={CategoryScreen} />
+      <ListenSpeakStack.Screen name="ListeningFlow" component={ListeningFlowScreen} />
+      <ListenSpeakStack.Screen name="Statistics" component={StatisticsScreen} />
+    </ListenSpeakStack.Navigator>
+  );
+};
+
+// Read Stack
+const ReadStackNavigator = () => {
+  return (
+    <ReadStack.Navigator screenOptions={{ headerShown: false }}>
+      <ReadStack.Screen name="ReadingList" component={ReadingListScreen} />
+      <ReadStack.Screen name="ReadingDetail" component={ReadingDetailScreen} />
+    </ReadStack.Navigator>
+  );
+};
+
+// Write Stack
+const WriteStackNavigator = () => {
+  return (
+    <WriteStack.Navigator screenOptions={{ headerShown: false }}>
+      <WriteStack.Screen name="WriteHome" component={HomeScreen} />
+      <WriteStack.Screen name="WriteCategory" component={CategoryScreen} />
+      <WriteStack.Screen name="Dictation" component={DictationScreen} />
+    </WriteStack.Navigator>
   );
 };
 
@@ -79,36 +101,34 @@ export const MainNavigator = () => {
       }}
     >
       <Tab.Screen
-        name="Home"
-        component={HomeStackNavigator}
+        name="ListenSpeak"
+        component={ListenSpeakStackNavigator}
         options={{
-          tabBarLabel: 'Học tập',
+          tabBarLabel: 'Nghe+Nói',
+          tabBarIcon: ({ focused }) => <TabIcon iconName="ear" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Read"
+        component={ReadStackNavigator}
+        options={{
+          tabBarLabel: 'Đọc',
           tabBarIcon: ({ focused }) => <TabIcon iconName="book" focused={focused} />,
         }}
       />
       <Tab.Screen
-        name="Vocabulary"
-        component={VocabularyScreen}
+        name="Write"
+        component={WriteStackNavigator}
         options={{
-          tabBarLabel: 'Vocabulary',
-          tabBarIcon: ({ focused }) => <TabIcon iconName="book" focused={focused} />,
+          tabBarLabel: 'Viết',
+          tabBarIcon: ({ focused }) => <TabIcon iconName="pencil" focused={focused} />,
         }}
       />
-      {/* Temporarily hidden
-      <Tab.Screen
-        name="DailyPhrase"
-        component={DailyPhraseScreen}
-        options={{
-          tabBarLabel: 'Phrase',
-          tabBarIcon: ({ focused }) => <TabIcon iconName="chatbubble-ellipses" focused={focused} />,
-        }}
-      />
-      */}
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarLabel: 'Settings',
+          tabBarLabel: 'Cài đặt',
           tabBarIcon: ({ focused }) => <TabIcon iconName="settings" focused={focused} />,
         }}
       />
@@ -117,4 +137,3 @@ export const MainNavigator = () => {
 };
 
 export default MainNavigator;
-
