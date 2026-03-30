@@ -190,7 +190,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Top Header Bar */}
       <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>{isWriteMode ? 'Viết chính tả' : 'Nghe + Nói'}</Text>
+        <Text style={styles.topBarTitle}>{isWriteMode ? 'Chính tả' : 'Shadowing'}</Text>
       </View>
 
       <ScrollView

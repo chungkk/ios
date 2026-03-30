@@ -104,7 +104,7 @@ export const MainNavigator = () => {
         name="ListenSpeak"
         component={ListenSpeakStackNavigator}
         options={{
-          tabBarLabel: 'Nghe+Nói',
+          tabBarLabel: 'Shadowing',
           tabBarIcon: ({ focused }) => <TabIcon iconName="ear" focused={focused} />,
         }}
       />
@@ -120,8 +120,8 @@ export const MainNavigator = () => {
         name="Write"
         component={WriteStackNavigator}
         options={{
-          tabBarLabel: 'Viết',
-          tabBarIcon: ({ focused }) => <TabIcon iconName="pencil" focused={focused} />,
+          tabBarLabel: 'Chính tả',
+          tabBarIcon: ({ focused }) => <TabIcon iconName="headset" focused={focused} />,
         }}
       />
       <Tab.Screen

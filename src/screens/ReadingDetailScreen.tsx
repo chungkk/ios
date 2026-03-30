@@ -1,4 +1,5 @@
 // ReadingDetailScreen - Read a Nachricht article with vocabulary
+// Interactive text: tap word to translate, long press to save sentence
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -19,6 +20,8 @@ import { useAuth } from '../hooks/useAuth';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import WordTranslatePopup from '../components/common/WordTranslatePopup';
+import InteractiveText from '../components/common/InteractiveText';
+import VocabDetailPopup, { VocabDetailData } from '../components/common/VocabDetailPopup';
 import { colors, spacing } from '../styles/theme';
 import type { ReadStackScreenProps } from '../navigation/types';
 import type { Nachricht, NachrichtVocabWord } from '../types/lesson.types';
@@ -36,6 +39,8 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedWord, setSelectedWord] = useState('');
   const [selectedContext, setSelectedContext] = useState('');
   const [showTranslatePopup, setShowTranslatePopup] = useState(false);
+  const [showVocabDetailPopup, setShowVocabDetailPopup] = useState(false);
+  const [matchedVocab, setMatchedVocab] = useState<VocabDetailData | null>(null);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -53,10 +58,64 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [nachrichtId]);
 
   const handleWordPress = useCallback((word: string, context: string) => {
+    // Check if word matches any pre-defined vocabulary from the article
+    if (nachricht?.vocabularyWords?.length) {
+      const normalizeWord = (w: string) => w.toLowerCase().replace(/[.,!?;:"""''\u201E\-\u2013\u2014()\[\]{}]/g, '').trim();
+      const normalizedInput = normalizeWord(word);
+
+      const matched = nachricht.vocabularyWords.find(v => {
+        const vocabWord = normalizeWord(v.word);
+        // Match the word itself, or match without article (der/die/das)
+        const withoutArticle = vocabWord.replace(/^(der|die|das|ein|eine)\s+/i, '');
+        return vocabWord === normalizedInput
+          || withoutArticle === normalizedInput
+          || vocabWord.includes(normalizedInput)
+          || normalizedInput.includes(withoutArticle);
+      });
+
+      if (matched) {
+        setMatchedVocab({
+          word: matched.word,
+          translation: matched.translation,
+          context: matched.context || context,
+          gender: matched.gender,
+          plural: matched.plural,
+          partOfSpeech: matched.partOfSpeech,
+          example: matched.example,
+        });
+        setShowVocabDetailPopup(true);
+        return;
+      }
+    }
+
+    // No match found → use API-based translate popup
     setSelectedWord(word);
     setSelectedContext(context);
     setShowTranslatePopup(true);
-  }, []);
+  }, [nachricht]);
+
+  // Save sentence as vocabulary (context)
+  const handleSaveSentence = useCallback(async (sentence: string) => {
+    if (!user) {
+      Alert.alert('Đăng nhập', 'Bạn cần đăng nhập để lưu câu.');
+      return;
+    }
+    try {
+      await vocabularyService.saveVocabulary({
+        word: sentence.substring(0, 60) + (sentence.length > 60 ? '...' : ''),
+        translation: '',
+        context: sentence,
+        notes: 'Saved sentence from reading',
+      });
+      Alert.alert('✅ Đã lưu', 'Câu đã được lưu vào từ vựng!');
+    } catch (error: any) {
+      if (error.message?.includes('already')) {
+        Alert.alert('ℹ️', 'Câu này đã được lưu trước đó.');
+      } else {
+        Alert.alert('Lỗi', 'Không thể lưu câu.');
+      }
+    }
+  }, [user]);
 
   const handleSaveWord = useCallback(async (vocabWord: NachrichtVocabWord) => {
     if (!user) {
@@ -150,7 +209,13 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           ) : null}
 
           {paragraphs.map((paragraph, index) => (
-            <Text key={index} style={styles.paragraph}>{paragraph}</Text>
+            <InteractiveText
+              key={index}
+              text={paragraph}
+              style={styles.paragraph}
+              onWordPress={handleWordPress}
+              onSentenceSave={handleSaveSentence}
+            />
           ))}
         </View>
 
@@ -193,13 +258,23 @@ const ReadingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         )}
       </ScrollView>
 
-      {/* Word Translate Popup */}
+      {/* Word Translate Popup (API-based, for non-vocab words) */}
       {showTranslatePopup && (
         <WordTranslatePopup
           word={selectedWord}
           context={selectedContext}
           visible={showTranslatePopup}
           onClose={() => setShowTranslatePopup(false)}
+        />
+      )}
+
+      {/* Vocab Detail Popup (pre-defined vocab with translation + example) */}
+      {showVocabDetailPopup && matchedVocab && (
+        <VocabDetailPopup
+          visible={showVocabDetailPopup}
+          vocabData={matchedVocab}
+          onClose={() => setShowVocabDetailPopup(false)}
+          onSaved={(word) => setSavedWords(prev => new Set([...prev, word]))}
         />
       )}
     </SafeAreaView>
