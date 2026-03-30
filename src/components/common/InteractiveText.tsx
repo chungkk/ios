@@ -149,7 +149,7 @@ const InteractiveText: React.FC<InteractiveTextProps> = ({
             return <Text key={index}>{segment}</Text>;
           }
 
-          const match = segment.match(/^([^a-zA-ZäöüÄÖÜß]*)(.*?)([^a-zA-ZäöüÄÖÜß]*)$/);
+          const match = segment.match(/^([^a-zA-ZäöüÄÖÜß0-9]*)(.*?)([^a-zA-ZäöüÄÖÜß0-9]*)$/);
           const prefix = match?.[1] || '';
           const wordPart = match?.[2] || segment;
           const suffix = match?.[3] || '';
