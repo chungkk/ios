@@ -236,7 +236,7 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(
       player.on('ended', () => {
         if (__DEV__) console.log('[AudioPlayer] Playback ended');
         isPlayingRef.current = false;
-        onStateChange?.('0');
+        onStateChange?.('ended');
       });
 
       return () => {

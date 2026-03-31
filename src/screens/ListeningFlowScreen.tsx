@@ -20,6 +20,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useLessonData } from '../hooks/useLessonData';
 import AudioPlayer, { AudioPlayerRef } from '../components/player/AudioPlayer';
+import VideoPlayer, { VideoPlayerRef } from '../components/player/VideoPlayer';
+import { extractVideoId } from '../utils/youtube';
+import { BASE_URL } from '../services/api';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { useSettings } from '../contexts/SettingsContext';
@@ -48,10 +51,13 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
   const parentNavigation = useNavigation().getParent();
   const insets = useSafeAreaInsets();
 
-  const audioPlayerRef = useRef<AudioPlayerRef>(null);
+  const playerRef = useRef<AudioPlayerRef & VideoPlayerRef>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const sentenceLayoutsRef = useRef<{ [key: number]: number }>({});
 
   // Flow state
   const [currentStep, setCurrentStep] = useState<FlowStep>('listen1');
+  const [showTranscript, setShowTranscript] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<0.5 | 0.75 | 1 | 1.25 | 1.5 | 2>(1);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -79,6 +85,36 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [navigation, parentNavigation]);
 
   const sentences = lesson?.transcript || [];
+
+  // Sync transcript with playback
+  useEffect(() => {
+    if (!isPlaying || sentences.length === 0) return;
+
+    const interval = setInterval(async () => {
+      if (!playerRef.current) return;
+      try {
+        const currentTime = await playerRef.current.getCurrentTime();
+        for (let i = sentences.length - 1; i >= 0; i--) {
+          if (currentTime >= sentences[i].startTime) {
+            setCurrentSentenceIndex(i);
+            break;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, sentences]);
+
+  // Auto-scroll transcript to active sentence
+  useEffect(() => {
+    const y = sentenceLayoutsRef.current[currentSentenceIndex];
+    if (y !== undefined && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: Math.max(0, y - 40), animated: true });
+    }
+  }, [currentSentenceIndex]);
 
   const handleGoBack = useCallback(() => {
     if (currentStep === 'listen2') {
@@ -116,16 +152,16 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handlePlaySentence = useCallback(async () => {
     const sentence = sentences[currentSentenceIndex];
-    if (!sentence || !audioPlayerRef.current) return;
+    if (!sentence || !playerRef.current) return;
 
-    audioPlayerRef.current.seekTo(sentence.start);
-    audioPlayerRef.current.play();
+    playerRef.current.seekTo(sentence.start);
+    playerRef.current.play();
     setIsPlaying(true);
 
     // Auto-pause at end of sentence
     const duration = (sentence.end - sentence.start) * 1000;
     setTimeout(() => {
-      audioPlayerRef.current?.pause();
+      playerRef.current?.pause();
       setIsPlaying(false);
     }, duration / playbackSpeed);
   }, [sentences, currentSentenceIndex, playbackSpeed]);
@@ -139,6 +175,11 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
 
   if (loading) return <Loading />;
   if (error || !lesson) return <EmptyState title="Lỗi" message="Không tải được bài học" />;
+
+  const videoId = lesson.youtubeUrl ? extractVideoId(lesson.youtubeUrl) : null;
+  const isAudioLesson = !videoId;
+  const audioUrl = lesson.audioFileUrl || lesson.audio || '';
+  const fullAudioUrl = audioUrl.startsWith('http') ? audioUrl : `${BASE_URL}${audioUrl}`;
 
   const currentSentence = sentences[currentSentenceIndex];
   const stepConfig = STEP_CONFIG[currentStep];
@@ -176,57 +217,121 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
         ))}
       </View>
 
-      {/* Audio Player */}
+      {/* Player */}
       <View style={styles.playerContainer}>
-        <AudioPlayer
-          ref={audioPlayerRef}
-          audioUrl={lesson.audioFileUrl || lesson.audio}
-          thumbnailUrl={lesson.thumbnail}
-          isPlaying={isPlaying}
-          playbackSpeed={playbackSpeed}
-          onStateChange={(state) => {
-            if (state === 'ended') handleAudioEnd();
-          }}
-        />
+        {isAudioLesson ? (
+          <AudioPlayer
+            ref={playerRef}
+            audioUrl={fullAudioUrl}
+            thumbnailUrl={lesson.thumbnail}
+            isPlaying={isPlaying}
+            playbackSpeed={playbackSpeed}
+            onStateChange={(state) => {
+              if (state === 'ended') handleAudioEnd();
+            }}
+          />
+        ) : (
+          <VideoPlayer
+            ref={playerRef}
+            videoId={videoId!}
+            isPlaying={isPlaying}
+            playbackSpeed={playbackSpeed}
+            onStateChange={(state) => {
+              const stateNum = parseInt(state, 10);
+              if (stateNum === 0) handleAudioEnd();
+            }}
+          />
+        )}
       </View>
 
       {/* Content Area - depends on step */}
       <View style={styles.contentArea}>
         {currentStep === 'listen1' && (
-          <View style={styles.listenOnlyContent}>
-            <Icon name="ear-outline" size={64} color={colors.retroCyan} />
-            <Text style={styles.listenOnlyTitle}>Nghe tập trung</Text>
-            <Text style={styles.listenOnlyDesc}>
-              Nghe toàn bộ audio mà không xem transcript. Tập trung hiểu nội dung chính.
-            </Text>
+          <View style={styles.listen1Content}>
+            {/* Toggle Transcript */}
             <TouchableOpacity
-              style={[styles.playButton, { backgroundColor: colors.retroCyan }]}
-              onPress={() => {
-                if (isPlaying) {
-                  audioPlayerRef.current?.pause();
-                  setIsPlaying(false);
-                } else {
-                  audioPlayerRef.current?.seekTo(0);
-                  audioPlayerRef.current?.play();
-                  setIsPlaying(true);
-                }
-              }}
+              style={styles.toggleTranscriptButton}
+              onPress={() => setShowTranscript(!showTranscript)}
             >
-              <Icon name={isPlaying ? 'pause' : 'play'} size={32} color="#fff" />
-              <Text style={styles.playButtonText}>{isPlaying ? 'Tạm dừng' : 'Phát audio'}</Text>
+              <Icon
+                name={showTranscript ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color={colors.textPrimary}
+              />
+              <Text style={styles.toggleTranscriptText}>
+                {showTranscript ? 'Ẩn Transcript' : 'Hiện Transcript'}
+              </Text>
             </TouchableOpacity>
-            {listenCompleted && (
-              <TouchableOpacity style={styles.nextStepButton} onPress={handleNextStep}>
-                <Text style={styles.nextStepText}>Tiếp theo: Nghe + Transcript</Text>
-                <Icon name="arrow-forward" size={20} color="#fff" />
-              </TouchableOpacity>
+
+            {showTranscript ? (
+              <ScrollView ref={scrollViewRef} style={styles.transcriptScroll} showsVerticalScrollIndicator={false}>
+                {sentences.map((sentence, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.sentenceRow,
+                      currentSentenceIndex === index && styles.sentenceRowActive,
+                    ]}
+                    onLayout={(e) => {
+                      sentenceLayoutsRef.current[index] = e.nativeEvent.layout.y;
+                    }}
+                    onPress={() => {
+                      setCurrentSentenceIndex(index);
+                      playerRef.current?.seekTo(sentence.start);
+                      setIsPlaying(true);
+                    }}
+                  >
+                    <Text style={[
+                      styles.sentenceText,
+                      currentSentenceIndex === index && styles.sentenceTextActive,
+                    ]}>
+                      {sentence.text}
+                    </Text>
+                    {sentence.translation ? (
+                      <Text style={styles.translationText}>{sentence.translation}</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.listenOnlyContent}>
+                <Icon name="ear-outline" size={64} color={colors.retroCyan} />
+                <Text style={styles.listenOnlyTitle}>Nghe tập trung</Text>
+                <Text style={styles.listenOnlyDesc}>
+                  Nghe toàn bộ audio mà không xem transcript.{'\n'}Tập trung hiểu nội dung chính.
+                </Text>
+              </View>
             )}
+
+            {/* Play/Pause + Next Step */}
+            <View style={styles.listen1BottomBar}>
+              <TouchableOpacity
+                style={[styles.playButton, { backgroundColor: colors.retroCyan }]}
+                onPress={() => {
+                  if (isPlaying) {
+                    playerRef.current?.pause();
+                    setIsPlaying(false);
+                  } else {
+                    setIsPlaying(true);
+                  }
+                }}
+              >
+                <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" />
+                <Text style={styles.playButtonText}>{isPlaying ? 'Tạm dừng' : 'Phát audio'}</Text>
+              </TouchableOpacity>
+              {listenCompleted && (
+                <TouchableOpacity style={styles.nextStepButton} onPress={handleNextStep}>
+                  <Text style={styles.nextStepText}>Tiếp theo: Nghe + Transcript</Text>
+                  <Icon name="arrow-forward" size={20} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
 
         {currentStep === 'listen2' && (
           <View style={styles.transcriptContent}>
-            <ScrollView style={styles.transcriptScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView ref={scrollViewRef} style={styles.transcriptScroll} showsVerticalScrollIndicator={false}>
               {sentences.map((sentence, index) => (
                 <TouchableOpacity
                   key={index}
@@ -234,10 +339,13 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
                     styles.sentenceRow,
                     currentSentenceIndex === index && styles.sentenceRowActive,
                   ]}
+                  onLayout={(e) => {
+                    sentenceLayoutsRef.current[index] = e.nativeEvent.layout.y;
+                  }}
                   onPress={() => {
                     setCurrentSentenceIndex(index);
-                    audioPlayerRef.current?.seekTo(sentence.start);
-                    audioPlayerRef.current?.play();
+                    playerRef.current?.seekTo(sentence.start);
+                    playerRef.current?.play();
                     setIsPlaying(true);
                   }}
                 >
@@ -410,13 +518,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
   },
   playerContainer: {
-    paddingHorizontal: spacing.md,
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000',
   },
   contentArea: {
     flex: 1,
     paddingHorizontal: spacing.md,
   },
-  // Step 1: Listen only
+  // Step 1
+  listen1Content: {
+    flex: 1,
+  },
+  toggleTranscriptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.retroBorder,
+  },
+  toggleTranscriptText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  listen1BottomBar: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
   listenOnlyContent: {
     flex: 1,
     justifyContent: 'center',
