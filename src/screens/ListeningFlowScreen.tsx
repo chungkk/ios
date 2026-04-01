@@ -1,7 +1,6 @@
 // ListeningFlowScreen - Combined Listening + Speaking Flow
-// Step 1: Listen once (no transcript)
-// Step 2: Listen again + transcript
-// Step 3: Shadowing (repeat 10-15 times per sentence)
+// Step 1: Listen (with optional transcript toggle)
+// Step 2: Shadowing (repeat 10-15 times per sentence)
 
 import React, { useState, useRef, useCallback, useLayoutEffect, useEffect } from 'react';
 import {
@@ -35,11 +34,10 @@ type Props = ListenSpeakStackScreenProps<'ListeningFlow'>;
 const SHADOWING_TARGET = 10;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type FlowStep = 'listen1' | 'listen2' | 'shadowing';
+type FlowStep = 'listen' | 'shadowing';
 
 const STEP_CONFIG = {
-  listen1: { label: 'Nghe lần 1', icon: 'ear-outline', color: colors.retroCyan },
-  listen2: { label: 'Nghe + Transcript', icon: 'document-text-outline', color: colors.retroYellow },
+  listen: { label: 'Nghe', icon: 'ear-outline', color: colors.retroCyan },
   shadowing: { label: 'Shadowing', icon: 'mic-outline', color: colors.retroPurple },
 };
 
@@ -56,13 +54,12 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
   const sentenceLayoutsRef = useRef<{ [key: number]: number }>({});
 
   // Flow state
-  const [currentStep, setCurrentStep] = useState<FlowStep>('listen1');
+  const [currentStep, setCurrentStep] = useState<FlowStep>('listen');
   const [showTranscript, setShowTranscript] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<0.5 | 0.75 | 1 | 1.25 | 1.5 | 2>(1);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [shadowingCounts, setShadowingCounts] = useState<{ [key: number]: number }>({});
-  const [listenCompleted, setListenCompleted] = useState(false);
 
   // Hide tab bar when in this screen
   useLayoutEffect(() => {
@@ -117,11 +114,8 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [currentSentenceIndex]);
 
   const handleGoBack = useCallback(() => {
-    if (currentStep === 'listen2') {
-      setCurrentStep('listen1');
-      setIsPlaying(false);
-    } else if (currentStep === 'shadowing') {
-      setCurrentStep('listen2');
+    if (currentStep === 'shadowing') {
+      setCurrentStep('listen');
       setIsPlaying(false);
     } else {
       navigation.goBack();
@@ -129,10 +123,7 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [currentStep, navigation]);
 
   const handleNextStep = useCallback(() => {
-    if (currentStep === 'listen1') {
-      setCurrentStep('listen2');
-      setIsPlaying(false);
-    } else if (currentStep === 'listen2') {
+    if (currentStep === 'listen') {
       setCurrentStep('shadowing');
       setIsPlaying(false);
       setCurrentSentenceIndex(0);
@@ -168,10 +159,7 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleAudioEnd = useCallback(() => {
     setIsPlaying(false);
-    if (currentStep === 'listen1') {
-      setListenCompleted(true);
-    }
-  }, [currentStep]);
+  }, []);
 
   if (loading) return <Loading />;
   if (error || !lesson) return <EmptyState title="Lỗi" message="Không tải được bài học" />;
@@ -205,13 +193,13 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {/* Step Progress */}
       <View style={styles.stepProgress}>
-        {(['listen1', 'listen2', 'shadowing'] as FlowStep[]).map((step, i) => (
+        {(['listen', 'shadowing'] as FlowStep[]).map((step, i) => (
           <View
             key={step}
             style={[
               styles.stepDot,
               currentStep === step && styles.stepDotActive,
-              (['listen1', 'listen2', 'shadowing'].indexOf(currentStep) > i) && styles.stepDotCompleted,
+              (['listen', 'shadowing'].indexOf(currentStep) > i) && styles.stepDotCompleted,
             ]}
           />
         ))}
@@ -246,8 +234,8 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {/* Content Area - depends on step */}
       <View style={styles.contentArea}>
-        {currentStep === 'listen1' && (
-          <View style={styles.listen1Content}>
+        {currentStep === 'listen' && (
+          <View style={styles.listenContent}>
             {/* Toggle Transcript */}
             <TouchableOpacity
               style={styles.toggleTranscriptButton}
@@ -278,6 +266,7 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => {
                       setCurrentSentenceIndex(index);
                       playerRef.current?.seekTo(sentence.start);
+                      playerRef.current?.play();
                       setIsPlaying(true);
                     }}
                   >
@@ -304,9 +293,9 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
             )}
 
             {/* Play/Pause + Next Step */}
-            <View style={styles.listen1BottomBar}>
+            <View style={styles.listenBottomBar}>
               <TouchableOpacity
-                style={[styles.playButton, { backgroundColor: colors.retroCyan }]}
+                style={[styles.playButton, { backgroundColor: colors.retroCyan, flex: 1 }]}
                 onPress={() => {
                   if (isPlaying) {
                     playerRef.current?.pause();
@@ -316,55 +305,14 @@ const ListeningFlowScreen: React.FC<Props> = ({ route, navigation }) => {
                   }
                 }}
               >
-                <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#fff" />
+                <Icon name={isPlaying ? 'pause' : 'play'} size={24} color="#fff" />
                 <Text style={styles.playButtonText}>{isPlaying ? 'Tạm dừng' : 'Phát audio'}</Text>
               </TouchableOpacity>
-              {listenCompleted && (
-                <TouchableOpacity style={styles.nextStepButton} onPress={handleNextStep}>
-                  <Text style={styles.nextStepText}>Tiếp theo: Nghe + Transcript</Text>
-                  <Icon name="arrow-forward" size={20} color="#fff" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={[styles.nextStepButton, { flex: 1 }]} onPress={handleNextStep}>
+                <Text style={styles.nextStepText}>Shadowing</Text>
+                <Icon name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
             </View>
-          </View>
-        )}
-
-        {currentStep === 'listen2' && (
-          <View style={styles.transcriptContent}>
-            <ScrollView ref={scrollViewRef} style={styles.transcriptScroll} showsVerticalScrollIndicator={false}>
-              {sentences.map((sentence, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.sentenceRow,
-                    currentSentenceIndex === index && styles.sentenceRowActive,
-                  ]}
-                  onLayout={(e) => {
-                    sentenceLayoutsRef.current[index] = e.nativeEvent.layout.y;
-                  }}
-                  onPress={() => {
-                    setCurrentSentenceIndex(index);
-                    playerRef.current?.seekTo(sentence.start);
-                    playerRef.current?.play();
-                    setIsPlaying(true);
-                  }}
-                >
-                  <Text style={[
-                    styles.sentenceText,
-                    currentSentenceIndex === index && styles.sentenceTextActive,
-                  ]}>
-                    {sentence.text}
-                  </Text>
-                  {sentence.translation ? (
-                    <Text style={styles.translationText}>{sentence.translation}</Text>
-                  ) : null}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity style={styles.nextStepButton} onPress={handleNextStep}>
-              <Text style={styles.nextStepText}>Tiếp theo: Shadowing</Text>
-              <Icon name="arrow-forward" size={20} color="#fff" />
-            </TouchableOpacity>
           </View>
         )}
 
@@ -525,8 +473,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.md,
   },
-  // Step 1
-  listen1Content: {
+  // Listen step
+  listenContent: {
     flex: 1,
   },
   toggleTranscriptButton: {
@@ -543,7 +491,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  listen1BottomBar: {
+  listenBottomBar: {
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
     gap: spacing.sm,
@@ -569,16 +518,16 @@ const styles = StyleSheet.create({
   playButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 28,
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 3,
     borderColor: colors.retroBorder,
-    marginTop: spacing.md,
   },
   playButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#fff',
   },
@@ -588,21 +537,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: colors.retroPurple,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 3,
     borderColor: colors.retroBorder,
-    marginTop: spacing.lg,
   },
   nextStepText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-  },
-  // Step 2: Transcript
-  transcriptContent: {
-    flex: 1,
   },
   transcriptScroll: {
     flex: 1,
