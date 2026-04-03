@@ -1,5 +1,5 @@
-// WriteHomeScreen - Chính tả tab with 3x4 grid layout + pagination
-// Displays all local_audio lessons in a 3-column grid (12 items per page)
+// WriteHomeScreen - Chính tả tab with 2x3 grid layout + pagination
+// Displays all local_audio lessons in a 2-column grid (6 items per page)
 
 import React, { useState, useCallback, useMemo } from 'react';
 import {
@@ -33,10 +33,10 @@ import { getThumbnailUrl, formatDuration, getDifficultyLabel } from '../utils/yo
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH >= 768;
-const COLUMNS = 3;
-const ITEMS_PER_PAGE = 12; // 3x4
-const CARD_GAP = 8;
-const CONTAINER_PADDING = 10;
+const COLUMNS = 2;
+const ITEMS_PER_PAGE = 6; // 2x3
+const CARD_GAP = 10;
+const CONTAINER_PADDING = 12;
 const CARD_WIDTH = (SCREEN_WIDTH - CONTAINER_PADDING * 2 - CARD_GAP * (COLUMNS - 1)) / COLUMNS;
 
 // ─── Mini Grid Card ───────────────────────────────────────────
@@ -170,42 +170,42 @@ const gridStyles = StyleSheet.create({
   },
   levelBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    paddingHorizontal: 5,
+    top: 6,
+    right: 6,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.retroBorder,
   },
   levelText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.retroDark,
     textTransform: 'uppercase',
   },
   durationBadge: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
+    bottom: 6,
+    right: 6,
     backgroundColor: colors.retroDark,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 6,
   },
   durationText: {
     color: '#fff',
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '600',
   },
   content: {
-    padding: 6,
+    padding: 8,
   },
   title: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.retroDark,
-    lineHeight: 13,
+    lineHeight: 17,
   },
 });
 

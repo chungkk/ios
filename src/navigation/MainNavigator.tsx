@@ -5,21 +5,16 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import type {
   MainTabParamList,
-  ListenSpeakStackParamList,
   ReadStackParamList,
   WriteStackParamList,
 } from './types';
 import { colors } from '../styles/theme';
-import HomeScreen from '../screens/HomeScreen';
 import CategoryScreen from '../screens/CategoryScreen';
-import ListeningFlowScreen from '../screens/ListeningFlowScreen';
 import ReadingListScreen from '../screens/ReadingListScreen';
 import ReadingDetailScreen from '../screens/ReadingDetailScreen';
 import DictationScreen from '../screens/DictationScreen';
 import WriteHomeScreen from '../screens/WriteHomeScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import StatisticsScreen from '../screens/StatisticsScreen';
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH >= 768;
 
@@ -37,21 +32,8 @@ const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) 
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
-const ListenSpeakStack = createNativeStackNavigator<ListenSpeakStackParamList>();
 const ReadStack = createNativeStackNavigator<ReadStackParamList>();
 const WriteStack = createNativeStackNavigator<WriteStackParamList>();
-
-// ListenSpeak Stack
-const ListenSpeakStackNavigator = () => {
-  return (
-    <ListenSpeakStack.Navigator screenOptions={{ headerShown: false }}>
-      <ListenSpeakStack.Screen name="ListenSpeakHome" component={HomeScreen} />
-      <ListenSpeakStack.Screen name="Category" component={CategoryScreen} />
-      <ListenSpeakStack.Screen name="ListeningFlow" component={ListeningFlowScreen} />
-      <ListenSpeakStack.Screen name="Statistics" component={StatisticsScreen} />
-    </ListenSpeakStack.Navigator>
-  );
-};
 
 // Read Stack
 const ReadStackNavigator = () => {
@@ -102,14 +84,6 @@ export const MainNavigator = () => {
         tabBarAllowFontScaling: false,
       }}
     >
-      <Tab.Screen
-        name="ListenSpeak"
-        component={ListenSpeakStackNavigator}
-        options={{
-          tabBarLabel: 'Shadowing',
-          tabBarIcon: ({ focused }) => <TabIcon iconName="ear" focused={focused} />,
-        }}
-      />
       <Tab.Screen
         name="Read"
         component={ReadStackNavigator}

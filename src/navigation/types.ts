@@ -19,19 +19,24 @@ export type AuthStackParamList = {
 
 // Main Tab Navigator (Bottom Tabs)
 export type MainTabParamList = {
-  ListenSpeak: undefined;
   Read: undefined;
   Write: undefined;
   Settings: undefined;
 };
 
-// ListenSpeak Stack Navigator (nested in ListenSpeak tab)
+// ListenSpeak Stack (kept for screen type compatibility)
 export type ListenSpeakStackParamList = {
   ListenSpeakHome: undefined;
   Category: { categorySlug: string; categoryName: string };
   ListeningFlow: { lessonId: string };
   Statistics: undefined;
 };
+
+export type ListenSpeakStackScreenProps<T extends keyof ListenSpeakStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<ListenSpeakStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
 
 // Read Stack Navigator (nested in Read tab)
 export type ReadStackParamList = {
@@ -69,12 +74,6 @@ export type MainTabScreenProps<T extends keyof MainTabParamList> =
   CompositeScreenProps<
     BottomTabScreenProps<MainTabParamList, T>,
     RootStackScreenProps<keyof RootStackParamList>
-  >;
-
-export type ListenSpeakStackScreenProps<T extends keyof ListenSpeakStackParamList> =
-  CompositeScreenProps<
-    NativeStackScreenProps<ListenSpeakStackParamList, T>,
-    MainTabScreenProps<keyof MainTabParamList>
   >;
 
 export type ReadStackScreenProps<T extends keyof ReadStackParamList> =
