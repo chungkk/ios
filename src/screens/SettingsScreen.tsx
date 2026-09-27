@@ -29,6 +29,7 @@ import { colors, spacing } from '../styles/theme';
 import { BASE_URL } from '../services/api';
 import { changePassword } from '../services/auth.service';
 import VocabChart from '../components/vocabulary/VocabChart';
+import { gemmaService, GemmaModelInfo, GemmaModelId, GEMMA_MODELS } from '../services/gemma.service';
 
 const LANGUAGES = [
   { value: 'de', label: 'Deutsch' },
@@ -50,7 +51,7 @@ const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { user, loading, userPoints, logout, deleteAccount, updateUser } = useAuth();
-  const { settings, toggleHaptic, setNativeLanguage, setDailyVocabGoal } = useSettings();
+  const { settings, toggleHaptic, setNativeLanguage, setDailyVocabGoal, toggleOfflineTranslate } = useSettings();
   const [showAGBModal, setShowAGBModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
@@ -70,6 +71,107 @@ const SettingsScreen: React.FC = () => {
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Gemma AI state
+  const [gemmaInfo, setGemmaInfo] = useState<GemmaModelInfo | null>(null);
+  const [gemmaDownloading, setGemmaDownloading] = useState(false);
+  const [gemmaProgress, setGemmaProgress] = useState(0);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [modelOptions, setModelOptions] = useState<Array<any>>([]);
+
+  // Load Gemma model info on mount
+  React.useEffect(() => {
+    const loadGemmaInfo = async () => {
+      try {
+        const info = await gemmaService.getModelInfo();
+        setGemmaInfo(info);
+        const models = await gemmaService.getModelsForDevice();
+        setModelOptions(models);
+      } catch (e) {
+        console.warn('[Settings] Could not load Gemma info:', e);
+      }
+    };
+    loadGemmaInfo();
+
+    const unsub = gemmaService.onStatusChange((info) => {
+      setGemmaInfo(info);
+      setGemmaDownloading(info.isDownloading);
+      setGemmaProgress(info.downloadProgress);
+    });
+
+    return unsub;
+  }, []);
+
+  // Handle Gemma model download (specific model)
+  const handleGemmaDownload = useCallback(async (modelId: GemmaModelId) => {
+    setShowModelPicker(false);
+    setGemmaDownloading(true);
+    setGemmaProgress(0);
+    const success = await gemmaService.downloadModel(modelId, (progress) => {
+      setGemmaProgress(progress);
+    });
+    setGemmaDownloading(false);
+    if (success) {
+      const model = GEMMA_MODELS[modelId];
+      setToastMessage(`✅ ${model.name} đã tải xong!`);
+      setToastVisible(true);
+      const initOk = await gemmaService.initialize(modelId);
+      if (initOk && !settings.offlineTranslateEnabled) {
+        toggleOfflineTranslate();
+      } else if (!initOk) {
+        Alert.alert('Lỗi khởi tạo', 'Model đã tải nhưng không thể khởi tạo. Vui lòng thử xoá và tải lại.');
+      }
+      const info = await gemmaService.getModelInfo();
+      setGemmaInfo(info);
+      const models = await gemmaService.getModelsForDevice();
+      setModelOptions(models);
+    } else {
+      Alert.alert('Lỗi', 'Không thể tải model. Kiểm tra kết nối mạng và dung lượng trống.');
+    }
+  }, [settings.offlineTranslateEnabled, toggleOfflineTranslate]);
+
+  // Handle Gemma model delete
+  const handleGemmaDelete = useCallback(() => {
+    const activeModel = gemmaInfo?.activeModelId ? GEMMA_MODELS[gemmaInfo.activeModelId] : null;
+    const sizeTxt = activeModel ? `${(activeModel.sizeMB / 1024).toFixed(1)} GB` : '';
+    Alert.alert(
+      'Xoá Model AI',
+      `Bạn có chắc muốn xoá ${activeModel?.name || 'model'}? Dung lượng ~${sizeTxt} sẽ được giải phóng.`,
+      [
+        { text: 'Huỷ', style: 'cancel' },
+        {
+          text: 'Xoá',
+          style: 'destructive',
+          onPress: async () => {
+            await gemmaService.deleteModel();
+            if (settings.offlineTranslateEnabled) {
+              toggleOfflineTranslate();
+            }
+            const info = await gemmaService.getModelInfo();
+            setGemmaInfo(info);
+            const models = await gemmaService.getModelsForDevice();
+            setModelOptions(models);
+            setToastMessage('Model AI đã được xoá.');
+            setToastVisible(true);
+          },
+        },
+      ]
+    );
+  }, [gemmaInfo, settings.offlineTranslateEnabled, toggleOfflineTranslate]);
+
+  // Handle open model picker
+  const handleOpenModelPicker = useCallback(async () => {
+    const models = await gemmaService.getModelsForDevice();
+    setModelOptions(models);
+    setShowModelPicker(true);
+  }, []);
+
+  // Handle cancel download
+  const handleGemmaCancelDownload = useCallback(() => {
+    gemmaService.cancelDownload();
+    setGemmaDownloading(false);
+    setGemmaProgress(0);
+  }, []);
 
   const handleLogin = () => {
     navigation.navigate('Auth', { screen: 'Login' });
@@ -408,6 +510,225 @@ const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* AI Offline Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🤖 AI Offline</Text>
+
+          {/* Device Info */}
+          {gemmaInfo?.deviceCapability && (
+            <View style={styles.gemmaDeviceInfo}>
+              <Icon name="phone-portrait" size={14} color={colors.textSecondary} />
+              <Text style={styles.gemmaDeviceText}>
+                {gemmaInfo.deviceCapability.deviceName} · {gemmaInfo.deviceCapability.totalRAMGB}GB RAM
+                {gemmaInfo.deviceCapability.freeStorageMB > 0 &&
+                  ` · ${(gemmaInfo.deviceCapability.freeStorageMB / 1024).toFixed(1)}GB trống`}
+              </Text>
+            </View>
+          )}
+
+          {/* Active Model Card or Download Prompt */}
+          <View style={styles.gemmaCard}>
+            {gemmaInfo?.isDownloaded && gemmaInfo.activeModelId ? (
+              // === Model already downloaded ===
+              <>
+                <View style={styles.gemmaHeader}>
+                  <View style={styles.gemmaIconWrap}>
+                    <Text style={{ fontSize: 20 }}>{GEMMA_MODELS[gemmaInfo.activeModelId].emoji}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.gemmaTitle}>{GEMMA_MODELS[gemmaInfo.activeModelId].name}</Text>
+                    <Text style={styles.gemmaSubtitle}>
+                      ✅ Sẵn sàng · {(GEMMA_MODELS[gemmaInfo.activeModelId].sizeMB / 1024).toFixed(1)} GB · {GEMMA_MODELS[gemmaInfo.activeModelId].speed}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.gemmaActions}>
+                  <TouchableOpacity
+                    style={styles.gemmaDeleteBtn}
+                    onPress={handleGemmaDelete}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="trash-outline" size={16} color={colors.retroCoral} />
+                    <Text style={styles.gemmaDeleteText}>Xoá</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.gemmaChangeBtn}
+                    onPress={handleOpenModelPicker}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="swap-horizontal" size={16} color={colors.retroCyan} />
+                    <Text style={styles.gemmaChangeText}>Đổi model</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : gemmaDownloading ? (
+              // === Downloading ===
+              <View>
+                <View style={styles.gemmaHeader}>
+                  <View style={styles.gemmaIconWrap}>
+                    <Icon name="cloud-download" size={22} color="#16a34a" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.gemmaTitle}>Đang tải model...</Text>
+                    <Text style={styles.gemmaSubtitle}>{gemmaProgress}%</Text>
+                  </View>
+                </View>
+                <View style={styles.gemmaProgressContainer}>
+                  <View style={styles.gemmaProgressBar}>
+                    <View style={[styles.gemmaProgressFill, { width: `${gemmaProgress}%` }]} />
+                  </View>
+                  <View style={styles.gemmaProgressInfo}>
+                    <Text style={styles.gemmaProgressText}>{gemmaProgress}%</Text>
+                    <TouchableOpacity onPress={handleGemmaCancelDownload}>
+                      <Text style={styles.gemmaCancelText}>Huỷ</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              // === No model yet ===
+              <>
+                <View style={styles.gemmaHeader}>
+                  <View style={styles.gemmaIconWrap}>
+                    <Icon name="hardware-chip" size={22} color="#16a34a" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.gemmaTitle}>Chưa có model AI</Text>
+                    <Text style={styles.gemmaSubtitle}>Tải model để dịch offline trên thiết bị</Text>
+                  </View>
+                </View>
+                <View style={styles.gemmaActions}>
+                  <TouchableOpacity
+                    style={styles.gemmaDownloadBtn}
+                    onPress={handleOpenModelPicker}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="cloud-download-outline" size={16} color="#fff" />
+                    <Text style={styles.gemmaDownloadText}>Chọn model & Tải</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Offline Translate Toggle */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              if (!gemmaInfo?.isDownloaded && !settings.offlineTranslateEnabled) {
+                Alert.alert('Chưa tải Model', 'Bạn cần tải model Gemma trước khi bật dịch offline.', [{ text: 'OK' }]);
+                return;
+              }
+              toggleOfflineTranslate();
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <Icon name="flash" size={22} color="#f59e0b" />
+              <Text style={styles.settingText}>Dịch offline</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <View style={[styles.toggleSwitch, settings.offlineTranslateEnabled && styles.toggleSwitchOn]}>
+                <View style={[styles.toggleKnob, settings.offlineTranslateEnabled && styles.toggleKnobOn]} />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <Text style={styles.gemmaNote}>
+            ℹ️ Click vào từ → dịch bằng AI ngay trên thiết bị, không cần internet.
+          </Text>
+        </View>
+
+        {/* Model Picker Modal */}
+        <Modal
+          visible={showModelPicker}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowModelPicker(false)}
+          supportedOrientations={['portrait', 'landscape']}
+        >
+          <View style={styles.languageModalOverlay}>
+            <View style={[styles.languageModalContainer, { maxWidth: 380 }]}>
+              <View style={styles.languageModalHeader}>
+                <Icon name="hardware-chip" size={28} color="#16a34a" />
+                <Text style={styles.languageModalTitle}>Chọn Model AI</Text>
+              </View>
+
+              {gemmaInfo?.deviceCapability && (
+                <Text style={styles.gemmaPickerDeviceInfo}>
+                  📱 {gemmaInfo.deviceCapability.deviceName} · {gemmaInfo.deviceCapability.totalRAMGB}GB RAM
+                </Text>
+              )}
+
+              <View style={styles.languageOptionsContainer}>
+                {modelOptions.map((model) => (
+                  <TouchableOpacity
+                    key={model.id}
+                    style={[
+                      styles.languageOption,
+                      !model.isSupported && styles.gemmaModelDisabled,
+                      model.isRecommended && model.isSupported && styles.gemmaModelRecommended,
+                    ]}
+                    onPress={() => {
+                      if (!model.isSupported) {
+                        Alert.alert(
+                          'Không tương thích',
+                          model.reason || 'Thiết bị không đủ cấu hình cho model này.',
+                          [{ text: 'OK' }]
+                        );
+                        return;
+                      }
+                      if (model.isDownloaded) {
+                        setShowModelPicker(false);
+                        return;
+                      }
+                      handleGemmaDownload(model.id);
+                    }}
+                    activeOpacity={0.7}
+                    disabled={!model.isSupported}
+                  >
+                    <Text style={styles.languageOptionFlag}>{model.emoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[
+                          styles.languageOptionText,
+                          !model.isSupported && { color: colors.textMuted },
+                        ]}>
+                          {model.name}
+                        </Text>
+                        {model.isRecommended && model.isSupported && (
+                          <View style={styles.gemmaRecommendedBadge}>
+                            <Text style={styles.gemmaRecommendedText}>⭐ Đề xuất</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 11, color: model.isSupported ? colors.textSecondary : colors.textMuted, marginTop: 2 }}>
+                        {model.description} · {(model.sizeMB / 1024).toFixed(1)} GB · {model.speed}
+                      </Text>
+                      {!model.isSupported && model.reason && (
+                        <Text style={{ fontSize: 10, color: colors.retroCoral, marginTop: 2 }}>
+                          ⚠️ {model.reason}
+                        </Text>
+                      )}
+                    </View>
+                    {model.isDownloaded && (
+                      <Icon name="checkmark-circle" size={22} color="#16a34a" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={styles.languageModalCancelBtn}
+                onPress={() => setShowModelPicker(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.languageModalCancelText}>Huỷ</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Account Management Section - Only for logged in users */}
         {user && (
@@ -1494,6 +1815,179 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.textSecondary,
+  },
+  // Gemma AI Styles
+  gemmaCard: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#bbf7d0',
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  gemmaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  gemmaIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#dcfce7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#bbf7d0',
+  },
+  gemmaTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.retroDark,
+  },
+  gemmaSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  gemmaProgressContainer: {
+    marginTop: 12,
+  },
+  gemmaProgressBar: {
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  gemmaProgressFill: {
+    height: '100%',
+    backgroundColor: '#16a34a',
+    borderRadius: 4,
+  },
+  gemmaProgressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  gemmaProgressText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#16a34a',
+  },
+  gemmaCancelText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.retroCoral,
+  },
+  gemmaActions: {
+    marginTop: 12,
+  },
+  gemmaDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#16a34a',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#15803d',
+  },
+  gemmaDownloadText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  gemmaDeleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#fff1f2',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#fecdd3',
+  },
+  gemmaDeleteText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroCoral,
+  },
+  gemmaStorageInfo: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  gemmaNote: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  gemmaDeviceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    marginBottom: spacing.sm,
+  },
+  gemmaDeviceText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  gemmaChangeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#e0f2fe',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#bae6fd',
+  },
+  gemmaChangeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.retroCyan,
+  },
+  gemmaPickerDeviceInfo: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  gemmaModelDisabled: {
+    opacity: 0.5,
+  },
+  gemmaModelRecommended: {
+    borderColor: '#16a34a',
+    borderWidth: 2,
+    backgroundColor: '#f0fdf4',
+  },
+  gemmaRecommendedBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  gemmaRecommendedText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#92400e',
   },
 });
 

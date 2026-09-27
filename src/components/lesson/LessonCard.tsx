@@ -58,11 +58,10 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
   const difficultyLabel = getDifficultyLabel(lesson.level);
   const difficultyColor = getDifficultyColor(lesson.level);
   const needsWhiteText = ['b2', 'c2'].includes(lesson.level?.toLowerCase() || '');
-  const isLocked = lesson.isLocked ?? false;
 
   return (
     <TouchableOpacity
-      style={[styles.card, isLocked && styles.lockedCard]}
+      style={styles.card}
       onPress={onPress}
       activeOpacity={0.9}
     >
@@ -71,22 +70,13 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
         {hasValidThumbnail ? (
           <Image
             source={{ uri: thumbnail }}
-            style={[styles.thumbnail, isLocked && styles.lockedThumbnail]}
+            style={styles.thumbnail}
             resizeMode="cover"
             onError={handleImageError}
           />
         ) : (
           <View style={[styles.thumbnail, styles.placeholderThumbnail]}>
             <Text style={styles.placeholderIcon}>🎧</Text>
-          </View>
-        )}
-
-        {/* Lock Icon Overlay */}
-        {isLocked && (
-          <View style={styles.lockOverlay}>
-            <View style={styles.lockIconContainer}>
-              <Text style={styles.lockIcon}>🔒</Text>
-            </View>
           </View>
         )}
 
@@ -107,7 +97,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress }) => {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={[styles.title, isLocked && styles.lockedTitle]} numberOfLines={2}>
+        <Text style={styles.title} numberOfLines={2}>
           {lesson.title}
         </Text>
         <View style={styles.footer}>
@@ -150,51 +140,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 0,
     elevation: 3,
-  },
-  lockedCard: {
-    opacity: 0.85,
-  },
-  thumbnailContainer: {
-    height: layout.lessonCardImageHeight,
-    position: 'relative',
-    backgroundColor: colors.bgCream,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.retroBorder,
-  },
-  thumbnail: {
-    width: '100%',
-    height: '100%',
-  },
-  lockedThumbnail: {
-    opacity: 0.6,
-  },
-  placeholderThumbnail: {
-    backgroundColor: '#E8E0D4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderIcon: {
-    fontSize: 28,
-    opacity: 0.5,
-  },
-  lockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  lockIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.retroBorder,
-  },
-  lockIcon: {
-    fontSize: 20,
   },
   difficultyBadge: {
     position: 'absolute',
@@ -241,9 +186,6 @@ const styles = StyleSheet.create({
     color: colors.retroDark,
     marginBottom: 6,
     lineHeight: 15,
-  },
-  lockedTitle: {
-    color: colors.textSecondary,
   },
   footer: {
     flexDirection: 'row',

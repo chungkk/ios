@@ -18,13 +18,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useHomepageData } from '../hooks/useHomepageData';
 import { useAuth } from '../hooks/useAuth';
 import { lessonService } from '../services/lesson.service';
-import { unlockService } from '../services/unlock.service';
 import LessonCard from '../components/lesson/LessonCard';
 import DifficultyFilter from '../components/lesson/DifficultyFilter';
 import ContinueLearningCard from '../components/lesson/ContinueLearningCard';
 import { useContinueLearning } from '../hooks/useContinueLearning';
 import ModeSelectionPopup, { LessonMode } from '../components/lesson/ModeSelectionPopup';
-import UnlockModal from '../components/lesson/UnlockModal';
 import { Loading, SkeletonCard } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import { colors, spacing } from '../styles/theme';
@@ -41,16 +39,13 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   // Detect which stack we're in based on route name
   const isWriteMode = route.name === 'WriteHome';
   const isListenMode = route.name === 'ListenSpeakHome' || route.name === 'HomeScreen';
+  const isShadowingMode = route.name === 'ShadowingHome';
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'experienced'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showModePopup, setShowModePopup] = useState(false);
   const [isFilterChanging, setIsFilterChanging] = useState(false);
 
-  // Unlock modal state
-  const [unlockLesson, setUnlockLesson] = useState<Lesson | null>(null);
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
-  const [isUnlocking, setIsUnlocking] = useState(false);
 
   // Get user data
   const { user, userPoints } = useAuth();
@@ -86,20 +81,16 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   }, []);
 
   const handleLessonPress = useCallback((lesson: Lesson) => {
-    // Check if lesson is locked
-    if (lesson.isLocked) {
-      // Show unlock modal instead of mode selection
-      setUnlockLesson(lesson);
-      setShowUnlockModal(true);
-      return;
-    }
-
     // Increment view count (non-blocking)
     lessonService.incrementViewCount(lesson.id).catch(() => { });
 
     // In the new tab structure, skip mode popup and navigate directly
     if (isWriteMode) {
       navigation.navigate('Dictation', { lessonId: lesson.id });
+      return;
+    }
+    if (isShadowingMode) {
+      navigation.navigate('ShadowingLesson', { lessonId: lesson.id });
       return;
     }
     if (isListenMode) {
@@ -112,38 +103,6 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     setShowModePopup(true);
   }, [isWriteMode, isListenMode, navigation]);
 
-  // Handle unlock confirmation
-  const handleUnlockConfirm = useCallback(async (lessonId: string) => {
-    setIsUnlocking(true);
-    try {
-      const result = await unlockService.unlockLesson(lessonId);
-
-      if (result.success) {
-        // Close modal and refresh data
-        setShowUnlockModal(false);
-        setUnlockLesson(null);
-        await refetch();
-
-        // After successful unlock, show mode selection
-        // Find the lesson and open mode popup
-        const unlockedLesson = { ...unlockLesson!, isLocked: false };
-        setSelectedLesson(unlockedLesson);
-        setShowModePopup(true);
-      } else {
-        throw new Error(result.error || 'Failed to unlock');
-      }
-    } catch (error: any) {
-      console.error('[HomeScreen] Unlock error:', error);
-      throw error;
-    } finally {
-      setIsUnlocking(false);
-    }
-  }, [refetch, unlockLesson]);
-
-  const handleCloseUnlockModal = useCallback(() => {
-    setShowUnlockModal(false);
-    setUnlockLesson(null);
-  }, []);
 
   const handleModeSelect = useCallback((mode: LessonMode) => {
     if (!selectedLesson) return;
@@ -154,6 +113,8 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     // Navigate based on context (which tab we're in)
     if (isWriteMode) {
       navigation.navigate('Dictation', { lessonId: selectedLesson.id });
+    } else if (isShadowingMode) {
+      navigation.navigate('ShadowingLesson', { lessonId: selectedLesson.id });
     } else if (isListenMode) {
       navigation.navigate('ListeningFlow', { lessonId: selectedLesson.id });
     } else if (mode === 'dictation') {
@@ -161,7 +122,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     } else {
       navigation.navigate('Lesson', { lessonId: selectedLesson.id });
     }
-  }, [selectedLesson, navigation, isWriteMode, isListenMode]);
+  }, [selectedLesson, navigation, isWriteMode, isListenMode, isShadowingMode]);
 
   const handleClosePopup = useCallback(() => {
     setShowModePopup(false);
@@ -169,9 +130,9 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   }, []);
 
   const handleViewAll = useCallback((categorySlug: string, categoryName: string) => {
-    const categoryRoute = isWriteMode ? 'WriteCategory' : 'Category';
+    const categoryRoute = isWriteMode ? 'WriteCategory' : isShadowingMode ? 'ShadowingCategory' : 'Category';
     navigation.navigate(categoryRoute, { categorySlug, categoryName });
-  }, [navigation, isWriteMode]);
+  }, [navigation, isWriteMode, isShadowingMode]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -228,10 +189,6 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
 
             {/* Stats */}
             <View style={styles.statsContainer}>
-              <View style={styles.statBadge}>
-                <Text style={styles.statIcon}>💎</Text>
-                <Text style={styles.statValue}>{userPoints || 0}</Text>
-              </View>
               <View style={styles.statBadge}>
                 <Text style={styles.statIcon}>🔥</Text>
                 <Text style={styles.statValue}>{streakValue}</Text>
@@ -352,15 +309,6 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         onSelectMode={handleModeSelect}
       />
 
-      {/* Unlock Modal */}
-      <UnlockModal
-        visible={showUnlockModal}
-        lesson={unlockLesson}
-        userUnlockInfo={userUnlockInfo}
-        onConfirm={handleUnlockConfirm}
-        onClose={handleCloseUnlockModal}
-        isLoading={isUnlocking}
-      />
     </SafeAreaView>
   );
 };

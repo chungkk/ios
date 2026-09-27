@@ -10,6 +10,7 @@ interface AppSettings {
   autoStop: boolean;
   showTranslation: boolean;
   dailyVocabGoal: number;
+  offlineTranslateEnabled: boolean;
 }
 
 interface SettingsContextType {
@@ -20,6 +21,7 @@ interface SettingsContextType {
   toggleAutoStop: () => Promise<void>;
   toggleShowTranslation: () => Promise<void>;
   setDailyVocabGoal: (goal: number) => Promise<void>;
+  toggleOfflineTranslate: () => Promise<void>;
 }
 
 const defaultSettings: AppSettings = {
@@ -28,6 +30,7 @@ const defaultSettings: AppSettings = {
   autoStop: false,
   showTranslation: false, // Default to hidden - user can toggle to see translations
   dailyVocabGoal: 10, // Default 10 words per day
+  offlineTranslateEnabled: false, // Requires Gemma model download
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -113,8 +116,18 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     await saveSettings(updated);
   }, [settings, saveSettings]);
 
+  // Toggle offline translate (Gemma on-device)
+  const toggleOfflineTranslate = useCallback(async () => {
+    let updated: AppSettings;
+    setSettings(prev => {
+      updated = { ...prev, offlineTranslateEnabled: !prev.offlineTranslateEnabled };
+      return updated;
+    });
+    await saveSettings(updated!);
+  }, [saveSettings]);
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage, toggleAutoStop, toggleShowTranslation, setDailyVocabGoal }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, toggleHaptic, setNativeLanguage, toggleAutoStop, toggleShowTranslation, setDailyVocabGoal, toggleOfflineTranslate }}>
       {children}
     </SettingsContext.Provider>
   );

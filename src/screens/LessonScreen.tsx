@@ -20,9 +20,7 @@ import PlaybackControls from '../components/player/PlaybackControls';
 import { Loading } from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 import SettingsMenu from '../components/lesson/SettingsMenu';
-import LockedLessonOverlay from '../components/lesson/LockedLessonOverlay';
 import { progressService } from '../services/progress.service';
-import { unlockService } from '../services/unlock.service';
 import { homepageService } from '../services/homepage.service';
 import { recordShadowingAttempt, recordShadowingStudyTime } from '../services/statistics.service';
 import { savedSentencesService, SavedSentence } from '../services/savedSentences.service';
@@ -35,9 +33,9 @@ import Toast, { ToastType } from '../components/common/Toast';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { UserUnlockInfo } from '../types/unlock.types';
 
-type LessonScreenProps = HomeStackScreenProps<'Lesson'>;
+type LessonScreenProps = HomeStackScreenProps<'Lesson'> | { route: { params: { lessonId: string; initialSentenceIndex?: number } }; navigation: any };
 
-export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation }) => {
+export const LessonScreen: React.FC<any> = ({ route, navigation }) => {
   const { lessonId, initialSentenceIndex } = route.params;
   const { settings } = useSettings();
   const { updateUserPoints } = useAuth();
@@ -109,7 +107,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
   const [showTranslatePopup, setShowTranslatePopup] = useState(false);
 
   // Unlock state for locked lessons
-  const [userUnlockInfo, setUserUnlockInfo] = useState<UserUnlockInfo | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
 
   // Toast notification state
@@ -126,7 +123,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     const fetchUnlockInfo = async () => {
       try {
         const data = await homepageService.fetchHomepageData('all', 1);
-        setUserUnlockInfo(data.userUnlockInfo || null);
       } catch (error) {
         console.log('[LessonScreen] Could not fetch unlock info:', error);
       }
@@ -713,54 +709,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({ route, navigation })
     );
   }
 
-  // Handle unlock for locked lessons
-  const handleUnlock = async () => {
-    setIsUnlocking(true);
-    try {
-      const result = await unlockService.unlockLesson(lessonId);
-      if (result.success) {
-        // Refresh lesson data to get unlocked content
-        // The lesson will be refetched and isLocked should be false now
-        // For now, just navigate back and let user click again
-        navigation.goBack();
-      } else {
-        setToastType('error');
-        setToastTitle(t('lesson.unlockFailed'));
-        setToastMessage(result.error || t('lesson.unlockError'));
-        setToastVisible(true);
-      }
-    } catch (error: any) {
-      console.error('[LessonScreen] Unlock error:', error);
-      setToastType('error');
-      setToastTitle(t('common.error'));
-      setToastMessage(t('lesson.unlockError'));
-      setToastVisible(true);
-    } finally {
-      setIsUnlocking(false);
-    }
-  };
-
-  // Show locked overlay if lesson is locked
-  if (lesson.isLocked) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="chevron-back" size={18} color="#fff" />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-        </View>
-        <LockedLessonOverlay
-          lesson={lesson}
-          userUnlockInfo={userUnlockInfo}
-          onUnlock={handleUnlock}
-          onGoBack={() => navigation.goBack()}
-          isLoading={isUnlocking}
-        />
-      </View>
-    );
-  }
 
   const videoId = lesson.youtubeUrl ? extractVideoId(lesson.youtubeUrl) : null;
   const isAudioLesson = !videoId;

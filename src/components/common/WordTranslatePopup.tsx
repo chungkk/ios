@@ -14,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Tts from 'react-native-tts';
-import { translateWord } from '../../services/translate.service';
+import { smartTranslateWord } from '../../services/translate.service';
 import { vocabularyService } from '../../services/vocabulary.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -43,6 +43,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
   const { user } = useAuth();
   const { settings } = useSettings();
   const [translation, setTranslation] = useState('');
+  const [translationSource, setTranslationSource] = useState<'offline' | 'online' | 'error' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -81,11 +82,14 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
       setIsLoading(true);
       setError(null);
       setTranslation('');
+      setTranslationSource(null);
       setIsSaved(false);
 
       try {
-        const result = await translateWord(word, context, '', targetLang);
-        setTranslation(result);
+        const preferOffline = settings.offlineTranslateEnabled;
+        const result = await smartTranslateWord(word, context, '', targetLang, preferOffline);
+        setTranslation(result.translation);
+        setTranslationSource(result.source);
 
         // Auto-speak word after popup opens (in German)
         try {
@@ -113,7 +117,7 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
     };
 
     fetchTranslation();
-  }, [visible, word, context, targetLang, t]);
+  }, [visible, word, context, targetLang, t, settings.offlineTranslateEnabled]);
 
   // Save word to vocabulary
   const handleSaveWord = useCallback(async () => {
@@ -213,7 +217,29 @@ const WordTranslatePopup: React.FC<WordTranslatePopupProps> = ({
             ) : error ? (
               <Text style={styles.errorText}>{error}</Text>
             ) : (
-              <Text style={styles.translationText}>{translation}</Text>
+              <View>
+                <Text style={styles.translationText}>{translation}</Text>
+                {translationSource && (
+                  <View style={styles.sourceBadgeContainer}>
+                    <View style={[
+                      styles.sourceBadge,
+                      translationSource === 'offline' ? styles.sourceBadgeOffline : styles.sourceBadgeOnline,
+                    ]}>
+                      <Icon
+                        name={translationSource === 'offline' ? 'hardware-chip-outline' : 'cloud-outline'}
+                        size={11}
+                        color={translationSource === 'offline' ? '#16a34a' : colors.retroCyan}
+                      />
+                      <Text style={[
+                        styles.sourceBadgeText,
+                        translationSource === 'offline' ? styles.sourceBadgeTextOffline : styles.sourceBadgeTextOnline,
+                      ]}>
+                        {translationSource === 'offline' ? 'Gemma AI' : 'Online'}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
             )}
           </View>
 
@@ -345,6 +371,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.retroCoral,
     textAlign: 'center',
+  },
+  sourceBadgeContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  sourceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
+  },
+  sourceBadgeOffline: {
+    backgroundColor: '#dcfce7',
+  },
+  sourceBadgeOnline: {
+    backgroundColor: '#e0f2fe',
+  },
+  sourceBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  sourceBadgeTextOffline: {
+    color: '#16a34a',
+  },
+  sourceBadgeTextOnline: {
+    color: colors.retroCyan,
   },
   contextContainer: {
     paddingHorizontal: spacing.lg,

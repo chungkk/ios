@@ -19,6 +19,7 @@ export type AuthStackParamList = {
 
 // Main Tab Navigator (Bottom Tabs)
 export type MainTabParamList = {
+  Shadowing: undefined;
   Read: undefined;
   Write: undefined;
   Settings: undefined;
@@ -49,6 +50,13 @@ export type WriteStackParamList = {
   WriteHome: undefined;
   WriteCategory: { categorySlug: string; categoryName: string };
   Dictation: { lessonId: string };
+};
+
+// Shadowing Stack Navigator (nested in Shadowing tab)
+export type ShadowingStackParamList = {
+  ShadowingHome: undefined;
+  ShadowingCategory: { categorySlug: string; categoryName: string };
+  ShadowingLesson: { lessonId: string; initialSentenceIndex?: number };
 };
 
 // Legacy Home Stack (kept for backward compatibility during migration)

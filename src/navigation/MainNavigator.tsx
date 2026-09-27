@@ -7,6 +7,7 @@ import type {
   MainTabParamList,
   ReadStackParamList,
   WriteStackParamList,
+  ShadowingStackParamList,
 } from './types';
 import { colors } from '../styles/theme';
 import CategoryScreen from '../screens/CategoryScreen';
@@ -15,6 +16,8 @@ import ReadingDetailScreen from '../screens/ReadingDetailScreen';
 import DictationScreen from '../screens/DictationScreen';
 import WriteHomeScreen from '../screens/WriteHomeScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import { HomeScreen } from '../screens/HomeScreen';
+import { LessonScreen } from '../screens/LessonScreen';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH >= 768;
 
@@ -34,6 +37,7 @@ const TabIcon = ({ iconName, focused }: { iconName: string; focused: boolean }) 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const ReadStack = createNativeStackNavigator<ReadStackParamList>();
 const WriteStack = createNativeStackNavigator<WriteStackParamList>();
+const ShadowingStack = createNativeStackNavigator<ShadowingStackParamList>();
 
 // Read Stack
 const ReadStackNavigator = () => {
@@ -53,6 +57,17 @@ const WriteStackNavigator = () => {
       <WriteStack.Screen name="WriteCategory" component={CategoryScreen} />
       <WriteStack.Screen name="Dictation" component={DictationScreen} />
     </WriteStack.Navigator>
+  );
+};
+
+// Shadowing Stack
+const ShadowingStackNavigator = () => {
+  return (
+    <ShadowingStack.Navigator screenOptions={{ headerShown: false }}>
+      <ShadowingStack.Screen name="ShadowingHome" component={HomeScreen} />
+      <ShadowingStack.Screen name="ShadowingCategory" component={CategoryScreen} />
+      <ShadowingStack.Screen name="ShadowingLesson" component={LessonScreen} />
+    </ShadowingStack.Navigator>
   );
 };
 
@@ -85,6 +100,14 @@ export const MainNavigator = () => {
       }}
     >
       <Tab.Screen
+        name="Shadowing"
+        component={ShadowingStackNavigator}
+        options={{
+          tabBarLabel: 'Shadowing',
+          tabBarIcon: ({ focused }) => <TabIcon iconName="mic" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
         name="Read"
         component={ReadStackNavigator}
         options={{
@@ -92,6 +115,7 @@ export const MainNavigator = () => {
           tabBarIcon: ({ focused }) => <TabIcon iconName="book" focused={focused} />,
         }}
       />
+      {/* TEMPORARILY HIDDEN - Chính tả tab
       <Tab.Screen
         name="Write"
         component={WriteStackNavigator}
@@ -100,6 +124,7 @@ export const MainNavigator = () => {
           tabBarIcon: ({ focused }) => <TabIcon iconName="headset" focused={focused} />,
         }}
       />
+      */}
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
